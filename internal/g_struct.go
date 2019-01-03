@@ -23,7 +23,7 @@ type G_ struct {
 func G_New() *G_ {
 	var g G_
 	g.NumberOfEntries = 0
-	g.FlushSize = 10000
+	g.FlushSize = 100000
 	g.Entries = make(map[string]string, g.FlushSize)
 	return &g
 }
