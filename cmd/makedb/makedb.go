@@ -51,16 +51,22 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 	}
 	defer db.Close()
 
-	// Garbage collection every 5 minutes
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-	for range ticker.C {
-	again:
-		err := db.RunValueLogGC(0.7)
-		if err == nil {
-			goto again
+	var stopGC = false
+
+	go func() {
+		// Garbage collection every 5 minutes
+		ticker := time.NewTicker(5 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+		again:
+			err := db.RunValueLogGC(0.7)
+			if err == nil {
+				if ! stopGC {
+					goto again
+				}
+			}
 		}
-	}
+	}()
 
 	// Glob all uniprot tsv files to be processed
 	files, _ := filepath.Glob(inputPath + "/*.tsv")
@@ -71,6 +77,8 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 
 	k_batch.Flush(db)
 	g_batch.Flush(db)
+
+	stopGC = true
 
 	PrintDB(db)
 
