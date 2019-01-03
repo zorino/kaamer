@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 	"sync"
 )
 
@@ -49,6 +50,17 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 		log.Fatal(err)
 	}
 	defer db.Close()
+
+	// Garbage collection every 5 minutes
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+	for range ticker.C {
+	again:
+		err := db.RunValueLogGC(0.7)
+		if err == nil {
+			goto again
+		}
+	}
 
 	// Glob all uniprot tsv files to be processed
 	files, _ := filepath.Glob(inputPath + "/*.tsv")
@@ -154,7 +166,7 @@ func processProteinInput(db *badger.DB, line string, kmerSize int) {
 		key := "k_" + c.Sequence[i:i+kmerSize]
 
 		var currentValue []byte
-		err := db.View(func(txn *badger.Txn) error {
+		db.View(func(txn *badger.Txn) error {
 			item, err := txn.Get([]byte(key))
 			if err == nil {
 				item.Value(func(val []byte) error {
@@ -167,42 +179,17 @@ func processProteinInput(db *badger.DB, line string, kmerSize int) {
 			return nil
 		})
 
-		if err == nil {
-			// fmt.Println("Current value (with nil) : " + string(currentValue))
-		} else {
-			fmt.Println("Current value (without nil) : " + string(currentValue))
-		}
+		// if err == nil {
+		// 	// fmt.Println("Current value (with nil) : " + string(currentValue))
+		// } else {
+		// 	fmt.Println("Current value (without nil) : " + string(currentValue))
+		// }
 
 		var g_val = g_batch.CreateValues(c.GeneOntology, string(currentValue), db)
 
 		k_batch.Mu.Lock()
 		k_batch.Add(key, g_val, db)
 		k_batch.Mu.Unlock()
-
-		// var new_val = fmt.Sprintf("['%s']", c.Entry)
-
-		// var new_val = "i_" + c.Entry
-
-		// dec := json.NewDecoder(strings.NewReader(jsonstring))
-
-		// db.View(func(txn *badger.Txn) error {
-		// 	item, err := txn.Get([]byte(key))
-		// 	var valCopy []byte
-		// 	if err == nil {
-		// 		item.Value(func(val []byte) error {
-		// 			// Accessing val here is valid.
-		// 			// fmt.Printf("The answer is: %s\n", val)
-		// 			valCopy = append([]byte{}, val...)
-		// 			return nil
-		// 		})
-		// 		new_val = new_val + ";" + string(valCopy[:])
-		// 	}
-		// 	return nil
-		// })
-
-		// k_batch.Mu.Lock()
-		// k_batch.Add(key, new_val, db)
-		// k_batch.Mu.Unlock()
 
 	}
 

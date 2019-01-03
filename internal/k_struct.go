@@ -36,7 +36,6 @@ func (k *K_) Flush(db *badger.DB) {
 
 	fmt.Println("BATCH INSERT")
 	wb.Flush()
-	db.RunValueLogGC(0.7)
 
 	k.Entries = make(map[string]string, k.FlushSize)
 	k.NumberOfEntries = 0
