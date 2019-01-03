@@ -5,6 +5,7 @@ import (
 	// "encoding/json"
 	"fmt"
 	"github.com/dgraph-io/badger"
+	"github.com/zorino/metaprot/internal"
 	"log"
 	"os"
 	"path/filepath"
@@ -21,8 +22,8 @@ type Protein struct {
 	GeneNames        string
 	Organism         string
 	TaxonomicLineage string
-	GeneOntology     string
-	FunctionCC       string
+	GeneOntology     string  // g_ struct
+	FunctionCC       string  // f_ struct
 	Pathway          string
 	EC_Number        string
 	Mass             string
@@ -30,44 +31,11 @@ type Protein struct {
 	Sequence         string
 }
 
-type k_ struct {
-	FlushSize       int
-	NumberOfEntries int
-	Entries         map[string]string
-	mu              sync.Mutex
-}
+// Badger DB Structs (from Uniprot Protein Annotations)
+var k_batch = db_struct.K_New()
+var g_batch = db_struct.G_New()
 
-func (k *k_) Add(key string, add_val string, db *badger.DB) {
-
-	if val, ok := k.Entries[key]; ok {
-		// fmt.Println("Key exist in struct adding to it")
-		k.Entries[key] = val + ";" + add_val
-	} else {
-		// fmt.Println("New Key")
-		k.Entries[key] = add_val
-		k.NumberOfEntries++
-	}
-
-	if k.NumberOfEntries == k.FlushSize {
-		wb := db.NewWriteBatch()
-		defer wb.Cancel()
-		for k, v := range k.Entries {
-			err := wb.Set([]byte(k), []byte(v), 0) // Will create txns as needed.
-			if err != nil {
-				fmt.Println("BUG: Error batch insert")
-				fmt.Println(err)
-			}
-		}
-		fmt.Println("BATCH INSERT")
-		wb.Flush()
-		db.RunValueLogGC(0.7)
-		k_batch.Entries = make(map[string]string, k_batch.FlushSize)
-		k.NumberOfEntries = 0
-	}
-}
-
-// Badger Batches
-var k_batch k_
+// var all_structs = []db_struct {k_batch, g_batch}
 
 func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 
@@ -85,14 +53,14 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 	// Glob all uniprot tsv files to be processed
 	files, _ := filepath.Glob(inputPath + "/*.tsv")
 
-	// K_batch batch d'insertion dans le namespace s_ (kmer -> prot_id)
-	k_batch.NumberOfEntries = 0
-	k_batch.FlushSize = 10000
-	k_batch.Entries = make(map[string]string, k_batch.FlushSize)
-
 	for _, file := range files {
 		run(db, file, kmerSize)
 	}
+
+	k_batch.Flush(db)
+	g_batch.Flush(db)
+
+	PrintDB(db)
 
 }
 
@@ -131,7 +99,6 @@ func run(db *badger.DB, fileName string, kmerSize int) int {
 	for v := range results {
 		counts += v
 	}
-	// fmt.Println(counts)
 
 	return counts
 
@@ -184,38 +151,86 @@ func processProteinInput(db *badger.DB, line string, kmerSize int) {
 	// sliding windows of kmerSize on Sequence
 	for i := 0; i < len(c.Sequence)-kmerSize+1; i++ {
 
-		key := "s_" + c.Sequence[i:i+kmerSize]
+		key := "k_" + c.Sequence[i:i+kmerSize]
 
-		var new_val = fmt.Sprintf("['%s']", c.Entry)
+		var currentValue []byte
+		err := db.View(func(txn *badger.Txn) error {
+			item, err := txn.Get([]byte(key))
+			if err == nil {
+				item.Value(func(val []byte) error {
+					// Accessing val here is valid.
+					// fmt.Printf("The answer is: %s\n", val)
+					currentValue = append([]byte{}, val...)
+					return nil
+				})
+			}
+			return nil
+		})
+
+		if err == nil {
+			// fmt.Println("Current value (with nil) : " + string(currentValue))
+		} else {
+			fmt.Println("Current value (without nil) : " + string(currentValue))
+		}
+
+		var g_val = g_batch.CreateValues(c.GeneOntology, string(currentValue), db)
+
+		k_batch.Mu.Lock()
+		k_batch.Add(key, g_val, db)
+		k_batch.Mu.Unlock()
+
+		// var new_val = fmt.Sprintf("['%s']", c.Entry)
 
 		// var new_val = "i_" + c.Entry
 
 		// dec := json.NewDecoder(strings.NewReader(jsonstring))
 
-		db.View(func(txn *badger.Txn) error {
-			item, err := txn.Get([]byte(key))
-			var valCopy []byte
-			if err == nil {
-				item.Value(func(val []byte) error {
-					// Accessing val here is valid.
-					// fmt.Printf("The answer is: %s\n", val)
-					valCopy = append([]byte{}, val...)
-					return nil
-				})
-				new_val = new_val + ";" + string(valCopy[:])
-			}
-			return nil
-		})
+		// db.View(func(txn *badger.Txn) error {
+		// 	item, err := txn.Get([]byte(key))
+		// 	var valCopy []byte
+		// 	if err == nil {
+		// 		item.Value(func(val []byte) error {
+		// 			// Accessing val here is valid.
+		// 			// fmt.Printf("The answer is: %s\n", val)
+		// 			valCopy = append([]byte{}, val...)
+		// 			return nil
+		// 		})
+		// 		new_val = new_val + ";" + string(valCopy[:])
+		// 	}
+		// 	return nil
+		// })
 
-		k_batch.mu.Lock()
-		k_batch.Add(key, new_val, db)
-		k_batch.mu.Unlock()
+		// k_batch.Mu.Lock()
+		// k_batch.Add(key, new_val, db)
+		// k_batch.Mu.Unlock()
 
 	}
 
 	fmt.Printf("%#v done\n", c.Entry)
 
 }
+
+func PrintDB (db *badger.DB) {
+	db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchSize = 10
+		it := txn.NewIterator(opts)
+		defer it.Close()
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			k := item.Key()
+			err := item.Value(func(v []byte) error {
+				fmt.Printf("key=%s, value=%s\n", k, v)
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 
 // P23883
 // PUUC_ECOLI
@@ -236,7 +251,7 @@ func processProteinInput(db *badger.DB, line string, kmerSize int) {
 // # namespases :
 //                k_   ->   peptide sequence kmers => [] i_  array de prot ids
 //                i_   ->   protein id            [] array des keys pour les autres champs (combinaison pour un même champ ...)
-//                n_   ->   proteine / gene nname
+//                n_   ->   proteine / gene name
 //                o_   ->   organism_name
 //                t_   ->   taxonomy
 //                g_   ->   gene ontology

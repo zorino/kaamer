@@ -39,6 +39,7 @@ func main() {
 			fmt.Println("No input file path !")
 		}
 		makedb.NewMakedb(*dbPath, *inputPath, *kmerSize)
+
 		os.Exit(0)
 	}
 
