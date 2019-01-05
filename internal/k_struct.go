@@ -18,7 +18,7 @@ type K_ struct {
 func K_New() *K_ {
 	var k K_
 	k.NumberOfEntries = 0
-	k.FlushSize = 100000
+	k.FlushSize = 1000000
 	k.Entries = make(map[string]string, k.FlushSize)
 	return &k
 }
