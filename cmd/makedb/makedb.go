@@ -94,8 +94,9 @@ func run(db *badger.DB, fileName string, kmerSize int) int {
 	results := make(chan int)
 	wg := new(sync.WaitGroup)
 
-	// thread pool (3 CPUs)
-	for w := 1; w <= 3; w++ {
+	// thread pool
+	var nbThreads = 12
+	for w := 1; w <= nbThreads; w++ {
 		wg.Add(1)
 		go readBuffer(jobs, results, wg, db, kmerSize)
 	}
