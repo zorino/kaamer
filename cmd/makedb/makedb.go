@@ -36,7 +36,6 @@ type Protein struct {
 var k_batch = db_struct.K_New()
 var g_batch = db_struct.G_New()
 
-// var all_structs = []db_struct {k_batch, g_batch}
 
 func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 
@@ -51,18 +50,18 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 	}
 	defer db.Close()
 
-	var stopGC = false
-
+	wgGC := new(sync.WaitGroup)
+	wgGC.Add(1)
 	go func() {
 		// Garbage collection every 5 minutes
+		var stopGC = false
 		ticker := time.NewTicker(5 * time.Minute)
 		defer ticker.Stop()
 		for range ticker.C {
-		again:
-			err := db.RunValueLogGC(0.7)
-			if err == nil {
-				if ! stopGC {
-					goto again
+			for ! stopGC {
+				err := db.RunValueLogGC(0.7)
+				if err != nil {
+					stopGC = true
 				}
 			}
 		}
@@ -75,10 +74,13 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 		run(db, file, kmerSize)
 	}
 
+	// Last DB flushes
 	k_batch.Flush(db)
 	g_batch.Flush(db)
 
-	stopGC = true
+	// Last DB GC
+	wgGC.Done()
+	db.RunValueLogGC(0.7)
 
 	PrintDB(db)
 
@@ -187,11 +189,6 @@ func processProteinInput(db *badger.DB, line string, kmerSize int) {
 			return nil
 		})
 
-		// if err == nil {
-		// 	// fmt.Println("Current value (with nil) : " + string(currentValue))
-		// } else {
-		// 	fmt.Println("Current value (without nil) : " + string(currentValue))
-		// }
 
 		var g_val = g_batch.CreateValues(c.GeneOntology, string(currentValue), db)
 
