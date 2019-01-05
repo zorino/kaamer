@@ -108,9 +108,8 @@ func (g *G_) CreateValues(key string, oldKey string, db *badger.DB) string {
 		if goId == "" {
 			continue
 		}
-		// fmt.Println(goId)
 
-		goId = "g_"+goId[5:len(goId)-2]
+		goId = "g_"+goId[5:len(goId)-1]
 
 		goIds = append(goIds, goId)
 
@@ -124,14 +123,15 @@ func (g *G_) CreateValues(key string, oldKey string, db *badger.DB) string {
 
 	var combinedKey = ""
 	var combinedVal = ""
-	if len(goIds) == 1 && goIds[0] == "" {
+
+	if len(goIds) == 0 {
 		combinedKey = "gg_nil"
 	} else {
 		if oldKey != "gg_nil" {
 			g.Mu.Lock()
 			oldVal, ok := g.GetValue(oldKey, db)
 			if (ok) {
-				fmt.Println("Old Val exists : " + oldVal)
+				// fmt.Println("Old Val exists : " + oldVal)
 				goIds = append(goIds, strings.Split(oldVal, ",")...)
 			}
 		} else {
