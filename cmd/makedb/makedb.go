@@ -44,6 +44,7 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 	opts := badger.DefaultOptions
 	opts.Dir = dbPath
 	opts.ValueDir = dbPath
+
 	db, err := badger.Open(opts)
 	if err != nil {
 		log.Fatal(err)
@@ -55,7 +56,7 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 	go func() {
 		// Garbage collection every 5 minutes
 		var stopGC = false
-		ticker := time.NewTicker(5 * time.Minute)
+		ticker := time.NewTicker(30 * time.Second)
 		defer ticker.Stop()
 		for range ticker.C {
 			for ! stopGC {
