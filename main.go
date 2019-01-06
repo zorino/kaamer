@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"./cmd/makedb"
+	"github.com/zorino/metaprot/cmd/makedb"
 	"os"
 )
 

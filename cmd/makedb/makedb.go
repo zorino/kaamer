@@ -5,7 +5,7 @@ import (
 	// "encoding/json"
 	"fmt"
 	"github.com/dgraph-io/badger"
-	"../../internal"
+	"github.com/zorino/metaprot/internal"
 	"log"
 	"os"
 	"path/filepath"
