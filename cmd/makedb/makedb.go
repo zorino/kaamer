@@ -191,12 +191,13 @@ func processProteinInput(db *badger.DB, line string, kmerSize int) {
 			return nil
 		})
 
-
 		var g_val = g_batch.CreateValues(c.GeneOntology, string(currentValue), db)
 
-		k_batch.Mu.Lock()
-		k_batch.Add(key, g_val, db)
-		k_batch.Mu.Unlock()
+		if g_val != string(currentValue) {
+			k_batch.Mu.Lock()
+			k_batch.Add(key, g_val, db)
+			k_batch.Mu.Unlock()
+		}
 
 	}
 

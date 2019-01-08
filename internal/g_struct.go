@@ -116,9 +116,6 @@ func (g *G_) CreateValues(key string, oldKey string, db *badger.DB) string {
 		g.Mu.Lock()
 		g.Add(goId, goName, db)
 		g.Mu.Unlock()
-
-		// fmt.Println(goId +"  "+goName)
-
 	}
 
 	var combinedKey = ""
@@ -139,7 +136,9 @@ func (g *G_) CreateValues(key string, oldKey string, db *badger.DB) string {
 		}
 
 		combinedKey, combinedVal = CreateHashValue(goIds)
-		g.Add(combinedKey, combinedVal, db)
+		if oldKey != combinedKey {
+			g.Add(combinedKey, combinedVal, db)
+		}
 		g.Mu.Unlock()
 	}
 
