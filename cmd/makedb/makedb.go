@@ -56,11 +56,11 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 	go func() {
 		// Garbage collection every 5 minutes
 		var stopGC = false
-		ticker := time.NewTicker(30 * time.Second)
+		ticker := time.NewTicker(5 * time.Minute)
 		defer ticker.Stop()
 		for range ticker.C {
 			for ! stopGC {
-				err := db.RunValueLogGC(0.7)
+				err := db.RunValueLogGC(0.5)
 				if err != nil {
 					stopGC = true
 				}
