@@ -81,7 +81,7 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 
 	// Last DB GC
 	wgGC.Done()
-	db.RunValueLogGC(0.7)
+	db.RunValueLogGC(0.1)
 
 	PrintDB(db)
 
