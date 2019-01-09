@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/dgraph-io/badger"
 	"github.com/zorino/metaprot/internal"
+	"github.com/zorino/metaprot/cmd/download_db"
 	"os"
 	"path/filepath"
 	"strings"
@@ -36,14 +37,19 @@ type DBStructs struct {
 
 func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 
+	// Glob all uniprot tsv files to be processed
+	files, _ := filepath.Glob(inputPath + "/*.tsv")
+
+	if len(files) == 0 {
+		download_db.Download(inputPath)
+		os.Exit(0)
+	}
+
 	os.Mkdir(dbPath, 0700)
 
 	dbStructs := new(DBStructs)
 	dbStructs.k_batch = db_struct.K_New(dbPath)
 	dbStructs.g_batch = db_struct.G_New(dbPath)
-
-	// Glob all uniprot tsv files to be processed
-	files, _ := filepath.Glob(inputPath + "/*.tsv")
 
 	for _, file := range files {
 		run(file, kmerSize, dbStructs)
