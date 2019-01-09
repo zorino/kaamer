@@ -2,15 +2,12 @@ package makedb
 
 import (
 	"bufio"
-	// "encoding/json"
 	"fmt"
 	"github.com/dgraph-io/badger"
 	"github.com/zorino/metaprot/internal"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 	"sync"
 )
 
@@ -32,62 +29,33 @@ type Protein struct {
 	Sequence         string
 }
 
-// Badger DB Structs (from Uniprot Protein Annotations)
-var k_batch = db_struct.K_New()
-var g_batch = db_struct.G_New()
-
+type DBStructs struct {
+	k_batch         *db_struct.K_
+	g_batch         *db_struct.G_
+}
 
 func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 
-	// Open the Badger database
-	// It will be created if it doesn't exist.
-	opts := badger.DefaultOptions
-	opts.Dir = dbPath
-	opts.ValueDir = dbPath
+	os.Mkdir(dbPath, 0700)
 
-	db, err := badger.Open(opts)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	wgGC := new(sync.WaitGroup)
-	wgGC.Add(1)
-	go func() {
-		// Garbage collection every 5 minutes
-		var stopGC = false
-		ticker := time.NewTicker(5 * time.Minute)
-		defer ticker.Stop()
-		for range ticker.C {
-			for ! stopGC {
-				err := db.RunValueLogGC(0.5)
-				if err != nil {
-					stopGC = true
-				}
-			}
-		}
-	}()
+	dbStructs := new(DBStructs)
+	dbStructs.k_batch = db_struct.K_New(dbPath)
+	dbStructs.g_batch = db_struct.G_New(dbPath)
 
 	// Glob all uniprot tsv files to be processed
 	files, _ := filepath.Glob(inputPath + "/*.tsv")
 
 	for _, file := range files {
-		run(db, file, kmerSize)
+		run(file, kmerSize, dbStructs)
 	}
 
 	// Last DB flushes
-	k_batch.Flush(db)
-	g_batch.Flush(db)
-
-	// Last DB GC
-	wgGC.Done()
-	db.RunValueLogGC(0.1)
-
-	PrintDB(db)
+	dbStructs.k_batch.Close()
+	dbStructs.g_batch.Close()
 
 }
 
-func run(db *badger.DB, fileName string, kmerSize int) int {
+func run(fileName string, kmerSize int, dbStructs *DBStructs) int {
 
 	file, _ := os.Open(fileName)
 
@@ -99,7 +67,7 @@ func run(db *badger.DB, fileName string, kmerSize int) int {
 	var nbThreads = 12
 	for w := 1; w <= nbThreads; w++ {
 		wg.Add(1)
-		go readBuffer(jobs, results, wg, db, kmerSize)
+		go readBuffer(jobs, results, wg, kmerSize, dbStructs)
 	}
 
 	// Go over a file line by line and queue up a ton of work
@@ -128,18 +96,18 @@ func run(db *badger.DB, fileName string, kmerSize int) int {
 
 }
 
-func readBuffer(jobs <-chan string, results chan<- int, wg *sync.WaitGroup, db *badger.DB, kmerSize int) {
+func readBuffer(jobs <-chan string, results chan<- int, wg *sync.WaitGroup, kmerSize int, dbStructs *DBStructs) {
 
 	defer wg.Done()
 	// line by line
 	for j := range jobs {
-		processProteinInput(db, j, kmerSize)
+		processProteinInput(j, kmerSize, dbStructs)
 	}
 	results <- 1
 
 }
 
-func processProteinInput(db *badger.DB, line string, kmerSize int) {
+func processProteinInput(line string, kmerSize int, dbStructs *DBStructs) {
 
 	s := strings.Split(line, "\t")
 	if len(s) < 11 {
@@ -175,10 +143,10 @@ func processProteinInput(db *badger.DB, line string, kmerSize int) {
 	// sliding windows of kmerSize on Sequence
 	for i := 0; i < len(c.Sequence)-kmerSize+1; i++ {
 
-		key := "k_" + c.Sequence[i:i+kmerSize]
+		key := c.Sequence[i:i+kmerSize]
 
 		var currentValue []byte
-		db.View(func(txn *badger.Txn) error {
+		dbStructs.k_batch.DB.View(func(txn *badger.Txn) error {
 			item, err := txn.Get([]byte(key))
 			if err == nil {
 				item.Value(func(val []byte) error {
@@ -191,12 +159,12 @@ func processProteinInput(db *badger.DB, line string, kmerSize int) {
 			return nil
 		})
 
-		var g_val = g_batch.CreateValues(c.GeneOntology, string(currentValue), db)
+		var g_val = dbStructs.g_batch.CreateValues(c.GeneOntology, string(currentValue))
 
 		if g_val != string(currentValue) {
-			k_batch.Mu.Lock()
-			k_batch.Add(key, g_val, db)
-			k_batch.Mu.Unlock()
+			dbStructs.k_batch.Mu.Lock()
+			dbStructs.k_batch.Add(key, g_val)
+			dbStructs.k_batch.Mu.Unlock()
 		}
 
 	}
@@ -205,26 +173,26 @@ func processProteinInput(db *badger.DB, line string, kmerSize int) {
 
 }
 
-func PrintDB (db *badger.DB) {
-	db.View(func(txn *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-		opts.PrefetchSize = 10
-		it := txn.NewIterator(opts)
-		defer it.Close()
-		for it.Rewind(); it.Valid(); it.Next() {
-			item := it.Item()
-			k := item.Key()
-			err := item.Value(func(v []byte) error {
-				fmt.Printf("key=%s, value=%s\n", k, v)
-				return nil
-			})
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-}
+// func PrintDB (db *badger.DB) {
+// 	db.View(func(txn *badger.Txn) error {
+// 		opts := badger.DefaultIteratorOptions
+// 		opts.PrefetchSize = 10
+// 		it := txn.NewIterator(opts)
+// 		defer it.Close()
+// 		for it.Rewind(); it.Valid(); it.Next() {
+// 			item := it.Item()
+// 			k := item.Key()
+// 			err := item.Value(func(v []byte) error {
+// 				fmt.Printf("key=%s, value=%s\n", k, v)
+// 				return nil
+// 			})
+// 			if err != nil {
+// 				return err
+// 			}
+// 		}
+// 		return nil
+// 	})
+// }
 
 
 // P23883

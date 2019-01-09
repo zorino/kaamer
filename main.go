@@ -14,10 +14,9 @@ func main() {
 
        -makedb       make the protein database
 
-               -i    input protein tsv files path
+               -i    input raw files dir // if doesn't exist metaprot will download from Uniprot (~50 GB)
                -d    badger database dir path
                -k    kmer size (default: 11)
-
 
 `
 
@@ -32,12 +31,14 @@ func main() {
 	flag.Parse()
 
 	if *makedbOpt == true {
+
 		// fmt.Println(*dbPath)
 		// fmt.Println(*inputPath)
 		// fmt.Println(*kmerSize)
-		if *inputPath == "" {
-			fmt.Println("No input file path !")
-		}
+		// if *inputPath == "" {
+		// 	fmt.Println("No input file path !")
+		// }
+
 		makedb.NewMakedb(*dbPath, *inputPath, *kmerSize)
 
 		os.Exit(0)
