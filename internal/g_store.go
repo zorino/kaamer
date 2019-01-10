@@ -50,15 +50,18 @@ func (g *G_) CreateValues(entry string, oldKey string) (string, bool) {
 	var combinedVal = ""
 	var new = false
 
+	if oldKey == "" {
+		new = true
+	}
+
 	if len(goIds) == 0 {
 		combinedKey = "_nil"
 	} else {
 
 		combinedKey, combinedVal = CreateHashValue(goIds)
 
-		if combinedKey == oldKey {
-			new = false
-		} else {
+		if combinedKey != oldKey {
+			new = true
 			g.Mu.Lock()
 			if oldKey != "_nil" {
 				oldVal, ok := g.GetValue(oldKey)
@@ -69,9 +72,12 @@ func (g *G_) CreateValues(entry string, oldKey string) (string, bool) {
 			}
 			g.AddValue(combinedKey, combinedVal)
 			g.Mu.Unlock()
+		} else {
+			new = false
 		}
 
 	}
 
 	return combinedKey, new
+
 }
