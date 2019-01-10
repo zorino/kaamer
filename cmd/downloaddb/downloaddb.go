@@ -139,16 +139,17 @@ func PrepareFiles(filePath string) {
 		}
 
 		if (n%10000000 == 0) {
+			w.Flush()
 			f.Close()
 			fileNum += 1
 			outFile := baseFile + fmt.Sprintf("%03d", fileNum) + ".tsv"
 			f, _ := os.Create(outFile)
 			w = bufio.NewWriter(f)
 		}
-
 		n++
 	}
 
+	w.Flush()
 	f.Close()
 
 	os.Remove(filePath)
