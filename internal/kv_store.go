@@ -88,7 +88,7 @@ func (kv *KVStore) HasValue(key string) bool {
 	return hasValue
 }
 
-func (kv *KVStore) Add(key string, newVal string) {
+func (kv *KVStore) AddValue(key string, newVal string) {
 
 	if _, ok := kv.Entries[key]; ok {
 		// Key exist in struct adding new value to it

@@ -42,7 +42,7 @@ func (g *G_) CreateValues(key string, oldKey string) (string, bool) {
 		goIds = append(goIds, goId)
 
 		g.Mu.Lock()
-		g.Add(goId, goName)
+		g.AddValue(goId, goName)
 		g.Mu.Unlock()
 	}
 
@@ -67,7 +67,7 @@ func (g *G_) CreateValues(key string, oldKey string) (string, bool) {
 					goIds = append(goIds, strings.Split(oldVal, ",")...)
 				}
 			}
-			g.Add(combinedKey, combinedVal)
+			g.AddValue(combinedKey, combinedVal)
 			g.Mu.Unlock()
 		}
 

@@ -159,7 +159,7 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 
 		if g_val, new := kvStores.g_batch.CreateValues(c.GeneOntology, string(currentValue)); new {
 			kvStores.k_batch.Mu.Lock()
-			kvStores.k_batch.Add(key, g_val)
+			kvStores.k_batch.AddValue(key, g_val)
 			kvStores.k_batch.Mu.Unlock()
 		}
 
