@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/dgraph-io/badger"
 	"github.com/zorino/metaprot/internal"
-	"github.com/zorino/metaprot/cmd/download_db"
+	"github.com/zorino/metaprot/cmd/downloaddb"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,8 +31,8 @@ type Protein struct {
 }
 
 type DBStructs struct {
-	k_batch         *db_struct.K_
-	g_batch         *db_struct.G_
+	k_batch         *kvstore.K_
+	g_batch         *kvstore.G_
 }
 
 func NewMakedb(dbPath string, inputPath string, kmerSize int) {
@@ -48,8 +48,8 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 	os.Mkdir(dbPath, 0700)
 
 	dbStructs := new(DBStructs)
-	dbStructs.k_batch = db_struct.K_New(dbPath)
-	dbStructs.g_batch = db_struct.G_New(dbPath)
+	dbStructs.k_batch = kvstore.K_New(dbPath)
+	dbStructs.g_batch = kvstore.G_New(dbPath)
 
 	for _, file := range files {
 		run(file, kmerSize, dbStructs)

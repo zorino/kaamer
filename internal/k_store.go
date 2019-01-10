@@ -1,4 +1,4 @@
-package db_struct
+package kvstore
 
 import (
 	"fmt"
