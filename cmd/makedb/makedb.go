@@ -15,25 +15,22 @@ import (
 // uniprotkb-bacteria (https://github.com/zorino/microbe-dbs)
 type Protein struct {
 	Entry            string
-	EntryName        string
-	Status           string
+	Status           string  // reviewed ?= Swisprot
 	ProteinNames     string
-	GeneNames        string
-	Organism         string
 	TaxonomicLineage string
-	GeneOntology     string  // g_ struct
-	FunctionCC       string  // f_ struct
+	GeneOntology     string  // g_store
+	FunctionCC       string  // f_store
 	Pathway          string
 	EC_Number        string
-	Mass             string
-	Length           string
-	Sequence         string
+	Sequence         string  // k_store
 }
 
 type KVStores struct {
 	k_batch         *kvstore.K_
 	g_batch         *kvstore.G_
+	f_batch         *kvstore.F_
 }
+
 
 func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 
@@ -50,6 +47,7 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 	kvStores := new(KVStores)
 	kvStores.k_batch = kvstore.K_New(dbPath)
 	kvStores.g_batch = kvstore.G_New(dbPath)
+	kvStores.f_batch = kvstore.F_New(dbPath)
 
 	for _, file := range files {
 		run(file, kmerSize, kvStores)
@@ -58,6 +56,7 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 	// Last DB flushes
 	kvStores.k_batch.Close()
 	kvStores.g_batch.Close()
+	kvStores.f_batch.Close()
 
 }
 
@@ -116,35 +115,26 @@ func readBuffer(jobs <-chan string, results chan<- int, wg *sync.WaitGroup, kmer
 func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 
 	s := strings.Split(line, "\t")
-	if len(s) < 11 {
+
+	if len(s) < 9 {
 		return
 	}
 
 	c := Protein{}
 	c.Entry = s[0]
-	c.EntryName = s[1]
-	c.Status = s[2]
-	c.ProteinNames = s[3]
-	c.GeneNames = s[4]
-	c.Organism = s[5]
-	c.TaxonomicLineage = s[6]
-	c.GeneOntology = s[7]
-	c.FunctionCC = s[8]
-	c.Pathway = s[9]
-	c.EC_Number = s[10]
-	c.Mass = s[11]
-	c.Length = s[12]
-	c.Sequence = s[13]
+	c.Status = s[1]
+	c.ProteinNames = s[2]
+	c.TaxonomicLineage = s[3]
+	c.GeneOntology = s[4]
+	c.FunctionCC = s[5]
+	c.Pathway = s[6]
+	c.EC_Number = s[7]
+	c.Sequence = s[8]
 
 	// skip peptide shorter than kmerSize
 	if len(c.Sequence) < kmerSize {
 		return
 	}
-
-	// build badger transactions
-	// i_ := "i_" + c.Entry
-	// i_val := ""
-	// u_ := "u_" + c.Status
 
 	// sliding windows of kmerSize on Sequence
 	for i := 0; i < len(c.Sequence)-kmerSize+1; i++ {
@@ -165,9 +155,9 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 			return nil
 		})
 
-		var g_val = kvStores.g_batch.CreateValues(c.GeneOntology, string(currentValue))
+		// kvStores.f_batch.CreateValues(c.FunctionCC, string(currentValue))
 
-		if g_val != string(currentValue) {
+		if g_val, new := kvStores.g_batch.CreateValues(c.GeneOntology, string(currentValue)); new {
 			kvStores.k_batch.Mu.Lock()
 			kvStores.k_batch.Add(key, g_val)
 			kvStores.k_batch.Mu.Unlock()
@@ -178,6 +168,7 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 	fmt.Printf("%#v done\n", c.Entry)
 
 }
+
 
 // func PrintDB (db *badger.DB) {
 // 	db.View(func(txn *badger.Txn) error {
