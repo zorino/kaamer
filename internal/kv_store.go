@@ -83,6 +83,11 @@ func (kv *KVStore) Flush() {
 	kv.NumberOfEntries = 0
 }
 
+func (kv *KVStore) HasValue(key string) bool {
+	_, hasValue := kv.Entries[key]
+	return hasValue
+}
+
 func (kv *KVStore) Add(key string, newVal string) {
 
 	if _, ok := kv.Entries[key]; ok {
