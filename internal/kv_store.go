@@ -90,7 +90,7 @@ func (kv *KVStore) HasValue(key string) bool {
 
 func (kv *KVStore) AddValue(key string, newVal string) {
 
-	if _, ok := kv.Entries[key]; ok {
+	if kv.HasValue(key) {
 		// Key exist in struct adding new value to it
 		kv.Entries[key] = newVal
 	} else {
