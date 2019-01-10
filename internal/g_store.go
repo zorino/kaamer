@@ -17,10 +17,10 @@ func G_New(dbPath string) *G_ {
 	return &g
 }
 
-func (g *G_) CreateValues(key string, oldKey string) (string, bool) {
+func (g *G_) CreateValues(entry string, oldKey string) (string, bool) {
 
 	// aldehyde dehydrogenase [NAD(P)+] activity [GO:0004030]; putrescine catabolic process [GO:0009447]
-	goArray := strings.Split(key, "; ")
+	goArray := strings.Split(entry, "; ")
 
 	reg := regexp.MustCompile(` \[GO:.*\]`)
 
