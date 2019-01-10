@@ -30,7 +30,7 @@ type Protein struct {
 	Sequence         string
 }
 
-type DBStructs struct {
+type KVStores struct {
 	k_batch         *kvstore.K_
 	g_batch         *kvstore.G_
 }
@@ -47,21 +47,21 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 
 	os.Mkdir(dbPath, 0700)
 
-	dbStructs := new(DBStructs)
-	dbStructs.k_batch = kvstore.K_New(dbPath)
-	dbStructs.g_batch = kvstore.G_New(dbPath)
+	kvStores := new(KVStores)
+	kvStores.k_batch = kvstore.K_New(dbPath)
+	kvStores.g_batch = kvstore.G_New(dbPath)
 
 	for _, file := range files {
-		run(file, kmerSize, dbStructs)
+		run(file, kmerSize, kvStores)
 	}
 
 	// Last DB flushes
-	dbStructs.k_batch.Close()
-	dbStructs.g_batch.Close()
+	kvStores.k_batch.Close()
+	kvStores.g_batch.Close()
 
 }
 
-func run(fileName string, kmerSize int, dbStructs *DBStructs) int {
+func run(fileName string, kmerSize int, kvStores *KVStores) int {
 
 	file, _ := os.Open(fileName)
 
@@ -73,7 +73,7 @@ func run(fileName string, kmerSize int, dbStructs *DBStructs) int {
 	var nbThreads = 12
 	for w := 1; w <= nbThreads; w++ {
 		wg.Add(1)
-		go readBuffer(jobs, results, wg, kmerSize, dbStructs)
+		go readBuffer(jobs, results, wg, kmerSize, kvStores)
 	}
 
 	// Go over a file line by line and queue up a ton of work
@@ -102,18 +102,18 @@ func run(fileName string, kmerSize int, dbStructs *DBStructs) int {
 
 }
 
-func readBuffer(jobs <-chan string, results chan<- int, wg *sync.WaitGroup, kmerSize int, dbStructs *DBStructs) {
+func readBuffer(jobs <-chan string, results chan<- int, wg *sync.WaitGroup, kmerSize int, kvStores *KVStores) {
 
 	defer wg.Done()
 	// line by line
 	for j := range jobs {
-		processProteinInput(j, kmerSize, dbStructs)
+		processProteinInput(j, kmerSize, kvStores)
 	}
 	results <- 1
 
 }
 
-func processProteinInput(line string, kmerSize int, dbStructs *DBStructs) {
+func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 
 	s := strings.Split(line, "\t")
 	if len(s) < 11 {
@@ -152,7 +152,7 @@ func processProteinInput(line string, kmerSize int, dbStructs *DBStructs) {
 		key := c.Sequence[i:i+kmerSize]
 
 		var currentValue []byte
-		dbStructs.k_batch.DB.View(func(txn *badger.Txn) error {
+		kvStores.k_batch.DB.View(func(txn *badger.Txn) error {
 			item, err := txn.Get([]byte(key))
 			if err == nil {
 				item.Value(func(val []byte) error {
@@ -165,12 +165,12 @@ func processProteinInput(line string, kmerSize int, dbStructs *DBStructs) {
 			return nil
 		})
 
-		var g_val = dbStructs.g_batch.CreateValues(c.GeneOntology, string(currentValue))
+		var g_val = kvStores.g_batch.CreateValues(c.GeneOntology, string(currentValue))
 
 		if g_val != string(currentValue) {
-			dbStructs.k_batch.Mu.Lock()
-			dbStructs.k_batch.Add(key, g_val)
-			dbStructs.k_batch.Mu.Unlock()
+			kvStores.k_batch.Mu.Lock()
+			kvStores.k_batch.Add(key, g_val)
+			kvStores.k_batch.Mu.Unlock()
 		}
 
 	}
