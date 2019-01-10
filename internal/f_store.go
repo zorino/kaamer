@@ -1,185 +1,84 @@
 package kvstore
 
 import (
-	"fmt"
-	"github.com/dgraph-io/badger"
-	"sync"
-	"strings"
+	// "strings"
 	"regexp"
-	"log"
-	"time"
+	"fmt"
 )
 
-// Gene Ontology Entries
+// Protein Function Entries (HAMAP or manually defined in uniprot/swissprot)
 type F_ struct {
-	DB              *badger.DB
-	WGgc            *sync.WaitGroup
-	FlushSize       int
-	NumberOfEntries int
-	Entries         map[string]string
-	Mu              sync.Mutex
+	*KVStore
 }
 
 func F_New(dbPath string) *F_ {
-
 	var f F_
-
-	f.NumberOfEntries = 0
-	f.FlushSize = 1000000
-	f.Entries = make(map[string]string, f.FlushSize)
-
-	// Open All the DBStructs Badger databases
-	opts := badger.DefaultOptions
-	opts.Dir = dbPath+"/g_"
-	opts.ValueDir = dbPath+"/g_"
-
-	err := error(nil)
-	f.DB, err = badger.Open(opts)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	f.WGgc = new(sync.WaitGroup)
-	f.WGgc.Add(1)
-	go func() {
-		// Garbage collection every 5 minutes
-		var stopGC = false
-		ticker := time.NewTicker(5 * time.Minute)
-		defer ticker.Stop()
-		for range ticker.C {
-			for ! stopGC {
-				err := f.DB.RunValueLogGC(0.5)
-				if err != nil {
-					stopGC = true
-				}
-			}
-		}
-	}()
-
+	f.KVStore = new(KVStore)
+	NewKVStore(f.KVStore, dbPath+"/f_store", 1000000)
 	return &f
-}
-
-func (f *F_) Close() {
-	f.WGgc.Done()
-	f.Flush()
-	f.DB.RunValueLogGC(0.1)
-	f.DB.Close()
-}
-
-func (f *F_) Flush() {
-	wb := f.DB.NewWriteBatch()
-	defer wb.Cancel()
-	for k, v := range f.Entries {
-		err := wb.Set([]byte(k), []byte(v), 0) // Will create txns as needed.
-		if err != nil {
-			fmt.Println("BUG: Error batch insert")
-			fmt.Println(err)
-		}
-	}
-
-	fmt.Println("BATCH INSERT")
-	wb.Flush()
-
-	f.Entries = make(map[string]string, f.FlushSize)
-	f.NumberOfEntries = 0
-}
-
-func (f *F_) Add(key string, add_val string) {
-
-	if _, ok := f.Entries[key]; ok {
-		// fmt.Println("Key exist in struct adding to it")
-	} else {
-		// fmt.Println("New Key")
-		f.Entries[key] = add_val
-		f.NumberOfEntries++
-	}
-
-	if f.NumberOfEntries == f.FlushSize {
-		f.Flush()
-	}
-}
-
-func (f *F_) GetValue(key string) (string, bool) {
-
-	if val, ok := f.Entries[key]; ok {
-		return val, true
-	}
-
-	var valCopy []byte
-
-	err := f.DB.View(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(key))
-		if err == nil {
-			item.Value(func(val []byte) error {
-				// Accessing val here is valid.
-				// fmt.Printf("The answer is: %s\n", val)
-				valCopy = append([]byte{}, val...)
-				return nil
-			})
-		}
-		return err
-	})
-
-	if err == nil {
-		return string(valCopy), true
-	}
-
-	return "", false
-
 }
 
 func (f *F_) CreateValues(key string, oldKey string) string {
 
-	// aldehyde dehydrogenase [NAD(P)+] activity [GO:0004030]; putrescine catabolic process [GO:0009447]
-	goArray := strings.Split(key, "; ")
+	// FUNCTION: Catalyzes the Claisen rearrangement of chorismate to prephenate. Probably involved in the aromatic amino acid biosynthesis. {ECO:0000269|PubMed:15737998, ECO:0000269|PubMed:18727669, ECO:0000269|PubMed:19556970}.
 
-	reg := regexp.MustCompile(` \[GO:.*\]`)
+	reg := regexp.MustCompile(` \{.*\}\.`)
 
-	var goIds []string
 
-	for _, _go := range goArray {
+	protFunction := reg.ReplaceAllString(key, "${1}")
+	protFunction =  protFunction[10:]
 
-		goName := reg.ReplaceAllString(_go, "${1}")
+	fmt.Println("Protein function:" + protFunction+"##")
 
-		goId := reg.FindString(_go)
+	// goArray := strings.Split(key, "; ")
 
-		if goId == "" {
-			continue
-		}
+	// // reg := regexp.MustCompile(` \[GO:.*\]`)
 
-		// real id prefix = "."
-		goId = "." + goId[5:len(goId)-1]
+	// var goIds []string
 
-		goIds = append(goIds, goId)
+	// for _, _go := range goArray {
 
-		f.Mu.Lock()
-		f.Add(goId, goName)
-		f.Mu.Unlock()
-	}
+	// 	goName := reg.ReplaceAllString(_go, "${1}")
 
-	var combinedKey = ""
-	var combinedVal = ""
+	// 	goId := reg.FindString(_go)
 
-	if len(goIds) == 0 {
-		combinedKey = "_nil"
-	} else {
-		if oldKey != "_nil" {
-			f.Mu.Lock()
-			oldVal, ok := f.GetValue(oldKey)
-			if (ok) {
-				// fmt.Println("Old Val exists : " + oldVal)
-				goIds = append(goIds, strings.Split(oldVal, ",")...)
-			}
-		} else {
-			f.Mu.Lock()
-		}
+	// 	if goId == "" {
+	// 		continue
+	// 	}
 
-		combinedKey, combinedVal = CreateHashValue(goIds)
-		if oldKey != combinedKey {
-			f.Add(combinedKey, combinedVal)
-		}
-		f.Mu.Unlock()
-	}
+	// 	// real id prefix = "."
+	// 	goId = "." + goId[5:len(goId)-1]
 
-	return combinedKey
+	// 	goIds = append(goIds, goId)
+
+	// 	f.Mu.Lock()
+	// 	f.Add(goId, goName)
+	// 	f.Mu.Unlock()
+	// }
+
+	// var combinedKey = ""
+	// var combinedVal = ""
+
+	// if len(goIds) == 0 {
+	// 	combinedKey = "_nil"
+	// } else {
+	// 	if oldKey != "_nil" {
+	// 		f.Mu.Lock()
+	// 		oldVal, ok := f.GetValue(oldKey)
+	// 		if (ok) {
+	// 			// fmt.Println("Old Val exists : " + oldVal)
+	// 			goIds = append(goIds, strings.Split(oldVal, ",")...)
+	// 		}
+	// 	} else {
+	// 		f.Mu.Lock()
+	// 	}
+
+	// 	combinedKey, combinedVal = CreateHashValue(goIds)
+	// 	if oldKey != combinedKey {
+	// 		f.Add(combinedKey, combinedVal)
+	// 	}
+	// 	f.Mu.Unlock()
+	// }
+
+	return ""
 }

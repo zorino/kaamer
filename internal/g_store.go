@@ -13,11 +13,11 @@ type G_ struct {
 func G_New(dbPath string) *G_ {
 	var g G_
 	g.KVStore = new(KVStore)
-	NewKVStore(g.KVStore, dbPath+"/g_", 1000000)
+	NewKVStore(g.KVStore, dbPath+"/g_store", 1000000)
 	return &g
 }
 
-func (g *G_) CreateValues(key string, oldKey string) string {
+func (g *G_) CreateValues(key string, oldKey string) (string, bool) {
 
 	// aldehyde dehydrogenase [NAD(P)+] activity [GO:0004030]; putrescine catabolic process [GO:0009447]
 	goArray := strings.Split(key, "; ")
@@ -48,27 +48,30 @@ func (g *G_) CreateValues(key string, oldKey string) string {
 
 	var combinedKey = ""
 	var combinedVal = ""
+	var new = false
 
 	if len(goIds) == 0 {
 		combinedKey = "_nil"
 	} else {
-		if oldKey != "_nil" {
-			g.Mu.Lock()
-			oldVal, ok := g.GetValue(oldKey)
-			if (ok) {
-				// fmt.Println("Old Val exists : " + oldVal)
-				goIds = append(goIds, strings.Split(oldVal, ",")...)
-			}
-		} else {
-			g.Mu.Lock()
-		}
 
 		combinedKey, combinedVal = CreateHashValue(goIds)
-		if oldKey != combinedKey {
+
+		if combinedKey == oldKey {
+			new = false
+		} else {
+			g.Mu.Lock()
+			if oldKey != "_nil" {
+				oldVal, ok := g.GetValue(oldKey)
+				if (ok) {
+					// fmt.Println("Old Val exists : " + oldVal)
+					goIds = append(goIds, strings.Split(oldVal, ",")...)
+				}
+			}
 			g.Add(combinedKey, combinedVal)
+			g.Mu.Unlock()
 		}
-		g.Mu.Unlock()
+
 	}
 
-	return combinedKey
+	return combinedKey, new
 }
