@@ -51,7 +51,7 @@ func Download(inputPath string) {
 
 	fmt.Println("# Raw Database Files Not Found in inputPath")
 
-	var url = "https://www.uniprot.org/uniprot/?query=taxonomy:2&format=tab&force=true&columns=id,entry%20name,protein%20names,genes,go,comment(FUNCTION),comment(PATHWAY),lineage-id(SUPERKINGDOM),lineage(SUPERKINGDOM),lineage-id(PHYLUM),lineage(PHYLUM),lineage-id(CLASS),lineage(CLASS),lineage-id(ORDER),lineage(ORDER),lineage-id(FAMILY),lineage(FAMILY),lineage-id(GENUS),lineage(GENUS),lineage-id(SPECIES),lineage(SPECIES),sequence&sort=score&compress=yes"
+	var url = "https://www.uniprot.org/uniprot/?query=taxonomy:2&format=tab&force=true&columns=id,reviewed,protein%20names,organism,lineage(all),go,comment(FUNCTION),comment(PATHWAY),ec,sequence&sort=score&compress=yes"
 
 	if _, err := os.Stat(inputPath); os.IsNotExist(err) {
 		// path/to/whatever does not exist
