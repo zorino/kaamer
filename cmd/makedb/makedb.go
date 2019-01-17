@@ -32,6 +32,22 @@ type KVStores struct {
 	o_batch         *kvstore.O_
 }
 
+func (kvStores *KVStores) Init (dbPath string) {
+	kvStores.k_batch = kvstore.K_New(dbPath)
+	kvStores.g_batch = kvstore.G_New(dbPath)
+	kvStores.f_batch = kvstore.F_New(dbPath)
+	kvStores.p_batch = kvstore.P_New(dbPath)
+	kvStores.o_batch = kvstore.O_New(dbPath)
+}
+
+func (kvStores *KVStores) Close () {
+	// Last DB flushes
+	kvStores.k_batch.Close()
+	kvStores.g_batch.Close()
+	kvStores.f_batch.Close()
+	kvStores.p_batch.Close()
+	kvStores.o_batch.Close()
+}
 
 func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 
@@ -45,23 +61,29 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 
 	os.Mkdir(dbPath, 0700)
 
-	kvStores := new(KVStores)
-	kvStores.k_batch = kvstore.K_New(dbPath)
-	kvStores.g_batch = kvstore.G_New(dbPath)
-	kvStores.f_batch = kvstore.F_New(dbPath)
-	kvStores.p_batch = kvstore.P_New(dbPath)
-	kvStores.o_batch = kvstore.O_New(dbPath)
+	wgDB := new(sync.WaitGroup)
+	wgDB.Add(len(files))
 
-	for _, file := range files {
-		run(file, kmerSize, kvStores)
+	for i, file := range files {
+
+		go func(file string, dbPath string, i int) {
+			defer wgDB.Done()
+			fmt.Println(file)
+
+			_dbPath := dbPath + fmt.Sprintf("/store_%d",i)
+
+			os.Mkdir(_dbPath, 0700)
+			kvStores := new(KVStores)
+			kvStores.Init(_dbPath)
+
+			run(file, kmerSize, kvStores)
+			kvStores.Close()
+
+		}(file, dbPath, i)
+
 	}
 
-	// Last DB flushes
-	kvStores.k_batch.Close()
-	kvStores.g_batch.Close()
-	kvStores.f_batch.Close()
-	kvStores.p_batch.Close()
-	kvStores.o_batch.Close()
+	wgDB.Wait()
 
 }
 
@@ -74,7 +96,7 @@ func run(fileName string, kmerSize int, kvStores *KVStores) int {
 	wg := new(sync.WaitGroup)
 
 	// thread pool
-	var nbThreads = 12
+	var nbThreads = 2
 	for w := 1; w <= nbThreads; w++ {
 		wg.Add(1)
 		go readBuffer(jobs, results, wg, kmerSize, kvStores)
