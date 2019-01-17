@@ -1,9 +1,8 @@
 package kvstore
 
 import (
-	// "strings"
+	"strings"
 	"regexp"
-	"fmt"
 )
 
 // Protein Function Entries (HAMAP or manually defined in uniprot/swissprot)
@@ -18,67 +17,48 @@ func F_New(dbPath string) *F_ {
 	return &f
 }
 
-func (f *F_) CreateValues(key string, oldKey string) string {
+func (f *F_) CreateValues(entry string, oldKey string) (string, bool) {
 
 	// FUNCTION: Catalyzes the Claisen rearrangement of chorismate to prephenate. Probably involved in the aromatic amino acid biosynthesis. {ECO:0000269|PubMed:15737998, ECO:0000269|PubMed:18727669, ECO:0000269|PubMed:19556970}.
 
+	var new = false
+
+	if entry == "" {
+		return "_nil", true
+	}
+
 	reg := regexp.MustCompile(` \{.*\}\.`)
 
+	protFunction := reg.ReplaceAllString(entry, "${1}")
 
-	protFunction := reg.ReplaceAllString(key, "${1}")
 	protFunction =  protFunction[10:]
 
-	fmt.Println("Protein function:" + protFunction+"##")
+	// fmt.Println("Protein function:" + protFunction+"##")
 
-	// goArray := strings.Split(key, "; ")
+	if oldKey == "" {
+		new = true
+	}
 
-	// // reg := regexp.MustCompile(` \[GO:.*\]`)
+	ids := []string{protFunction}
 
-	// var goIds []string
+	combinedKey, _ := CreateHashValue(ids)
 
-	// for _, _go := range goArray {
+	if combinedKey != oldKey {
+		new = true
+		f.Mu.Lock()
+		if oldKey != "_nil" {
+			oldVal, ok := f.GetValue(oldKey)
+			if (ok) {
+				// fmt.Println("Old Val exists : " + oldVal)
+				ids = append(ids, strings.Split(oldVal, ",")...)
+			}
+		}
+		combinedKey, _ := CreateHashValue(ids)
+		f.AddValue(combinedKey, entry)
+		f.Mu.Unlock()
+	} else {
+		new = false
+	}
 
-	// 	goName := reg.ReplaceAllString(_go, "${1}")
-
-	// 	goId := reg.FindString(_go)
-
-	// 	if goId == "" {
-	// 		continue
-	// 	}
-
-	// 	// real id prefix = "."
-	// 	goId = "." + goId[5:len(goId)-1]
-
-	// 	goIds = append(goIds, goId)
-
-	// 	f.Mu.Lock()
-	// 	f.Add(goId, goName)
-	// 	f.Mu.Unlock()
-	// }
-
-	// var combinedKey = ""
-	// var combinedVal = ""
-
-	// if len(goIds) == 0 {
-	// 	combinedKey = "_nil"
-	// } else {
-	// 	if oldKey != "_nil" {
-	// 		f.Mu.Lock()
-	// 		oldVal, ok := f.GetValue(oldKey)
-	// 		if (ok) {
-	// 			// fmt.Println("Old Val exists : " + oldVal)
-	// 			goIds = append(goIds, strings.Split(oldVal, ",")...)
-	// 		}
-	// 	} else {
-	// 		f.Mu.Lock()
-	// 	}
-
-	// 	combinedKey, combinedVal = CreateHashValue(goIds)
-	// 	if oldKey != combinedKey {
-	// 		f.Add(combinedKey, combinedVal)
-	// 	}
-	// 	f.Mu.Unlock()
-	// }
-
-	return ""
+	return combinedKey, new
 }
