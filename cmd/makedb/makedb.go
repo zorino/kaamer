@@ -29,6 +29,7 @@ type KVStores struct {
 	g_batch         *kvstore.G_
 	f_batch         *kvstore.F_
 	p_batch         *kvstore.P_
+	o_batch         *kvstore.O_
 }
 
 
@@ -49,6 +50,7 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 	kvStores.g_batch = kvstore.G_New(dbPath)
 	kvStores.f_batch = kvstore.F_New(dbPath)
 	kvStores.p_batch = kvstore.P_New(dbPath)
+	kvStores.o_batch = kvstore.O_New(dbPath)
 
 	for _, file := range files {
 		run(file, kmerSize, kvStores)
@@ -59,6 +61,7 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 	kvStores.g_batch.Close()
 	kvStores.f_batch.Close()
 	kvStores.p_batch.Close()
+	kvStores.o_batch.Close()
 
 }
 
@@ -149,6 +152,7 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 		var gCurrentValue = ""
 		var fCurrentValue = ""
 		var pCurrentValue = ""
+		var oCurrentValue = ""
 
 		kvStores.k_batch.Mu.Lock()
 
@@ -161,10 +165,12 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 			gCurrentValue = currentValues[0]
 			fCurrentValue = currentValues[1]
 			pCurrentValue = currentValues[2]
+			oCurrentValue = currentValues[3]
 		} else {
 			isNewValue = true
 		}
 
+		// Gene Ontology
 		if gVal, new := kvStores.g_batch.CreateValues(c.GeneOntology, gCurrentValue); new {
 			isNewValue = isNewValue || new
 			newValues = append(newValues, gVal)
@@ -172,6 +178,7 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 			newValues = append(newValues, gCurrentValue)
 		}
 
+		// Protein Function
 		if fVal, new := kvStores.f_batch.CreateValues(c.FunctionCC, fCurrentValue); new {
 			isNewValue = isNewValue || new
 			newValues = append(newValues, fVal)
@@ -179,11 +186,20 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 			newValues = append(newValues, fCurrentValue)
 		}
 
+		// Protein Pathway
 		if pVal, new := kvStores.p_batch.CreateValues(c.Pathway, pCurrentValue); new {
 			isNewValue = isNewValue || new
 			newValues = append(newValues, pVal)
 		} else {
 			newValues = append(newValues, pCurrentValue)
+		}
+
+		// Protein Organism
+		if oVal, new := kvStores.o_batch.CreateValues(c.TaxonomicLineage, oCurrentValue); new {
+			isNewValue = isNewValue || new
+			newValues = append(newValues, oVal)
+		} else {
+			newValues = append(newValues, oCurrentValue)
 		}
 
 		if isNewValue {
