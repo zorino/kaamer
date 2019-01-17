@@ -28,6 +28,7 @@ type KVStores struct {
 	k_batch         *kvstore.K_
 	g_batch         *kvstore.G_
 	f_batch         *kvstore.F_
+	p_batch         *kvstore.P_
 }
 
 
@@ -47,6 +48,7 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 	kvStores.k_batch = kvstore.K_New(dbPath)
 	kvStores.g_batch = kvstore.G_New(dbPath)
 	kvStores.f_batch = kvstore.F_New(dbPath)
+	kvStores.p_batch = kvstore.P_New(dbPath)
 
 	for _, file := range files {
 		run(file, kmerSize, kvStores)
@@ -56,6 +58,7 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 	kvStores.k_batch.Close()
 	kvStores.g_batch.Close()
 	kvStores.f_batch.Close()
+	kvStores.p_batch.Close()
 
 }
 
@@ -145,6 +148,7 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 		var currentValue []byte
 		var gCurrentValue = ""
 		var fCurrentValue = ""
+		var pCurrentValue = ""
 
 		kvStores.k_batch.Mu.Lock()
 
@@ -156,6 +160,7 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 			currentValues := strings.Split(string(currentValue), ",")
 			gCurrentValue = currentValues[0]
 			fCurrentValue = currentValues[1]
+			pCurrentValue = currentValues[2]
 		} else {
 			isNewValue = true
 		}
@@ -172,6 +177,13 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 			newValues = append(newValues, fVal)
 		} else {
 			newValues = append(newValues, fCurrentValue)
+		}
+
+		if pVal, new := kvStores.p_batch.CreateValues(c.Pathway, pCurrentValue); new {
+			isNewValue = isNewValue || new
+			newValues = append(newValues, pVal)
+		} else {
+			newValues = append(newValues, pCurrentValue)
 		}
 
 		if isNewValue {
