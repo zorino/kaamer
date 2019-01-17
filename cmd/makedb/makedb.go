@@ -3,7 +3,6 @@ package makedb
 import (
 	"bufio"
 	"fmt"
-	"github.com/dgraph-io/badger"
 	"github.com/zorino/metaprot/internal"
 	"github.com/zorino/metaprot/cmd/downloaddb"
 	"os"
@@ -141,27 +140,46 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 
 		key := c.Sequence[i:i+kmerSize]
 
+		var newValues []string
+		var isNewValue = false
 		var currentValue []byte
-		kvStores.k_batch.DB.View(func(txn *badger.Txn) error {
-			item, err := txn.Get([]byte(key))
-			if err == nil {
-				item.Value(func(val []byte) error {
-					// Accessing val here is valid.
-					// fmt.Printf("The answer is: %s\n", val)
-					currentValue = append([]byte{}, val...)
-					return nil
-				})
-			}
-			return nil
-		})
+		var gCurrentValue = ""
+		var fCurrentValue = ""
 
-		// kvStores.f_batch.CreateValues(c.FunctionCC, string(currentValue))
+		kvStores.k_batch.Mu.Lock()
 
-		if g_val, new := kvStores.g_batch.CreateValues(c.GeneOntology, string(currentValue)); new {
-			kvStores.k_batch.Mu.Lock()
-			kvStores.k_batch.AddValue(key, g_val)
-			kvStores.k_batch.Mu.Unlock()
+		_val, ok := kvStores.k_batch.GetValue(key)
+
+		// Old value found
+		if ok {
+			currentValue = append([]byte{}, _val...)
+			currentValues := strings.Split(string(currentValue), ",")
+			gCurrentValue = currentValues[0]
+			fCurrentValue = currentValues[1]
+		} else {
+			isNewValue = true
 		}
+
+		if gVal, new := kvStores.g_batch.CreateValues(c.GeneOntology, gCurrentValue); new {
+			isNewValue = isNewValue || new
+			newValues = append(newValues, gVal)
+		} else {
+			newValues = append(newValues, gCurrentValue)
+		}
+
+		if fVal, new := kvStores.f_batch.CreateValues(c.FunctionCC, fCurrentValue); new {
+			isNewValue = isNewValue || new
+			newValues = append(newValues, fVal)
+		} else {
+			newValues = append(newValues, fCurrentValue)
+		}
+
+		if isNewValue {
+			// fmt.Println(strings.Join(newValues, ","))
+			kvStores.k_batch.AddValue(key, strings.Join(newValues, ","))
+		}
+
+		kvStores.k_batch.Mu.Unlock()
 
 	}
 
