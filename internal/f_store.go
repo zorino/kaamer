@@ -13,7 +13,7 @@ type F_ struct {
 func F_New(dbPath string) *F_ {
 	var f F_
 	f.KVStore = new(KVStore)
-	NewKVStore(f.KVStore, dbPath+"/f_store", 1000000)
+	NewKVStore(f.KVStore, dbPath+"/f_store", 1000)
 	return &f
 }
 
@@ -23,9 +23,12 @@ func (f *F_) CreateValues(entry string, oldKey string) (string, bool) {
 
 	var new = false
 
-	if entry == "" {
+	if entry == "" && oldKey == "" {
 		return "_nil", true
+	} else if (entry == "" && oldKey != "") {
+		return "_nil", false
 	}
+
 
 	reg := regexp.MustCompile(` \{.*\}\.`)
 
@@ -41,7 +44,7 @@ func (f *F_) CreateValues(entry string, oldKey string) (string, bool) {
 
 	ids := []string{protFunction}
 
-	combinedKey, _ := CreateHashValue(ids)
+	combinedKey, _ := CreateHashValue(ids, true)
 
 	if combinedKey != oldKey {
 		new = true
@@ -53,7 +56,7 @@ func (f *F_) CreateValues(entry string, oldKey string) (string, bool) {
 				ids = append(ids, strings.Split(oldVal, ",")...)
 			}
 		}
-		combinedKey, _ := CreateHashValue(ids)
+		combinedKey, _ := CreateHashValue(ids, true)
 		f.AddValue(combinedKey, entry)
 		f.Mu.Unlock()
 	} else {

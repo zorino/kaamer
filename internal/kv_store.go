@@ -154,10 +154,12 @@ func RemoveDuplicatesFromSlice(s []string) []string {
 
 }
 
-func CreateHashValue(ids []string) (string,string) {
+func CreateHashValue(ids []string, unique bool) (string,string) {
 
-	ids = RemoveDuplicatesFromSlice(ids)
-	sort.Strings(ids)
+	if unique {
+		ids = RemoveDuplicatesFromSlice(ids)
+		sort.Strings(ids)
+	}
 
 	var idsString = strings.Join(ids, ",")
 

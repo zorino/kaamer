@@ -13,13 +13,18 @@ type G_ struct {
 func G_New(dbPath string) *G_ {
 	var g G_
 	g.KVStore = new(KVStore)
-	NewKVStore(g.KVStore, dbPath+"/g_store", 1000000)
+	NewKVStore(g.KVStore, dbPath+"/g_store", 1000)
 	return &g
 }
 
 func (g *G_) CreateValues(entry string, oldKey string) (string, bool) {
 
 	// aldehyde dehydrogenase [NAD(P)+] activity [GO:0004030]; putrescine catabolic process [GO:0009447]
+
+	if oldKey == "" && entry == "" {
+		return "_nil", true
+	}
+
 	goArray := strings.Split(entry, "; ")
 
 	reg := regexp.MustCompile(` \[GO:.*\]`)
@@ -50,15 +55,12 @@ func (g *G_) CreateValues(entry string, oldKey string) (string, bool) {
 	var combinedVal = ""
 	var new = false
 
-	if oldKey == "" {
-		new = true
-	}
 
 	if len(goIds) == 0 {
 		combinedKey = "_nil"
 	} else {
 
-		combinedKey, combinedVal = CreateHashValue(goIds)
+		combinedKey, combinedVal = CreateHashValue(goIds, true)
 
 		if combinedKey != oldKey {
 			new = true

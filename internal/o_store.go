@@ -12,7 +12,7 @@ type O_ struct {
 func O_New(dbPath string) *O_ {
 	var o O_
 	o.KVStore = new(KVStore)
-	NewKVStore(o.KVStore, dbPath+"/o_store", 1000000)
+	NewKVStore(o.KVStore, dbPath+"/o_store", 1000)
 	return &o
 }
 
@@ -22,8 +22,10 @@ func (o *O_) CreateValues(entry string, oldKey string) (string, bool) {
 
 	var new = false
 
-	if entry == "" {
+	if entry == "" && oldKey == "" {
 		return "_nil", true
+	} else if (entry == "" && oldKey != "") {
+		return "_nil", false
 	}
 
 	protOrganism := entry[20:]
@@ -36,7 +38,7 @@ func (o *O_) CreateValues(entry string, oldKey string) (string, bool) {
 
 	ids := []string{protOrganism}
 
-	combinedKey, _ := CreateHashValue(ids)
+	combinedKey, _ := CreateHashValue(ids, true)
 
 	if combinedKey != oldKey {
 		new = true
@@ -48,7 +50,7 @@ func (o *O_) CreateValues(entry string, oldKey string) (string, bool) {
 				ids = append(ids, strings.Split(oldVal, ",")...)
 			}
 		}
-		combinedKey, _ := CreateHashValue(ids)
+		combinedKey, _ := CreateHashValue(ids, true)
 		o.AddValue(combinedKey, entry)
 		o.Mu.Unlock()
 	} else {

@@ -73,10 +73,12 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 			_dbPath := dbPath + fmt.Sprintf("/store_%d",i)
 
 			os.Mkdir(_dbPath, 0700)
+
 			kvStores := new(KVStores)
 			kvStores.Init(_dbPath)
 
 			run(file, kmerSize, kvStores)
+
 			kvStores.Close()
 
 		}(file, dbPath, i)
@@ -166,67 +168,54 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 	// sliding windows of kmerSize on Sequence
 	for i := 0; i < len(c.Sequence)-kmerSize+1; i++ {
 
-		key := c.Sequence[i:i+kmerSize]
+		key := "."+c.Sequence[i:i+kmerSize]
 
-		var newValues []string
 		var isNewValue = false
 		var currentValue []byte
-		var gCurrentValue = ""
-		var fCurrentValue = ""
-		var pCurrentValue = ""
-		var oCurrentValue = ""
+
+		newValues := [4]string{"","","",""}
 
 		kvStores.k_batch.Mu.Lock()
 
-		_val, ok := kvStores.k_batch.GetValue(key)
+		__val, ok := kvStores.k_batch.GetValue(key)
+		_val, ok := kvStores.k_batch.GetValue(__val)
 
 		// Old value found
 		if ok {
 			currentValue = append([]byte{}, _val...)
-			currentValues := strings.Split(string(currentValue), ",")
-			gCurrentValue = currentValues[0]
-			fCurrentValue = currentValues[1]
-			pCurrentValue = currentValues[2]
-			oCurrentValue = currentValues[3]
+			copy(newValues[:], strings.Split(string(currentValue), ",")[:3])
 		} else {
 			isNewValue = true
 		}
 
 		// Gene Ontology
-		if gVal, new := kvStores.g_batch.CreateValues(c.GeneOntology, gCurrentValue); new {
+		if gVal, new := kvStores.g_batch.CreateValues(c.GeneOntology, newValues[0]); new {
 			isNewValue = isNewValue || new
-			newValues = append(newValues, gVal)
-		} else {
-			newValues = append(newValues, gCurrentValue)
+			newValues[0] = gVal
 		}
 
 		// Protein Function
-		if fVal, new := kvStores.f_batch.CreateValues(c.FunctionCC, fCurrentValue); new {
+		if fVal, new := kvStores.f_batch.CreateValues(c.FunctionCC, newValues[1]); new {
 			isNewValue = isNewValue || new
-			newValues = append(newValues, fVal)
-		} else {
-			newValues = append(newValues, fCurrentValue)
+			newValues[1] = fVal
 		}
 
 		// Protein Pathway
-		if pVal, new := kvStores.p_batch.CreateValues(c.Pathway, pCurrentValue); new {
+		if pVal, new := kvStores.p_batch.CreateValues(c.Pathway, newValues[2]); new {
 			isNewValue = isNewValue || new
-			newValues = append(newValues, pVal)
-		} else {
-			newValues = append(newValues, pCurrentValue)
+			newValues[2] = pVal
 		}
 
 		// Protein Organism
-		if oVal, new := kvStores.o_batch.CreateValues(c.TaxonomicLineage, oCurrentValue); new {
+		if oVal, new := kvStores.o_batch.CreateValues(c.TaxonomicLineage, newValues[3]); new {
 			isNewValue = isNewValue || new
-			newValues = append(newValues, oVal)
-		} else {
-			newValues = append(newValues, oCurrentValue)
+			newValues[3] = oVal
 		}
 
 		if isNewValue {
-			// fmt.Println(strings.Join(newValues, ","))
-			kvStores.k_batch.AddValue(key, strings.Join(newValues, ","))
+			_hash, _ids := kvstore.CreateHashValue(newValues[:], false)
+			kvStores.k_batch.AddValue(_hash, _ids)
+			kvStores.k_batch.AddValue(key, _hash)
 		}
 
 		kvStores.k_batch.Mu.Unlock()

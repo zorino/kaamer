@@ -13,7 +13,7 @@ type P_ struct {
 func P_New(dbPath string) *P_ {
 	var p P_
 	p.KVStore = new(KVStore)
-	NewKVStore(p.KVStore, dbPath+"/p_store", 1000000)
+	NewKVStore(p.KVStore, dbPath+"/p_store", 1000)
 	return &p
 }
 
@@ -24,9 +24,12 @@ func (p *P_) CreateValues(entry string, oldKey string) (string, bool) {
 
 	var new = false
 
-	if entry == "" {
+	if entry == "" && oldKey == "" {
 		return "_nil", true
+	} else if (entry == "" && oldKey != "") {
+		return "_nil", false
 	}
+
 
 	reg := regexp.MustCompile(` \{.*\}\.`)
 	protPathway := reg.ReplaceAllString(entry, "${1}")
@@ -44,7 +47,7 @@ func (p *P_) CreateValues(entry string, oldKey string) (string, bool) {
 
 	ids := []string{protPathway}
 
-	combinedKey, _ := CreateHashValue(ids)
+	combinedKey, _ := CreateHashValue(ids, true)
 
 	if combinedKey != oldKey {
 		new = true
@@ -56,7 +59,7 @@ func (p *P_) CreateValues(entry string, oldKey string) (string, bool) {
 				ids = append(ids, strings.Split(oldVal, ",")...)
 			}
 		}
-		combinedKey, _ := CreateHashValue(ids)
+		combinedKey, _ := CreateHashValue(ids, true)
 		p.AddValue(combinedKey, entry)
 		p.Mu.Unlock()
 	} else {
