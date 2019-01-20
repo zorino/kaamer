@@ -124,7 +124,6 @@ func PrepareFiles(filePath string, nbOfFiles int) {
 		f, _ := os.Create(outFile)
 		tsvWrite.File = f
 		tsvWrite.Buffer = bufio.NewWriter(f)
-		tsvWrite.Buffer = bufio.NewWriterSize(tsvWrite.Buffer, 1024*1024)
 		tsvWrite.Iterator = 0
 		bufferArray = append(bufferArray, tsvWrite)
 	}
