@@ -11,7 +11,16 @@ import (
 	gzip "github.com/klauspost/pgzip"
 	"bufio"
 	"runtime"
+	"strconv"
+	"sync"
 )
+
+type TSVOutputWriter struct {
+	File          *os.File
+	Buffer        *bufio.Writer
+	Iterator      int
+}
+
 
 // WriteCounter counts the number of bytes written to it. It implements to the io.Writer
 // interface and we can pass this into io.TeeReader() which will report progress on each
@@ -45,7 +54,7 @@ func Download(inputPath string) {
 	if _, err := os.Stat(filePath); ! os.IsNotExist(err) {
 		// path/to/whatever does not exist
 		os.MkdirAll(inputPath, 0700)
-		PrepareFiles(filePath)
+		PrepareFiles(filePath, 10)
 		return
 	}
 
@@ -92,16 +101,32 @@ func Download(inputPath string) {
 		log.Fatal(err)
 	}
 
-	PrepareFiles(filePath)
+	numFiles, _ := strconv.Atoi(nbResults)
+	numFiles = numFiles / 10000000
+
+	PrepareFiles(filePath, numFiles)
 
 	fmt.Println("\nPlease rerun makedb with -i " + inputPath)
 	fmt.Println()
 
 }
 
-func PrepareFiles(filePath string) {
+func PrepareFiles(filePath string, nbOfFiles int) {
 
 	fmt.Println("# Preparing Files..")
+
+
+	bufferArray := []*TSVOutputWriter{}
+	baseFile := strings.Replace(filePath, ".tsv.gz", "-", -1)
+	for i := 0; i < nbOfFiles; i++ {
+		tsvWrite := new(TSVOutputWriter)
+		outFile := baseFile + fmt.Sprintf("%03d", i) + ".tsv"
+		f, _ := os.Create(outFile)
+		tsvWrite.File = f
+		tsvWrite.Buffer = bufio.NewWriter(f)
+		tsvWrite.Iterator = 0
+		bufferArray = append(bufferArray, tsvWrite)
+	}
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -116,42 +141,38 @@ func PrepareFiles(filePath string) {
 	}
 
 	scan := bufio.NewScanner(r)
+        buf := make([]byte, 0, 64*1024)
+        scan.Buffer(buf, 1024*1024)
 
 	n := 0
-	fileNum := 0
-
-	baseFile := strings.Replace(filePath, ".tsv.gz", "-", -1)
-	outFile := baseFile + fmt.Sprintf("%03d", fileNum) + ".tsv"
-	f, err := os.Create(outFile)
-	w := bufio.NewWriter(f)
 
 	for scan.Scan() {
+
 		line := scan.Text()
-		if n < 1 {
-			n++
-			continue
+
+		bufferIndex := n%nbOfFiles
+
+		bufferArray[bufferIndex].Iterator += 1
+		_, err := bufferArray[bufferIndex].Buffer.WriteString(line+"\n")
+
+		if err != nil {
+			log.Panic(err)
 		}
 
-		w.WriteString(line+"\n")
-
-		if (n%10000 == 0) {
-			w.Flush()
+		if (bufferArray[bufferIndex].Iterator%10000 == 0) {
+			bufferArray[bufferIndex].Buffer.Flush()
 		}
 
-		if (n%10000000 == 0) {
-			w.Flush()
-			f.Close()
-			fileNum += 1
-			outFile := baseFile + fmt.Sprintf("%03d", fileNum) + ".tsv"
-			f, _ := os.Create(outFile)
-			w = bufio.NewWriter(f)
-		}
 		n++
 	}
 
-	w.Flush()
-	f.Close()
+	for i:=0; i< len(bufferArray); i++ {
+		bufferArray[i].Buffer.Flush()
+		bufferArray[i].File.Close()
+	}
 
-	os.Remove(filePath)
+	fmt.Println("line read : %i", n)
+
+	// os.Remove(filePath)
 
 }
