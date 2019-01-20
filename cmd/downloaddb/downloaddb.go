@@ -12,7 +12,6 @@ import (
 	"bufio"
 	"runtime"
 	"strconv"
-	"sync"
 )
 
 type TSVOutputWriter struct {
