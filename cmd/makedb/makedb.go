@@ -16,13 +16,29 @@ type Protein struct {
 	Entry            string
 	Status           string  // reviewed ?= Swisprot
 	ProteinNames     string
-	TaxonomicLineage string
+	TaxonomicLineage string  // o_store
 	GeneOntology     string  // g_store
 	FunctionCC       string  // f_store
-	Pathway          string
+	Pathway          string  // p_store
 	EC_Number        string
 	Sequence         string  // k_store
 }
+
+// # Stores :
+//                k_   ->   peptide kmers => [g_key, f_key, p_key, o_key]
+//                g_   ->   gene ontology
+//                f_   ->   function (uniprot)
+//                p_   ->   pathway
+//                o_   ->   taxonomic lineage
+//
+//
+//  Each store uses a combination pattern to reduce its size (flyweight design pattern)
+//  '.' prefix are for real keys and '_' prefix for combination keys
+//  Combination keys are SHA1SUM of the content
+//  Example :
+//              '.MSAVALPRVSG' => '_213a326b89b'
+//              '_213a326b89b' => '[g_key,f_key,p_key,o_key]'
+//
 
 type KVStores struct {
 	k_batch         *kvstore.K_
@@ -249,38 +265,3 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 // 		return nil
 // 	})
 // }
-
-
-// P23883
-// PUUC_ECOLI
-// reviewed
-// NADP/NAD-dependent aldehyde dehydrogenase PuuC (ALDH) (EC 1.2.1.5) (3-hydroxypropionaldehyde dehydrogenase) (Gamma-glutamyl-gamma-aminobutyraldehyde dehydrogenase) (Gamma-Glu-gamma-aminobutyraldehyde dehydrogenase)
-// puuC aldH b1300 JW1293
-// Escherichia coli (strain K12)
-// cellular organisms, Bacteria, Proteobacteria, Gammaproteobacteria, Enterobacterales, Enterobacteriaceae, Escherichia, Escherichia coli, Escherichia coli (strain K12)
-// aldehyde dehydrogenase [NAD(P)+] activity [GO:0004030]; putrescine catabolic process [GO:0009447]
-// FUNCTION: Catalyzes the oxidation of 3-hydroxypropionaldehyde (3-HPA) to 3-hydroxypropionic acid (3-HP) (PubMed:18668238). It acts preferentially with NAD but can also use NADP (PubMed:18668238). 3-HPA appears to be the most suitable substrate for PuuC followed by isovaleraldehyde, propionaldehyde, butyraldehyde, and valeraldehyde (PubMed:18668238). It might play a role in propionate and/or acetic acid metabolisms (PubMed:18668238). Also involved in the breakdown of putrescine through the oxidation of gamma-Glu-gamma-aminobutyraldehyde to gamma-Glu-gamma-aminobutyrate (gamma-Glu-GABA) (PubMed:15590624). {ECO:0000269|PubMed:15590624, ECO:0000269|PubMed:18668238, ECO:0000305|PubMed:1840553}.
-// PATHWAY: Amine and polyamine degradation; putrescine degradation; 4-aminobutanoate from putrescine: step 3/4. {ECO:0000305|PubMed:15590624}.
-// 1.2.1.5
-// 53,419
-// 495
-// MNFHHLAYWQDKALSLAIENRLFINGEYTAAAENETFETVDPVTQAPLAKIARGKSVDIDRAMSAARGVFERGDWSLSSPAKRKAVLNKLADLMEAHAEELALLETLDTGKPIRHSLRDDIPGAARAIRWYAEAIDKVYGEVATTSSHELAMIVREPVGVIAAIVPWNFPLLLTCWKLGPALAAGNSVILKPSEKSPLSAIRLAGLAKEAGLPDGVLNVVTGFGHEAGQALSRHNDIDAIAFTGSTRTGKQLLKDAGDSNMKRVWLEAGGKSANIVFADCPDLQQAASATAAGIFYNQGQVCIAGTRLLLEESIADEFLALLKQQAQNWQPGHPLDPATTMGTLIDCAHADSVHSFIREGESKGQLLLDGRNAGLAAAIGPTIFVDVDPNASLSREEIFGPVLVVTRFTSEEQALQLANDSQYGLGAAVWTRDLSRAHRMSRRLKAGSVFVNNYNDGDMTVPFGGYKQSGNGRDKSLHALEKFTELKTIWISLEA
-
-// # Prefix scan on kmers : k_
-// # namespases :
-//                k_   ->   peptide sequence kmers => [] i_  array de prot ids
-//                i_   ->   protein id            [] array des keys pour les autres champs (combinaison pour un même champ ...)
-//                n_   ->   proteine / gene name
-//                o_   ->   organism_name
-//                t_   ->   taxonomy
-//                g_   ->   gene ontology
-//                f_   ->   function (uniprot)
-//                p_   ->   pathway
-//                e_   ->   ec_number
-//                m_   ->   mass
-//                l_   ->   lenght
-//                u_   ->   status
-//
-//  double-letter are combination of values (flyweight design pattern)
-//     example : nn_XXXXXXXXXX = combination of names
-//
