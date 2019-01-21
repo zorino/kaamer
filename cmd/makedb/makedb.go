@@ -108,7 +108,7 @@ func run(fileName string, kmerSize int, kvStores *KVStores) int {
 	go func() {
 		scanner := bufio.NewScanner(file)
 		buf := make([]byte, 0, 64*1024)
-		scan.Buffer(buf, 1024*1024)
+		scanner.Buffer(buf, 1024*1024)
 		for scanner.Scan() {
 			jobs <- scanner.Text()
 		}
