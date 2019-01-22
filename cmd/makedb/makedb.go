@@ -96,6 +96,10 @@ func (kvStores *KVStores) Close () {
 
 func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 
+	// For SSD throughput (as done in badger/graphdb) see :
+	// https://groups.google.com/forum/#!topic/golang-nuts/jPb_h3TvlKE/discussion
+	runtime.GOMAXPROCS(128)
+
 	// Glob all uniprot tsv files to be processed
 	files, _ := filepath.Glob(inputPath + "/*.tsv")
 
