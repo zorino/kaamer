@@ -9,6 +9,7 @@ import (
 	"github.com/dgraph-io/badger/options"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 )
@@ -105,12 +106,17 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 
 	os.Mkdir(dbPath, 0700)
 
+	threadByWorker := runtime.NumCPU()/len(files)
+	if threadByWorker < 1 {
+		threadByWorker = 1
+	}
+
 	wgDB := new(sync.WaitGroup)
 	wgDB.Add(len(files))
 
 	for i, file := range files {
 
-		go func(file string, dbPath string, i int) {
+		go func(file string, dbPath string, i int, threadByWorker int) {
 			defer wgDB.Done()
 			fmt.Println(file)
 
@@ -121,10 +127,10 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 			kvStores := new(KVStores)
 			kvStores.Init(_dbPath)
 
-			run(file, kmerSize, kvStores)
+			run(file, kmerSize, kvStores, threadByWorker)
 
 			kvStores.Close()
-		}(file, dbPath, i)
+		}(file, dbPath, i, threadByWorker)
 
 	}
 
@@ -132,7 +138,7 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 
 }
 
-func run(fileName string, kmerSize int, kvStores *KVStores) int {
+func run(fileName string, kmerSize int, kvStores *KVStores, nbThreads int) int {
 
 	file, _ := os.Open(fileName)
 
@@ -141,7 +147,6 @@ func run(fileName string, kmerSize int, kvStores *KVStores) int {
 	wg := new(sync.WaitGroup)
 
 	// thread pool
-	var nbThreads = 2
 	for w := 1; w <= nbThreads; w++ {
 		wg.Add(1)
 		go readBuffer(jobs, results, wg, kmerSize, kvStores)
