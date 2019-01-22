@@ -1,16 +1,18 @@
 package kvstore
 
-import ()
+import (
+	"github.com/dgraph-io/badger"
+)
 
 // Kmer Entries
 type K_ struct {
 	*KVStore
 }
 
-func K_New(dbPath string) *K_ {
+func K_New(opts badger.Options, flushSize int) *K_ {
 	var k K_
 	k.KVStore = new(KVStore)
-	NewKVStore(k.KVStore, dbPath+"/k_store", 1000)
+	NewKVStore(k.KVStore, opts, flushSize)
 	return &k
 }
 

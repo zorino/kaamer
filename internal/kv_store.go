@@ -23,19 +23,14 @@ type KVStore struct {
 	Mu              sync.Mutex
 }
 
-func NewKVStore(kv *KVStore, dbPath string, flushSize int) {
+func NewKVStore(kv *KVStore, options badger.Options, flushSize int) {
 
 	kv.NumberOfEntries = 0
 	kv.FlushSize = flushSize
 	kv.Entries = make(map[string]string, kv.FlushSize)
 
-	// Open All the DBStructs Badger databases
-	opts := badger.DefaultOptions
-	opts.Dir = dbPath
-	opts.ValueDir = dbPath
-
 	err := error(nil)
-	kv.DB, err = badger.Open(opts)
+	kv.DB, err = badger.Open(options)
 	if err != nil {
 		log.Fatal(err)
 	}

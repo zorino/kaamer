@@ -3,6 +3,7 @@ package kvstore
 import (
 	"strings"
 	"regexp"
+	"github.com/dgraph-io/badger"
 )
 
 // Protein Pathways Entries (HAMAP or manually defined in uniprot/swissprot)
@@ -10,10 +11,10 @@ type P_ struct {
 	*KVStore
 }
 
-func P_New(dbPath string) *P_ {
+func P_New(opts badger.Options, flushSize int) *P_ {
 	var p P_
 	p.KVStore = new(KVStore)
-	NewKVStore(p.KVStore, dbPath+"/p_store", 1000)
+	NewKVStore(p.KVStore, opts, flushSize)
 	return &p
 }
 

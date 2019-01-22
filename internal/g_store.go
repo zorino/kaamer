@@ -3,6 +3,7 @@ package kvstore
 import (
 	"strings"
 	"regexp"
+	"github.com/dgraph-io/badger"
 )
 
 // Gene Ontology Entries
@@ -10,10 +11,10 @@ type G_ struct {
 	*KVStore
 }
 
-func G_New(dbPath string) *G_ {
+func G_New(opts badger.Options, flushSize int) *G_ {
 	var g G_
 	g.KVStore = new(KVStore)
-	NewKVStore(g.KVStore, dbPath+"/g_store", 1000)
+	NewKVStore(g.KVStore, opts, flushSize)
 	return &g
 }
 

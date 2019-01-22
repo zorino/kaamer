@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/zorino/metaprot/internal"
 	"github.com/zorino/metaprot/cmd/downloaddb"
+	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/options"
 	"os"
 	"path/filepath"
 	"strings"
@@ -49,11 +51,37 @@ type KVStores struct {
 }
 
 func (kvStores *KVStores) Init (dbPath string) {
-	kvStores.k_batch = kvstore.K_New(dbPath)
-	kvStores.g_batch = kvstore.G_New(dbPath)
-	kvStores.f_batch = kvstore.F_New(dbPath)
-	kvStores.p_batch = kvstore.P_New(dbPath)
-	kvStores.o_batch = kvstore.O_New(dbPath)
+
+	k_opts := badger.DefaultOptions
+	k_opts.Dir = dbPath+"/k_store"
+	k_opts.ValueDir = dbPath+"/k_store"
+	k_opts.ValueLogLoadingMode = options.FileIO
+
+	g_opts := badger.DefaultOptions
+	g_opts.Dir = dbPath+"/g_store"
+	g_opts.ValueDir = dbPath+"/g_store"
+	g_opts.ValueLogLoadingMode = options.FileIO
+
+	f_opts := badger.DefaultOptions
+	f_opts.Dir = dbPath+"/f_store"
+	f_opts.ValueDir = dbPath+"/f_store"
+	f_opts.ValueLogLoadingMode = options.FileIO
+
+	p_opts := badger.DefaultOptions
+	p_opts.Dir = dbPath+"/p_store"
+	p_opts.ValueDir = dbPath+"/p_store"
+	p_opts.ValueLogLoadingMode = options.FileIO
+
+	o_opts := badger.DefaultOptions
+	o_opts.Dir = dbPath+"/o_store"
+	o_opts.ValueDir = dbPath+"/o_store"
+	o_opts.ValueLogLoadingMode = options.FileIO
+
+	kvStores.k_batch = kvstore.K_New(k_opts, 1000)
+	kvStores.g_batch = kvstore.G_New(g_opts, 1000)
+	kvStores.f_batch = kvstore.F_New(f_opts, 1000)
+	kvStores.p_batch = kvstore.P_New(p_opts, 1000)
+	kvStores.o_batch = kvstore.O_New(o_opts, 1000)
 }
 
 func (kvStores *KVStores) Close () {
@@ -96,7 +124,6 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 			run(file, kmerSize, kvStores)
 
 			kvStores.Close()
-
 		}(file, dbPath, i)
 
 	}

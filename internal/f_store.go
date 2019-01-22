@@ -3,6 +3,7 @@ package kvstore
 import (
 	"strings"
 	"regexp"
+	"github.com/dgraph-io/badger"
 )
 
 // Protein Function Entries (HAMAP or manually defined in uniprot/swissprot)
@@ -10,10 +11,10 @@ type F_ struct {
 	*KVStore
 }
 
-func F_New(dbPath string) *F_ {
+func F_New(opts badger.Options, flushSize int) *F_ {
 	var f F_
 	f.KVStore = new(KVStore)
-	NewKVStore(f.KVStore, dbPath+"/f_store", 1000)
+	NewKVStore(f.KVStore, opts, flushSize)
 	return &f
 }
 
