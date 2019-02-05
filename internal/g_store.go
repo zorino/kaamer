@@ -1,9 +1,11 @@
 package kvstore
 
 import (
+	"bytes"
 	"strings"
 	"regexp"
 	"github.com/dgraph-io/badger"
+	// "encoding/hex"
 )
 
 // Gene Ontology Entries
@@ -18,23 +20,23 @@ func G_New(opts badger.Options, flushSize int) *G_ {
 	return &g
 }
 
-func (g *G_) CreateValues(entry string, oldKey string) (string, bool) {
+func (g *G_) CreateValues(entry string, oldKey []byte) ([]byte, bool) {
 
 	// aldehyde dehydrogenase [NAD(P)+] activity [GO:0004030]; putrescine catabolic process [GO:0009447]
 
-	if oldKey == "" && entry == "" {
-		return "_nil", true
+	if oldKey == nil && entry == "" {
+		return g.NilVal, true
 	}
 
 	goArray := strings.Split(entry, "; ")
 
 	reg := regexp.MustCompile(` \[GO:.*\]`)
 
-	var goIds []string
+	var goIds [][]byte
 
 	for _, _go := range goArray {
 
-		goName := reg.ReplaceAllString(_go, "${1}")
+		// goName := reg.ReplaceAllString(_go, "${1}")
 
 		goId := reg.FindString(_go)
 
@@ -45,36 +47,46 @@ func (g *G_) CreateValues(entry string, oldKey string) (string, bool) {
 		// real id prefix = "."
 		goId = "." + goId[5:len(goId)-1]
 
-		goIds = append(goIds, goId)
+		goKey, _ := CreateHashValue([][]byte{[]byte(goId)}, false)
+		goIds = append(goIds, goKey)
 
 		g.Mu.Lock()
-		g.AddValue(goId, goName)
+		g.AddValue(goKey, []byte(_go))
 		g.Mu.Unlock()
+
 	}
 
-	var combinedKey = ""
-	var combinedVal = ""
+	var combinedKey = g.NilVal
+	var newCombinedKey = g.NilVal
+	var newCombinedVal = g.NilVal
+
 	var new = false
 
 
 	if len(goIds) == 0 {
-		combinedKey = "_nil"
+		combinedKey = g.NilVal
 	} else {
 
-		combinedKey, combinedVal = CreateHashValue(goIds, true)
+		combinedKey, _ = CreateHashValue(goIds, true)
 
-		if combinedKey != oldKey {
+		if ! bytes.Equal(combinedKey, oldKey) {
 			new = true
 			g.Mu.Lock()
-			if oldKey != "_nil" {
+			if ! bytes.Equal(oldKey, g.NilVal) {
 				oldVal, ok := g.GetValue(oldKey)
 				if (ok) {
 					// fmt.Println("Old Val exists : " + oldVal)
-					goIds = append(goIds, strings.Split(oldVal, ",")...)
+					for i:=0; (i+1)<len(oldVal); i+=20 {
+						goIds = append(goIds, oldVal[i:i+20])
+					}
 				}
 			}
-			g.AddValue(combinedKey, combinedVal)
+
+			newCombinedKey, newCombinedVal = CreateHashValue(goIds, true)
+			combinedKey = newCombinedKey
+			g.AddValue(newCombinedKey, newCombinedVal)
 			g.Mu.Unlock()
+
 		} else {
 			new = false
 		}

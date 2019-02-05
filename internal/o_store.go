@@ -1,8 +1,10 @@
 package kvstore
 
 import (
-	"strings"
+	// "fmt"
+	"bytes"
 	"github.com/dgraph-io/badger"
+	// "encoding/hex"
 )
 
 // Protein Pathways Entries (HAMAP or manually defined in uniprot/swissprot)
@@ -17,42 +19,53 @@ func O_New(opts badger.Options, flushSize int) *O_ {
 	return &o
 }
 
-func (o *O_) CreateValues(entry string, oldKey string) (string, bool) {
+func (o *O_) CreateValues(entry string, oldKey []byte) ([]byte, bool) {
 
 	// cellular organisms, Bacteria, Proteobacteria, Gammaproteobacteria, Enterobacterales, Enterobacteriaceae, Escherichia, Escherichia coli, Escherichia coli (strain K12)
 
 	var new = false
 
-	if entry == "" && oldKey == "" {
-		return "_nil", true
-	} else if (entry == "" && oldKey != "") {
-		return "_nil", false
+	if entry == "" && oldKey == nil {
+		return o.NilVal, true
+	} else if (entry == "" && oldKey != nil) {
+		return o.NilVal, false
 	}
 
 	protOrganism := entry[20:]
 
 	// fmt.Println("Protein organism:"+protOrganism+"##")
 
-	if oldKey == "" {
+	if oldKey == nil {
 		new = true
 	}
 
-	ids := []string{protOrganism}
+	finalKeyValue := [][]byte{[]byte(protOrganism)}
+	finalKey, _ := CreateHashValue(finalKeyValue, false)
 
+	o.Mu.Lock()
+	o.AddValue(finalKey, []byte(protOrganism))
+	o.Mu.Unlock()
+
+	ids := [][]byte{finalKey}
 	combinedKey, _ := CreateHashValue(ids, true)
 
-	if combinedKey != oldKey {
+	var newCombinedKey = o.NilVal
+	var newCombinedVal = o.NilVal
+
+	if ! bytes.Equal(combinedKey, oldKey) {
 		new = true
 		o.Mu.Lock()
-		if oldKey != "_nil" {
+		if ! bytes.Equal(oldKey, o.NilVal) {
 			oldVal, ok := o.GetValue(oldKey)
 			if (ok) {
-				// fmt.Println("Old Val exists : " + oldVal)
-				ids = append(ids, strings.Split(oldVal, ",")...)
+				for i:=0; (i+1)<len(oldVal); i+=20 {
+					ids = append(ids, oldVal[i:i+20])
+				}
 			}
 		}
-		combinedKey, _ := CreateHashValue(ids, true)
-		o.AddValue(combinedKey, entry)
+		newCombinedKey, newCombinedVal = CreateHashValue(ids, true)
+		combinedKey = newCombinedKey
+		o.AddValue(newCombinedKey, newCombinedVal)
 		o.Mu.Unlock()
 	} else {
 		new = false

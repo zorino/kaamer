@@ -1,33 +1,37 @@
 package kvstore
 
 import (
+	"bytes"
 	"sort"
 	"crypto/sha1"
-	"encoding/hex"
-	"strings"
 	"fmt"
 	"github.com/dgraph-io/badger"
+	// "sort"
 	"sync"
 	"log"
 	"time"
+	// "encoding/hex"
 )
 
-
-// Gene Ontology Entries
+// Key Value Store
 type KVStore struct {
 	DB              *badger.DB
 	WGgc            *sync.WaitGroup
 	FlushSize       int
 	NumberOfEntries int
-	Entries         map[string]string
+	Entries         map[string][]byte
+	NilVal          []byte
 	Mu              sync.Mutex
 }
+
 
 func NewKVStore(kv *KVStore, options badger.Options, flushSize int) {
 
 	kv.NumberOfEntries = 0
 	kv.FlushSize = flushSize
-	kv.Entries = make(map[string]string, kv.FlushSize)
+
+	kv.Entries = make(map[string][]byte)
+	kv.NilVal = []byte{'0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'}
 
 	err := error(nil)
 	kv.DB, err = badger.Open(options)
@@ -62,110 +66,114 @@ func (kv *KVStore) Close() {
 }
 
 func (kv *KVStore) Flush() {
+
 	wb := kv.DB.NewWriteBatch()
 	defer wb.Cancel()
 	for k, v := range kv.Entries {
-		err := wb.Set([]byte(k), []byte(v), 0) // Will create txns as needed.
-		if err != nil {
-			fmt.Println("BUG: Error batch insert")
-			fmt.Println(err)
+		errTx := wb.Set([]byte(k), v, 0) // Will create txns as needed.
+		if errTx != nil {
+			fmt.Println(errTx.Error())
+			log.Fatal("BUG: Error batch insert")
 		}
 	}
 
 	fmt.Println("BATCH INSERT")
 	wb.Flush()
-	kv.Entries = make(map[string]string, kv.FlushSize)
+
+	kv.Entries = make(map[string][]byte)
 	kv.NumberOfEntries = 0
+
 }
 
-func (kv *KVStore) HasValue(key string) bool {
-	_, hasValue := kv.Entries[key]
-	return hasValue
-}
+func (kv *KVStore) HasKey(key []byte) (bool, []byte) {
 
-func (kv *KVStore) AddValue(key string, newVal string) {
-
-	if kv.HasValue(key) {
-		// Key exist in struct adding new value to it
-		kv.Entries[key] = newVal
-	} else {
-		// New Key into cache
-		kv.Entries[key] = newVal
-		kv.NumberOfEntries++
+	if val, ok := kv.Entries[string(key)]; ok {
+		return ok, val
 	}
 
-	if kv.NumberOfEntries == kv.FlushSize {
+	return false, []byte{}
+
+}
+
+func (kv *KVStore) AddValue(key []byte, newVal []byte) {
+
+	if hasKey, _ := kv.HasKey(key); hasKey {
+		kv.Entries[string(key)] = newVal
+	} else {
+		kv.NumberOfEntries++
+		kv.Entries[string(key)] = newVal
+	}
+
+	if len(kv.Entries) == kv.FlushSize {
 		kv.Flush()
 	}
+
 }
 
-func (kv *KVStore) GetValue(key string) (string, bool) {
+func (kv *KVStore) GetValue(key []byte) ([]byte, bool) {
 
-	if val, ok := kv.Entries[key]; ok {
+	if hasKey, val := kv.HasKey(key); hasKey {
 		return val, true
 	}
 
 	var valCopy []byte
 
 	err := kv.DB.View(func(txn *badger.Txn) error {
-		item, err := txn.Get([]byte(key))
-		if err == nil {
+		item, errTx := txn.Get(key)
+		if errTx == nil {
 			item.Value(func(val []byte) error {
 				// Copying new value
 				valCopy = append([]byte{}, val...)
 				return nil
 			})
 		}
-		return err
+		return errTx
 	})
 
 	if err == nil {
-		return string(valCopy), true
+		return valCopy, true
 	}
 
-	return "", false
+	return nil, false
 }
 
 
 // Utility functions
-func RemoveDuplicatesFromSlice(s []string) []string {
+func RemoveDuplicatesFromSlice(s [][]byte) [][]byte {
 
-	m := make(map[string]bool)
-	for _, item := range s {
-		if _, ok := m[item]; ok {
-			// duplicate item
-			// fmt.Println(item, "is a duplicate")
+	var sortedBytesArray [][]byte
+
+	for _, e := range s {
+
+		i := sort.Search(len(sortedBytesArray), func(i int) bool {
+			return bytes.Compare(e, sortedBytesArray[i]) >= 0
+		})
+
+		if i < len(sortedBytesArray) && bytes.Equal(e, sortedBytesArray[i]) {
+			// element in array already
 		} else {
-			m[item] = true
+			sortedBytesArray = append(sortedBytesArray, []byte{})
+			copy(sortedBytesArray[i+1:], sortedBytesArray[i:])
+			sortedBytesArray[i] = e
 		}
 	}
 
-	var result []string
-	for item, _ := range m {
-		result = append(result, item)
-	}
-
-	return result
+	return sortedBytesArray
 
 }
 
-func CreateHashValue(ids []string, unique bool) (string,string) {
+func CreateHashValue(ids [][]byte, unique bool) ([]byte, []byte) {
 
 	if unique {
 		ids = RemoveDuplicatesFromSlice(ids)
-		sort.Strings(ids)
 	}
 
-	var idsString = strings.Join(ids, ",")
+	joinedIds := bytes.Join(ids, nil)
 
 	h := sha1.New()
-	h.Write([]byte(idsString))
+	h.Write(joinedIds)
 	bs := h.Sum(nil)
-	hashKey := hex.EncodeToString(bs)
 
-	// combined key prefix = "_"
-	hashKey = "_" + hashKey[len(hashKey)-11:len(hashKey)]
-
-	return hashKey, idsString
+	return bs, joinedIds
 
 }

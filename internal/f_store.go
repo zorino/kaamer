@@ -1,9 +1,11 @@
 package kvstore
 
 import (
-	"strings"
+	// "fmt"
+	"bytes"
 	"regexp"
 	"github.com/dgraph-io/badger"
+	// "encoding/hex"
 )
 
 // Protein Function Entries (HAMAP or manually defined in uniprot/swissprot)
@@ -18,18 +20,17 @@ func F_New(opts badger.Options, flushSize int) *F_ {
 	return &f
 }
 
-func (f *F_) CreateValues(entry string, oldKey string) (string, bool) {
+func (f *F_) CreateValues(entry string, oldKey []byte) ([]byte, bool) {
 
 	// FUNCTION: Catalyzes the Claisen rearrangement of chorismate to prephenate. Probably involved in the aromatic amino acid biosynthesis. {ECO:0000269|PubMed:15737998, ECO:0000269|PubMed:18727669, ECO:0000269|PubMed:19556970}.
 
 	var new = false
 
-	if entry == "" && oldKey == "" {
-		return "_nil", true
-	} else if (entry == "" && oldKey != "") {
-		return "_nil", false
+	if entry == "" && oldKey == nil {
+		return f.NilVal, true
+	} else if (entry == "" && oldKey != nil) {
+		return f.NilVal, false
 	}
-
 
 	reg := regexp.MustCompile(` \{.*\}\.`)
 
@@ -39,26 +40,37 @@ func (f *F_) CreateValues(entry string, oldKey string) (string, bool) {
 
 	// fmt.Println("Protein function:" + protFunction+"##")
 
-	if oldKey == "" {
+	if oldKey == nil {
 		new = true
 	}
 
-	ids := []string{protFunction}
+	finalKeyValue := [][]byte{[]byte(protFunction)}
+	finalKey, _ := CreateHashValue(finalKeyValue, false)
 
+	f.Mu.Lock()
+	f.AddValue(finalKey, []byte(protFunction))
+	f.Mu.Unlock()
+
+	ids := [][]byte{finalKey}
 	combinedKey, _ := CreateHashValue(ids, true)
 
-	if combinedKey != oldKey {
+	var newCombinedKey = f.NilVal
+	var newCombinedVal = f.NilVal
+
+	if ! bytes.Equal(combinedKey, oldKey) {
 		new = true
 		f.Mu.Lock()
-		if oldKey != "_nil" {
+		if ! bytes.Equal(oldKey, f.NilVal) {
 			oldVal, ok := f.GetValue(oldKey)
 			if (ok) {
-				// fmt.Println("Old Val exists : " + oldVal)
-				ids = append(ids, strings.Split(oldVal, ",")...)
+				for i:=0; (i+1)<len(oldVal); i+=20 {
+					ids = append(ids, oldVal[i:i+20])
+				}
 			}
 		}
-		combinedKey, _ := CreateHashValue(ids, true)
-		f.AddValue(combinedKey, entry)
+		newCombinedKey, newCombinedVal = CreateHashValue(ids, true)
+		combinedKey = newCombinedKey
+		f.AddValue(newCombinedKey, newCombinedVal)
 		f.Mu.Unlock()
 	} else {
 		new = false

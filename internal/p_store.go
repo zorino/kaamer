@@ -1,7 +1,7 @@
 package kvstore
 
 import (
-	"strings"
+	"bytes"
 	"regexp"
 	"github.com/dgraph-io/badger"
 )
@@ -18,19 +18,18 @@ func P_New(opts badger.Options, flushSize int) *P_ {
 	return &p
 }
 
-func (p *P_) CreateValues(entry string, oldKey string) (string, bool) {
+func (p *P_) CreateValues(entry string, oldKey []byte) ([]byte, bool) {
 
 	// PATHWAY: Metabolic intermediate biosynthesis; prephenate biosynthesis; prephenate from chorismate: step 1/1.
 	// PATHWAY: Porphyrin-containing compound metabolism; heme O biosynthesis; heme O from protoheme: step 1/1. {ECO:0000255|HAMAP-Rule:MF_00154}.
 
 	var new = false
 
-	if entry == "" && oldKey == "" {
-		return "_nil", true
-	} else if (entry == "" && oldKey != "") {
-		return "_nil", false
+	if entry == "" && oldKey == nil {
+		return p.NilVal, true
+	} else if (entry == "" && oldKey != nil) {
+		return p.NilVal, false
 	}
-
 
 	reg := regexp.MustCompile(` \{.*\}\.`)
 	protPathway := reg.ReplaceAllString(entry, "${1}")
@@ -42,26 +41,37 @@ func (p *P_) CreateValues(entry string, oldKey string) (string, bool) {
 
 	// fmt.Println("Protein pathway:" + protPathway+"##")
 
-	if oldKey == "" {
+	if oldKey == nil {
 		new = true
 	}
 
-	ids := []string{protPathway}
+	finalKeyValue := [][]byte{[]byte(protPathway)}
+	finalKey, _ := CreateHashValue(finalKeyValue, false)
 
+	p.Mu.Lock()
+	p.AddValue(finalKey, []byte(protPathway))
+	p.Mu.Unlock()
+
+	ids := [][]byte{finalKey}
 	combinedKey, _ := CreateHashValue(ids, true)
 
-	if combinedKey != oldKey {
+	var newCombinedKey = p.NilVal
+	var newCombinedVal = p.NilVal
+
+	if ! bytes.Equal(combinedKey, oldKey) {
 		new = true
 		p.Mu.Lock()
-		if oldKey != "_nil" {
+		if ! bytes.Equal(oldKey, p.NilVal) {
 			oldVal, ok := p.GetValue(oldKey)
 			if (ok) {
-				// fmt.Println("Old Val exists : " + oldVal)
-				ids = append(ids, strings.Split(oldVal, ",")...)
+				for i:=0; (i+1)<len(oldVal); i+=20 {
+					ids = append(ids, oldVal[i:i+20])
+				}
 			}
 		}
-		combinedKey, _ := CreateHashValue(ids, true)
-		p.AddValue(combinedKey, entry)
+		newCombinedKey, newCombinedVal = CreateHashValue(ids, true)
+		combinedKey = newCombinedKey
+		p.AddValue(newCombinedKey, newCombinedVal)
 		p.Mu.Unlock()
 	} else {
 		new = false

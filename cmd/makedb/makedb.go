@@ -12,6 +12,9 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"encoding/hex"
+	"encoding/binary"
+	"unicode/utf8"
 )
 
 // uniprotkb-bacteria (https://github.com/zorino/microbe-dbs)
@@ -145,6 +148,12 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 
 	wgDB.Wait()
 
+	// // Testing
+	// kvStores := new(KVStores)
+	// kvStores.Init(dbPath+"/store_0")
+	// PrintKStore(kvStores)
+	// kvStores.Close()
+
 }
 
 func run(fileName string, kmerSize int, kvStores *KVStores, nbThreads int) int {
@@ -227,22 +236,23 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 	// sliding windows of kmerSize on Sequence
 	for i := 0; i < len(c.Sequence)-kmerSize+1; i++ {
 
-		key := "."+c.Sequence[i:i+kmerSize]
+		key := kvStores.k_batch.CreateBytesKey(c.Sequence[i:i+kmerSize])
 
 		var isNewValue = false
 		var currentValue []byte
 
-		newValues := [4]string{"","","",""}
-
+		newValues := [4][]byte{nil,nil,nil,nil}
 		kvStores.k_batch.Mu.Lock()
-
 		__val, ok := kvStores.k_batch.GetValue(key)
-		_val, ok := kvStores.k_batch.GetValue(__val)
 
 		// Old value found
 		if ok {
+			_val, _ := kvStores.k_batch.GetValue(__val)
 			currentValue = append([]byte{}, _val...)
-			copy(newValues[:], strings.Split(string(currentValue), ",")[:3])
+
+			for i, _ := range newValues {
+				newValues[i] = currentValue[(i)*20:(i+1)*20]
+			}
 		} else {
 			isNewValue = true
 		}
@@ -272,9 +282,9 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 		}
 
 		if isNewValue {
-			_hash, _ids := kvstore.CreateHashValue(newValues[:], false)
-			kvStores.k_batch.AddValue(_hash, _ids)
-			kvStores.k_batch.AddValue(key, _hash)
+			combinedKey, combinedVal := kvstore.CreateHashValue(newValues[:], false)
+			kvStores.k_batch.AddValue(combinedKey, combinedVal)
+			kvStores.k_batch.AddValue(key, combinedKey)
 		}
 
 		kvStores.k_batch.Mu.Unlock()
@@ -286,23 +296,36 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 }
 
 
-// func PrintDB (db *badger.DB) {
-// 	db.View(func(txn *badger.Txn) error {
-// 		opts := badger.DefaultIteratorOptions
-// 		opts.PrefetchSize = 10
-// 		it := txn.NewIterator(opts)
-// 		defer it.Close()
-// 		for it.Rewind(); it.Valid(); it.Next() {
-// 			item := it.Item()
-// 			k := item.Key()
-// 			err := item.Value(func(v []byte) error {
-// 				fmt.Printf("key=%s, value=%s\n", k, v)
-// 				return nil
-// 			})
-// 			if err != nil {
-// 				return err
-// 			}
-// 		}
-// 		return nil
-// 	})
-// }
+func PrintKStore (kvStores *KVStores) {
+
+	kvStores.k_batch.DB.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchSize = 10
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			k := item.Key()
+			err := item.Value(func(v []byte) error {
+				val := hex.EncodeToString(v)
+				if utf8.ValidString(string(v)) {
+					val = string(v)
+				}
+				if len(val) < 41 {
+					kmerInt := binary.BigEndian.Uint32(k)
+					fmt.Printf("Kmer: key=%s, value=%s\n", kvStores.k_batch.DecodeKmer(kmerInt), val)
+				} else {
+					fmt.Printf("Hash: key=%s, value=%s\n", hex.EncodeToString(k), val)
+				}
+
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+}
