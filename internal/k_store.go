@@ -117,8 +117,9 @@ func (k *K_) EncodeKmer(kmer string) uint32 {
 }
 
 // expect kmers of length 7
-func (k *K_) DecodeKmer(kmerInt uint32) string {
+func (k *K_) DecodeKmer(key []byte) string {
 
+	kmerInt := binary.BigEndian.Uint32(key)
 	aa := (kmerInt >> 23) & 0x1FF
 	bb := (kmerInt >> 14) & 0x1FF
 	cc := (kmerInt >> 5) & 0x1FF
