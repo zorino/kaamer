@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 	"encoding/hex"
-	"encoding/binary"
+	// "encoding/binary"
 	"unicode/utf8"
 )
 
@@ -32,10 +32,15 @@ type Protein struct {
 
 // # Stores :
 //                k_   ->   peptide kmers => [g_key, f_key, p_key, o_key]
+//                kk_  ->   k_ combination store
 //                g_   ->   gene ontology
+//                gg_  ->   g_ combination store
 //                f_   ->   function (uniprot)
+//                ff_  ->   f_ combination store
 //                p_   ->   pathway
+//                pp_  ->   p_ combination store
 //                o_   ->   taxonomic lineage
+//                oo_  ->   o_ combination store
 //
 //
 //  Each store uses a combination pattern to reduce its size (flyweight design pattern)
@@ -48,10 +53,15 @@ type Protein struct {
 
 type KVStores struct {
 	k_batch         *kvstore.K_
+	kk_batch        *kvstore.H_
 	g_batch         *kvstore.G_
+	gg_batch        *kvstore.H_
 	f_batch         *kvstore.F_
+	ff_batch        *kvstore.H_
 	p_batch         *kvstore.P_
+	pp_batch        *kvstore.H_
 	o_batch         *kvstore.O_
+	oo_batch        *kvstore.H_
 }
 
 func (kvStores *KVStores) Init (dbPath string) {
@@ -63,12 +73,26 @@ func (kvStores *KVStores) Init (dbPath string) {
 	k_opts.TableLoadingMode = options.MemoryMap
 	k_opts.SyncWrites = false
 
+	kk_opts := badger.DefaultOptions
+	kk_opts.Dir = dbPath+"/kk_store"
+	kk_opts.ValueDir = dbPath+"/kk_store"
+	kk_opts.ValueLogLoadingMode = options.FileIO
+	kk_opts.TableLoadingMode = options.MemoryMap
+	kk_opts.SyncWrites = false
+
 	g_opts := badger.DefaultOptions
 	g_opts.Dir = dbPath+"/g_store"
 	g_opts.ValueDir = dbPath+"/g_store"
 	g_opts.ValueLogLoadingMode = options.FileIO
 	g_opts.TableLoadingMode = options.MemoryMap
 	g_opts.SyncWrites = false
+
+	gg_opts := badger.DefaultOptions
+	gg_opts.Dir = dbPath+"/gg_store"
+	gg_opts.ValueDir = dbPath+"/gg_store"
+	gg_opts.ValueLogLoadingMode = options.FileIO
+	gg_opts.TableLoadingMode = options.MemoryMap
+	gg_opts.SyncWrites = false
 
 	f_opts := badger.DefaultOptions
 	f_opts.Dir = dbPath+"/f_store"
@@ -77,12 +101,26 @@ func (kvStores *KVStores) Init (dbPath string) {
 	f_opts.TableLoadingMode = options.MemoryMap
 	f_opts.SyncWrites = false
 
+	ff_opts := badger.DefaultOptions
+	ff_opts.Dir = dbPath+"/ff_store"
+	ff_opts.ValueDir = dbPath+"/ff_store"
+	ff_opts.ValueLogLoadingMode = options.FileIO
+	ff_opts.TableLoadingMode = options.MemoryMap
+	ff_opts.SyncWrites = false
+
 	p_opts := badger.DefaultOptions
 	p_opts.Dir = dbPath+"/p_store"
 	p_opts.ValueDir = dbPath+"/p_store"
 	p_opts.ValueLogLoadingMode = options.FileIO
 	p_opts.TableLoadingMode = options.MemoryMap
 	p_opts.SyncWrites = false
+
+	pp_opts := badger.DefaultOptions
+	pp_opts.Dir = dbPath+"/pp_store"
+	pp_opts.ValueDir = dbPath+"/pp_store"
+	pp_opts.ValueLogLoadingMode = options.FileIO
+	pp_opts.TableLoadingMode = options.MemoryMap
+	pp_opts.SyncWrites = false
 
 	o_opts := badger.DefaultOptions
 	o_opts.Dir = dbPath+"/o_store"
@@ -91,20 +129,37 @@ func (kvStores *KVStores) Init (dbPath string) {
 	o_opts.TableLoadingMode = options.MemoryMap
 	o_opts.SyncWrites = false
 
+	oo_opts := badger.DefaultOptions
+	oo_opts.Dir = dbPath+"/oo_store"
+	oo_opts.ValueDir = dbPath+"/oo_store"
+	oo_opts.ValueLogLoadingMode = options.FileIO
+	oo_opts.TableLoadingMode = options.MemoryMap
+	oo_opts.SyncWrites = false
+
 	kvStores.k_batch = kvstore.K_New(k_opts, 1000)
+	kvStores.kk_batch = kvstore.H_New(kk_opts, 1000)
 	kvStores.g_batch = kvstore.G_New(g_opts, 1000)
+	kvStores.gg_batch = kvstore.H_New(gg_opts, 1000)
 	kvStores.f_batch = kvstore.F_New(f_opts, 1000)
+	kvStores.ff_batch = kvstore.H_New(ff_opts, 1000)
 	kvStores.p_batch = kvstore.P_New(p_opts, 1000)
+	kvStores.pp_batch = kvstore.H_New(pp_opts, 1000)
 	kvStores.o_batch = kvstore.O_New(o_opts, 1000)
+	kvStores.oo_batch = kvstore.H_New(oo_opts, 1000)
 }
 
 func (kvStores *KVStores) Close () {
 	// Last DB flushes
 	kvStores.k_batch.Close()
+	kvStores.kk_batch.Close()
 	kvStores.g_batch.Close()
+	kvStores.gg_batch.Close()
 	kvStores.f_batch.Close()
+	kvStores.ff_batch.Close()
 	kvStores.p_batch.Close()
+	kvStores.pp_batch.Close()
 	kvStores.o_batch.Close()
+	kvStores.oo_batch.Close()
 }
 
 func NewMakedb(dbPath string, inputPath string, kmerSize int) {
@@ -153,11 +208,11 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 
 	wgDB.Wait()
 
-	// // Testing
-	// kvStores := new(KVStores)
-	// kvStores.Init(dbPath+"/store_0")
-	// PrintKStore(kvStores)
-	// kvStores.Close()
+	// Testing
+	kvStores := new(KVStores)
+	kvStores.Init(dbPath+"/store_0")
+	PrintKStore(kvStores)
+	kvStores.Close()
 
 }
 
@@ -247,14 +302,16 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 		var currentValue []byte
 
 		newValues := [4][]byte{nil,nil,nil,nil}
+
 		kvStores.k_batch.Mu.Lock()
 		__val, ok := kvStores.k_batch.GetValue(key)
 
 		// Old value found
 		if ok {
-			_val, _ := kvStores.k_batch.GetValue(__val)
-			currentValue = append([]byte{}, _val...)
-
+			kvStores.kk_batch.Mu.Lock()
+			_val, _ := kvStores.kk_batch.GetValue(__val)
+			kvStores.kk_batch.Mu.Unlock()
+			currentValue = _val
 			for i, _ := range newValues {
 				newValues[i] = currentValue[(i)*20:(i+1)*20]
 			}
@@ -263,32 +320,34 @@ func processProteinInput(line string, kmerSize int, kvStores *KVStores) {
 		}
 
 		// Gene Ontology
-		if gVal, new := kvStores.g_batch.CreateValues(c.GeneOntology, newValues[0]); new {
+		if gVal, new := kvStores.g_batch.CreateValues(c.GeneOntology, newValues[0], kvStores.gg_batch); new {
 			isNewValue = isNewValue || new
 			newValues[0] = gVal
 		}
 
 		// Protein Function
-		if fVal, new := kvStores.f_batch.CreateValues(c.FunctionCC, newValues[1]); new {
+		if fVal, new := kvStores.f_batch.CreateValues(c.FunctionCC, newValues[1], kvStores.ff_batch); new {
 			isNewValue = isNewValue || new
 			newValues[1] = fVal
 		}
 
 		// Protein Pathway
-		if pVal, new := kvStores.p_batch.CreateValues(c.Pathway, newValues[2]); new {
+		if pVal, new := kvStores.p_batch.CreateValues(c.Pathway, newValues[2], kvStores.pp_batch); new {
 			isNewValue = isNewValue || new
 			newValues[2] = pVal
 		}
 
 		// Protein Organism
-		if oVal, new := kvStores.o_batch.CreateValues(c.TaxonomicLineage, newValues[3]); new {
+		if oVal, new := kvStores.o_batch.CreateValues(c.TaxonomicLineage, newValues[3], kvStores.oo_batch); new {
 			isNewValue = isNewValue || new
 			newValues[3] = oVal
 		}
 
 		if isNewValue {
-			combinedKey, combinedVal := kvstore.CreateHashValue(newValues[:], false)
-			kvStores.k_batch.AddValue(combinedKey, combinedVal)
+			kvStores.kk_batch.Mu.Lock()
+			combinedKey, combinedVal := kvStores.kk_batch.CreateValues(newValues[:], false)
+			kvStores.kk_batch.AddValue(combinedKey, combinedVal)
+			kvStores.kk_batch.Mu.Unlock()
 			kvStores.k_batch.AddValue(key, combinedKey)
 		}
 
@@ -318,8 +377,7 @@ func PrintKStore (kvStores *KVStores) {
 					val = string(v)
 				}
 				if len(val) < 41 {
-					kmerInt := binary.BigEndian.Uint32(k)
-					fmt.Printf("Kmer: key=%s, value=%s\n", kvStores.k_batch.DecodeKmer(kmerInt), val)
+					fmt.Printf("Kmer: key=%s, value=%s\n", kvStores.k_batch.DecodeKmer(k), val)
 				} else {
 					fmt.Printf("Hash: key=%s, value=%s\n", hex.EncodeToString(k), val)
 				}

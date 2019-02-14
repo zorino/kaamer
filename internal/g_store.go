@@ -20,12 +20,12 @@ func G_New(opts badger.Options, flushSize int) *G_ {
 	return &g
 }
 
-func (g *G_) CreateValues(entry string, oldKey []byte) ([]byte, bool) {
+func (g *G_) CreateValues(entry string, oldKey []byte, gg_ *H_) ([]byte, bool) {
 
 	// aldehyde dehydrogenase [NAD(P)+] activity [GO:0004030]; putrescine catabolic process [GO:0009447]
 
 	if oldKey == nil && entry == "" {
-		return g.NilVal, true
+		return gg_.NilVal, true
 	}
 
 	goArray := strings.Split(entry, "; ")
@@ -56,24 +56,24 @@ func (g *G_) CreateValues(entry string, oldKey []byte) ([]byte, bool) {
 
 	}
 
-	var combinedKey = g.NilVal
-	var newCombinedKey = g.NilVal
-	var newCombinedVal = g.NilVal
+	var combinedKey = gg_.NilVal
+	var newCombinedKey = gg_.NilVal
+	var newCombinedVal = gg_.NilVal
 
 	var new = false
 
 
 	if len(goIds) == 0 {
-		combinedKey = g.NilVal
+		combinedKey = gg_.NilVal
 	} else {
 
-		combinedKey, _ = CreateHashValue(goIds, true)
+		combinedKey, _ = gg_.CreateValues(goIds, true)
 
 		if ! bytes.Equal(combinedKey, oldKey) {
 			new = true
-			g.Mu.Lock()
-			if ! bytes.Equal(oldKey, g.NilVal) {
-				oldVal, ok := g.GetValue(oldKey)
+			gg_.Mu.Lock()
+			if ! bytes.Equal(oldKey, gg_.NilVal) {
+				oldVal, ok := gg_.GetValue(oldKey)
 				if (ok) {
 					// fmt.Println("Old Val exists : " + oldVal)
 					for i:=0; (i+1)<len(oldVal); i+=20 {
@@ -82,10 +82,10 @@ func (g *G_) CreateValues(entry string, oldKey []byte) ([]byte, bool) {
 				}
 			}
 
-			newCombinedKey, newCombinedVal = CreateHashValue(goIds, true)
+			newCombinedKey, newCombinedVal = gg_.CreateValues(goIds, true)
 			combinedKey = newCombinedKey
-			g.AddValue(newCombinedKey, newCombinedVal)
-			g.Mu.Unlock()
+			gg_.AddValue(newCombinedKey, newCombinedVal)
+			gg_.Mu.Unlock()
 
 		} else {
 			new = false

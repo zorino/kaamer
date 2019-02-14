@@ -19,16 +19,16 @@ func O_New(opts badger.Options, flushSize int) *O_ {
 	return &o
 }
 
-func (o *O_) CreateValues(entry string, oldKey []byte) ([]byte, bool) {
+func (o *O_) CreateValues(entry string, oldKey []byte, oo_ *H_) ([]byte, bool) {
 
 	// cellular organisms, Bacteria, Proteobacteria, Gammaproteobacteria, Enterobacterales, Enterobacteriaceae, Escherichia, Escherichia coli, Escherichia coli (strain K12)
 
 	var new = false
 
 	if entry == "" && oldKey == nil {
-		return o.NilVal, true
+		return oo_.NilVal, true
 	} else if (entry == "" && oldKey != nil) {
-		return o.NilVal, false
+		return oo_.NilVal, false
 	}
 
 	protOrganism := entry[20:]
@@ -47,26 +47,26 @@ func (o *O_) CreateValues(entry string, oldKey []byte) ([]byte, bool) {
 	o.Mu.Unlock()
 
 	ids := [][]byte{finalKey}
-	combinedKey, _ := CreateHashValue(ids, true)
+	combinedKey, _ := oo_.CreateValues(ids, true)
 
-	var newCombinedKey = o.NilVal
-	var newCombinedVal = o.NilVal
+	var newCombinedKey = oo_.NilVal
+	var newCombinedVal = oo_.NilVal
 
 	if ! bytes.Equal(combinedKey, oldKey) {
 		new = true
-		o.Mu.Lock()
-		if ! bytes.Equal(oldKey, o.NilVal) {
-			oldVal, ok := o.GetValue(oldKey)
+		oo_.Mu.Lock()
+		if ! bytes.Equal(oldKey, oo_.NilVal) {
+			oldVal, ok := oo_.GetValue(oldKey)
 			if (ok) {
 				for i:=0; (i+1)<len(oldVal); i+=20 {
 					ids = append(ids, oldVal[i:i+20])
 				}
 			}
 		}
-		newCombinedKey, newCombinedVal = CreateHashValue(ids, true)
+		newCombinedKey, newCombinedVal = oo_.CreateValues(ids, true)
 		combinedKey = newCombinedKey
-		o.AddValue(newCombinedKey, newCombinedVal)
-		o.Mu.Unlock()
+		oo_.AddValue(newCombinedKey, newCombinedVal)
+		oo_.Mu.Unlock()
 	} else {
 		new = false
 	}

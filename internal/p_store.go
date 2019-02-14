@@ -18,7 +18,7 @@ func P_New(opts badger.Options, flushSize int) *P_ {
 	return &p
 }
 
-func (p *P_) CreateValues(entry string, oldKey []byte) ([]byte, bool) {
+func (p *P_) CreateValues(entry string, oldKey []byte, pp_ *H_) ([]byte, bool) {
 
 	// PATHWAY: Metabolic intermediate biosynthesis; prephenate biosynthesis; prephenate from chorismate: step 1/1.
 	// PATHWAY: Porphyrin-containing compound metabolism; heme O biosynthesis; heme O from protoheme: step 1/1. {ECO:0000255|HAMAP-Rule:MF_00154}.
@@ -26,9 +26,9 @@ func (p *P_) CreateValues(entry string, oldKey []byte) ([]byte, bool) {
 	var new = false
 
 	if entry == "" && oldKey == nil {
-		return p.NilVal, true
+		return pp_.NilVal, true
 	} else if (entry == "" && oldKey != nil) {
-		return p.NilVal, false
+		return pp_.NilVal, false
 	}
 
 	reg := regexp.MustCompile(` \{.*\}\.`)
@@ -53,26 +53,26 @@ func (p *P_) CreateValues(entry string, oldKey []byte) ([]byte, bool) {
 	p.Mu.Unlock()
 
 	ids := [][]byte{finalKey}
-	combinedKey, _ := CreateHashValue(ids, true)
+	combinedKey, _ := pp_.CreateValues(ids, true)
 
-	var newCombinedKey = p.NilVal
-	var newCombinedVal = p.NilVal
+	var newCombinedKey = pp_.NilVal
+	var newCombinedVal = pp_.NilVal
 
 	if ! bytes.Equal(combinedKey, oldKey) {
 		new = true
-		p.Mu.Lock()
-		if ! bytes.Equal(oldKey, p.NilVal) {
-			oldVal, ok := p.GetValue(oldKey)
+		pp_.Mu.Lock()
+		if ! bytes.Equal(oldKey, pp_.NilVal) {
+			oldVal, ok := pp_.GetValue(oldKey)
 			if (ok) {
 				for i:=0; (i+1)<len(oldVal); i+=20 {
 					ids = append(ids, oldVal[i:i+20])
 				}
 			}
 		}
-		newCombinedKey, newCombinedVal = CreateHashValue(ids, true)
+		newCombinedKey, newCombinedVal = pp_.CreateValues(ids, true)
 		combinedKey = newCombinedKey
-		p.AddValue(newCombinedKey, newCombinedVal)
-		p.Mu.Unlock()
+		pp_.AddValue(newCombinedKey, newCombinedVal)
+		pp_.Mu.Unlock()
 	} else {
 		new = false
 	}

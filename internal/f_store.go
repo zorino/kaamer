@@ -20,16 +20,16 @@ func F_New(opts badger.Options, flushSize int) *F_ {
 	return &f
 }
 
-func (f *F_) CreateValues(entry string, oldKey []byte) ([]byte, bool) {
+func (f *F_) CreateValues(entry string, oldKey []byte, ff_ *H_) ([]byte, bool) {
 
 	// FUNCTION: Catalyzes the Claisen rearrangement of chorismate to prephenate. Probably involved in the aromatic amino acid biosynthesis. {ECO:0000269|PubMed:15737998, ECO:0000269|PubMed:18727669, ECO:0000269|PubMed:19556970}.
 
 	var new = false
 
 	if entry == "" && oldKey == nil {
-		return f.NilVal, true
+		return ff_.NilVal, true
 	} else if (entry == "" && oldKey != nil) {
-		return f.NilVal, false
+		return ff_.NilVal, false
 	}
 
 	reg := regexp.MustCompile(` \{.*\}\.`)
@@ -52,26 +52,26 @@ func (f *F_) CreateValues(entry string, oldKey []byte) ([]byte, bool) {
 	f.Mu.Unlock()
 
 	ids := [][]byte{finalKey}
-	combinedKey, _ := CreateHashValue(ids, true)
+	combinedKey, _ := ff_.CreateValues(ids, true)
 
-	var newCombinedKey = f.NilVal
-	var newCombinedVal = f.NilVal
+	var newCombinedKey = ff_.NilVal
+	var newCombinedVal = ff_.NilVal
 
 	if ! bytes.Equal(combinedKey, oldKey) {
 		new = true
-		f.Mu.Lock()
-		if ! bytes.Equal(oldKey, f.NilVal) {
-			oldVal, ok := f.GetValue(oldKey)
+		ff_.Mu.Lock()
+		if ! bytes.Equal(oldKey, ff_.NilVal) {
+			oldVal, ok := ff_.GetValue(oldKey)
 			if (ok) {
 				for i:=0; (i+1)<len(oldVal); i+=20 {
 					ids = append(ids, oldVal[i:i+20])
 				}
 			}
 		}
-		newCombinedKey, newCombinedVal = CreateHashValue(ids, true)
+		newCombinedKey, newCombinedVal = ff_.CreateValues(ids, true)
 		combinedKey = newCombinedKey
-		f.AddValue(newCombinedKey, newCombinedVal)
-		f.Mu.Unlock()
+		ff_.AddValue(newCombinedKey, newCombinedVal)
+		ff_.Mu.Unlock()
 	} else {
 		new = false
 	}
