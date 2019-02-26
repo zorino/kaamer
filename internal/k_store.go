@@ -16,11 +16,11 @@ type K_ struct {
 	aaBinTable  map[uint32][2]rune
 }
 
-func K_New(opts badger.Options, flushSize int) *K_ {
+func K_New(opts badger.Options, flushSize int, nbOfThreads int) *K_ {
 	var k K_
 	k.KVStore = new(KVStore)
 	k.aaTable, k.aaBinTable = NewAATable()
-	NewKVStore(k.KVStore, opts, flushSize)
+	NewKVStore(k.KVStore, opts, flushSize, nbOfThreads)
 	return &k
 }
 

@@ -13,14 +13,14 @@ type G_ struct {
 	*KVStore
 }
 
-func G_New(opts badger.Options, flushSize int) *G_ {
+func G_New(opts badger.Options, flushSize int, nbOfThreads int) *G_ {
 	var g G_
 	g.KVStore = new(KVStore)
-	NewKVStore(g.KVStore, opts, flushSize)
+	NewKVStore(g.KVStore, opts, flushSize, nbOfThreads)
 	return &g
 }
 
-func (g *G_) CreateValues(entry string, oldKey []byte, gg_ *H_) ([]byte, bool) {
+func (g *G_) CreateValues(entry string, oldKey []byte, gg_ *H_, threadId int) ([]byte, bool) {
 
 	// aldehyde dehydrogenase [NAD(P)+] activity [GO:0004030]; putrescine catabolic process [GO:0009447]
 
@@ -32,11 +32,9 @@ func (g *G_) CreateValues(entry string, oldKey []byte, gg_ *H_) ([]byte, bool) {
 
 	reg := regexp.MustCompile(` \[GO:.*\]`)
 
-	var goIds [][]byte
+	var ids [][]byte
 
 	for _, _go := range goArray {
-
-		// goName := reg.ReplaceAllString(_go, "${1}")
 
 		goId := reg.FindString(_go)
 
@@ -45,14 +43,13 @@ func (g *G_) CreateValues(entry string, oldKey []byte, gg_ *H_) ([]byte, bool) {
 		}
 
 		// real id prefix = "."
-		goId = "." + goId[5:len(goId)-1]
+		// goId = "." + goId[5:len(goId)-1]
+		goId = goId[5:len(goId)-1]
 
 		goKey, _ := CreateHashValue([][]byte{[]byte(goId)}, false)
-		goIds = append(goIds, goKey)
+		ids = append(ids, goKey)
 
-		g.Mu.Lock()
-		g.AddValue(goKey, []byte(_go))
-		g.Mu.Unlock()
+		g.AddValue(goKey, []byte(_go), threadId)
 
 	}
 
@@ -63,30 +60,16 @@ func (g *G_) CreateValues(entry string, oldKey []byte, gg_ *H_) ([]byte, bool) {
 	var new = false
 
 
-	if len(goIds) == 0 {
+	if len(ids) == 0 {
 		combinedKey = gg_.NilVal
 	} else {
 
-		combinedKey, _ = gg_.CreateValues(goIds, true)
+		combinedKey, _ = gg_.CreateValues(ids, true)
 
 		if ! bytes.Equal(combinedKey, oldKey) {
 			new = true
-			gg_.Mu.Lock()
-			if ! bytes.Equal(oldKey, gg_.NilVal) {
-				oldVal, ok := gg_.GetValue(oldKey)
-				if (ok) {
-					// fmt.Println("Old Val exists : " + oldVal)
-					for i:=0; (i+1)<len(oldVal); i+=20 {
-						goIds = append(goIds, oldVal[i:i+20])
-					}
-				}
-			}
-
-			newCombinedKey, newCombinedVal = gg_.CreateValues(goIds, true)
-			combinedKey = newCombinedKey
-			gg_.AddValue(newCombinedKey, newCombinedVal)
-			gg_.Mu.Unlock()
-
+			newCombinedKey, newCombinedVal = gg_.CreateValues(ids, true)
+			gg_.AddValue(newCombinedKey, newCombinedVal, threadId)
 		} else {
 			new = false
 		}

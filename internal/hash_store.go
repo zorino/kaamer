@@ -13,10 +13,10 @@ type H_ struct {
 	*KVStore
 }
 
-func H_New(opts badger.Options, flushSize int) *H_ {
+func H_New(opts badger.Options, flushSize int, nbOfThreads int) *H_ {
 	var h H_
 	h.KVStore = new(KVStore)
-	NewKVStore(h.KVStore, opts, flushSize)
+	NewKVStore(h.KVStore, opts, flushSize, nbOfThreads)
 	return &h
 }
 

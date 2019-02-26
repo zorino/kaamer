@@ -13,14 +13,14 @@ type F_ struct {
 	*KVStore
 }
 
-func F_New(opts badger.Options, flushSize int) *F_ {
+func F_New(opts badger.Options, flushSize int, nbOfThreads int) *F_ {
 	var f F_
 	f.KVStore = new(KVStore)
-	NewKVStore(f.KVStore, opts, flushSize)
+	NewKVStore(f.KVStore, opts, flushSize, nbOfThreads)
 	return &f
 }
 
-func (f *F_) CreateValues(entry string, oldKey []byte, ff_ *H_) ([]byte, bool) {
+func (f *F_) CreateValues(entry string, oldKey []byte, ff_ *H_, threadId int) ([]byte, bool) {
 
 	// FUNCTION: Catalyzes the Claisen rearrangement of chorismate to prephenate. Probably involved in the aromatic amino acid biosynthesis. {ECO:0000269|PubMed:15737998, ECO:0000269|PubMed:18727669, ECO:0000269|PubMed:19556970}.
 
@@ -38,8 +38,6 @@ func (f *F_) CreateValues(entry string, oldKey []byte, ff_ *H_) ([]byte, bool) {
 
 	protFunction =  protFunction[10:]
 
-	// fmt.Println("Protein function:" + protFunction+"##")
-
 	if oldKey == nil {
 		new = true
 	}
@@ -47,9 +45,7 @@ func (f *F_) CreateValues(entry string, oldKey []byte, ff_ *H_) ([]byte, bool) {
 	finalKeyValue := [][]byte{[]byte(protFunction)}
 	finalKey, _ := CreateHashValue(finalKeyValue, false)
 
-	f.Mu.Lock()
-	f.AddValue(finalKey, []byte(protFunction))
-	f.Mu.Unlock()
+	f.AddValue(finalKey, []byte(protFunction), threadId)
 
 	ids := [][]byte{finalKey}
 	combinedKey, _ := ff_.CreateValues(ids, true)
@@ -59,19 +55,8 @@ func (f *F_) CreateValues(entry string, oldKey []byte, ff_ *H_) ([]byte, bool) {
 
 	if ! bytes.Equal(combinedKey, oldKey) {
 		new = true
-		ff_.Mu.Lock()
-		if ! bytes.Equal(oldKey, ff_.NilVal) {
-			oldVal, ok := ff_.GetValue(oldKey)
-			if (ok) {
-				for i:=0; (i+1)<len(oldVal); i+=20 {
-					ids = append(ids, oldVal[i:i+20])
-				}
-			}
-		}
 		newCombinedKey, newCombinedVal = ff_.CreateValues(ids, true)
-		combinedKey = newCombinedKey
-		ff_.AddValue(newCombinedKey, newCombinedVal)
-		ff_.Mu.Unlock()
+		ff_.AddValue(newCombinedKey, newCombinedVal, threadId)
 	} else {
 		new = false
 	}

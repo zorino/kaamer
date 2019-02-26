@@ -4,33 +4,31 @@ import (
 	"bytes"
 	"sort"
 	"crypto/sha1"
-	"fmt"
+	// "fmt"
 	"github.com/dgraph-io/badger"
 	// "sort"
 	"sync"
 	"log"
-	"time"
-	// "encoding/hex"
 )
+
+type TxBatch struct {
+	NbOfTx         int
+	TxBufferSize   int
+	Entries        *sync.Map
+}
+
 
 // Key Value Store
 type KVStore struct {
 	DB              *badger.DB
-	WGgc            *sync.WaitGroup
-	FlushSize       int
-	NumberOfEntries int
-	Entries         map[string][]byte
+	TxBatches       []*TxBatch
 	NilVal          []byte
 	Mu              sync.Mutex
 }
 
 
-func NewKVStore(kv *KVStore, options badger.Options, flushSize int) {
+func NewKVStore(kv *KVStore, options badger.Options, flushSize int, nbOfThreads int) {
 
-	kv.NumberOfEntries = 0
-	kv.FlushSize = flushSize
-
-	kv.Entries = make(map[string][]byte)
 	kv.NilVal = []byte{'0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'}
 
 	err := error(nil)
@@ -39,82 +37,102 @@ func NewKVStore(kv *KVStore, options badger.Options, flushSize int) {
 		log.Fatal(err)
 	}
 
-	kv.WGgc = new(sync.WaitGroup)
-	kv.WGgc.Add(1)
-	go func() {
-		// Garbage collection every 5 minutes
-		var stopGC = false
-		ticker := time.NewTicker(5 * time.Minute)
-		defer ticker.Stop()
-		for range ticker.C {
-			for ! stopGC {
-				err := kv.DB.RunValueLogGC(0.5)
-				if err != nil {
-					stopGC = true
-				}
-			}
-		}
-	}()
+	kv.TxBatches = make([]*TxBatch, nbOfThreads)
+
+	for i :=0; i<nbOfThreads; i++ {
+		kv.TxBatches[i] = &TxBatch{NbOfTx: 0, TxBufferSize: flushSize, Entries: new(sync.Map) }
+	}
+
 
 }
 
 func (kv *KVStore) Close() {
-	kv.WGgc.Done()
 	kv.Flush()
-	kv.DB.RunValueLogGC(0.1)
 	kv.DB.Close()
 }
 
 func (kv *KVStore) Flush() {
-
-	wb := kv.DB.NewWriteBatch()
-	defer wb.Cancel()
-	for k, v := range kv.Entries {
-		errTx := wb.Set([]byte(k), v, 0) // Will create txns as needed.
-		if errTx != nil {
-			fmt.Println(errTx.Error())
-			log.Fatal("BUG: Error batch insert")
-		}
+	for i, _ := range kv.TxBatches {
+		kv.CreateBatch(i)
 	}
-
-	fmt.Println("BATCH INSERT")
-	wb.Flush()
-
-	kv.Entries = make(map[string][]byte)
-	kv.NumberOfEntries = 0
-
 }
 
 func (kv *KVStore) HasKey(key []byte) (bool, []byte) {
 
-	if val, ok := kv.Entries[string(key)]; ok {
-		return ok, val
+	for _, batch := range kv.TxBatches {
+		if val, ok := batch.Entries.Load(string(key)); ok {
+			if _val, okType := val.([]byte); okType {
+				return ok, []byte(_val)
+			}
+		}
 	}
 
 	return false, []byte{}
 
 }
 
-func (kv *KVStore) AddValue(key []byte, newVal []byte) {
+func (kv *KVStore) AddValue(key []byte, newVal []byte, threadId int) {
 
-	if hasKey, _ := kv.HasKey(key); hasKey {
-		kv.Entries[string(key)] = newVal
-	} else {
-		kv.NumberOfEntries++
-		kv.Entries[string(key)] = newVal
+	bufferFull := (kv.TxBatches[threadId].NbOfTx == kv.TxBatches[threadId].TxBufferSize)
+
+	if bufferFull {
+		kv.CreateBatch(threadId)
 	}
 
-	if len(kv.Entries) == kv.FlushSize {
-		kv.Flush()
+	oldVal, hasKey := kv.TxBatches[threadId].Entries.LoadOrStore(string(key), newVal)
+	if hasKey {
+		oV, okOld := oldVal.([]byte)
+		if okOld && ! bytes.Equal([]byte(oV), newVal) {
+			kv.CreateBatch(threadId)
+			kv.TxBatches[threadId].Entries.LoadOrStore(string(key), newVal)
+		}
 	}
+
+	kv.TxBatches[threadId].NbOfTx += 1
 
 }
+
+func (kv *KVStore) CreateBatch(threadId int) {
+
+	if kv.TxBatches[threadId].NbOfTx == 0 {
+		return
+	}
+
+	WB := kv.DB.NewWriteBatch()
+
+	kv.TxBatches[threadId].Entries.Range(func(k, v interface{}) bool {
+		key, okKey := k.(string)
+		value, okValue := v.([]byte)
+		if okKey && okValue {
+			WB.Set([]byte(key), value, 0) // Will create txns as needed.
+		}
+		return true
+	})
+
+	WB.Flush()
+
+	kv.TxBatches[threadId].NbOfTx = 0
+	kv.TxBatches[threadId].Entries = new(sync.Map)
+
+}
+
 
 func (kv *KVStore) GetValue(key []byte) ([]byte, bool) {
 
 	if hasKey, val := kv.HasKey(key); hasKey {
 		return val, true
 	}
+
+	val, err := kv.GetValueFromBadger(key)
+	if err == nil && val != nil {
+		return val, true
+	}
+
+	return nil, false
+
+}
+
+func (kv *KVStore) GetValueFromBadger(key []byte) ([]byte, error) {
 
 	var valCopy []byte
 
@@ -131,12 +149,12 @@ func (kv *KVStore) GetValue(key []byte) ([]byte, bool) {
 	})
 
 	if err == nil {
-		return valCopy, true
+		return valCopy, err
 	}
 
-	return nil, false
-}
+	return nil, err
 
+}
 
 // Utility functions
 func RemoveDuplicatesFromSlice(s [][]byte) [][]byte {

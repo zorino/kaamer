@@ -12,14 +12,14 @@ type O_ struct {
 	*KVStore
 }
 
-func O_New(opts badger.Options, flushSize int) *O_ {
+func O_New(opts badger.Options, flushSize int, nbOfThreads int) *O_ {
 	var o O_
 	o.KVStore = new(KVStore)
-	NewKVStore(o.KVStore, opts, flushSize)
+	NewKVStore(o.KVStore, opts, flushSize, nbOfThreads)
 	return &o
 }
 
-func (o *O_) CreateValues(entry string, oldKey []byte, oo_ *H_) ([]byte, bool) {
+func (o *O_) CreateValues(entry string, oldKey []byte, oo_ *H_, threadId int) ([]byte, bool) {
 
 	// cellular organisms, Bacteria, Proteobacteria, Gammaproteobacteria, Enterobacterales, Enterobacteriaceae, Escherichia, Escherichia coli, Escherichia coli (strain K12)
 
@@ -33,8 +33,6 @@ func (o *O_) CreateValues(entry string, oldKey []byte, oo_ *H_) ([]byte, bool) {
 
 	protOrganism := entry[20:]
 
-	// fmt.Println("Protein organism:"+protOrganism+"##")
-
 	if oldKey == nil {
 		new = true
 	}
@@ -42,9 +40,7 @@ func (o *O_) CreateValues(entry string, oldKey []byte, oo_ *H_) ([]byte, bool) {
 	finalKeyValue := [][]byte{[]byte(protOrganism)}
 	finalKey, _ := CreateHashValue(finalKeyValue, false)
 
-	o.Mu.Lock()
-	o.AddValue(finalKey, []byte(protOrganism))
-	o.Mu.Unlock()
+	o.AddValue(finalKey, []byte(protOrganism), threadId)
 
 	ids := [][]byte{finalKey}
 	combinedKey, _ := oo_.CreateValues(ids, true)
@@ -54,19 +50,8 @@ func (o *O_) CreateValues(entry string, oldKey []byte, oo_ *H_) ([]byte, bool) {
 
 	if ! bytes.Equal(combinedKey, oldKey) {
 		new = true
-		oo_.Mu.Lock()
-		if ! bytes.Equal(oldKey, oo_.NilVal) {
-			oldVal, ok := oo_.GetValue(oldKey)
-			if (ok) {
-				for i:=0; (i+1)<len(oldVal); i+=20 {
-					ids = append(ids, oldVal[i:i+20])
-				}
-			}
-		}
 		newCombinedKey, newCombinedVal = oo_.CreateValues(ids, true)
-		combinedKey = newCombinedKey
-		oo_.AddValue(newCombinedKey, newCombinedVal)
-		oo_.Mu.Unlock()
+		oo_.AddValue(newCombinedKey, newCombinedVal, threadId)
 	} else {
 		new = false
 	}

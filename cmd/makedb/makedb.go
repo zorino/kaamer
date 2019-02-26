@@ -1,11 +1,13 @@
 package makedb
 
 import (
+	"bytes"
 	"bufio"
 	"fmt"
 	"github.com/zorino/metaprot/internal"
 	"github.com/zorino/metaprot/cmd/downloaddb"
 	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/pb"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -13,6 +15,9 @@ import (
 	"sync"
 	"encoding/hex"
 	"unicode/utf8"
+	"log"
+	"context"
+	"time"
 )
 
 // uniprotkb-bacteria (https://github.com/zorino/microbe-dbs)
@@ -53,31 +58,34 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 	wgDB := new(sync.WaitGroup)
 	wgDB.Add(len(files))
 
+	kvStores_holder := make([]*kvstore.KVStores, len(files))
+
 	for i, file := range files {
 
-		go func(file string, dbPath string, i int, threadByWorker int) {
+		_dbPath := dbPath + fmt.Sprintf("/store_%d",i)
+		os.Mkdir(_dbPath, 0700)
+
+		kvStores := kvstore.KVStoresNew(_dbPath, threadByWorker)
+		kvStores_holder[i] = kvStores
+
+		go func(file string, dbPath string, i int, threadByWorker int, kvStores *kvstore.KVStores) {
+
 			defer wgDB.Done()
 			fmt.Println(file)
-
-			_dbPath := dbPath + fmt.Sprintf("/store_%d",i)
-
-			os.Mkdir(_dbPath, 0700)
-
-			kvStores := kvstore.KVStoresNew(_dbPath)
-
 			run(file, kmerSize, kvStores, threadByWorker)
 
-			kvStores.Close()
-		}(file, dbPath, i, threadByWorker)
+		}(file, dbPath, i, threadByWorker, kvStores)
 
 	}
 
 	wgDB.Wait()
 
-	// Testing
-	kvStores := kvstore.KVStoresNew(dbPath+"/store_0")
-	PrintKStore(kvStores)
-	kvStores.Close()
+	for i, _ := range files {
+		kvStores_holder[i].Flush()
+		MergeValues(kvStores_holder[i])
+		kvStores_holder[i].Close()
+	}
+
 
 }
 
@@ -85,14 +93,14 @@ func run(fileName string, kmerSize int, kvStores *kvstore.KVStores, nbThreads in
 
 	file, _ := os.Open(fileName)
 
-	jobs := make(chan string)
-	results := make(chan int)
+	jobs := make(chan string, 3)
+	results := make(chan int, 3)
 	wg := new(sync.WaitGroup)
 
 	// thread pool
 	for w := 1; w <= nbThreads; w++ {
 		wg.Add(1)
-		go readBuffer(jobs, results, wg, kmerSize, kvStores)
+		go readBuffer(jobs, results, wg, kmerSize, kvStores, w-1)
 	}
 
 	// Go over a file line by line and queue up a ton of work
@@ -114,27 +122,31 @@ func run(fileName string, kmerSize int, kvStores *kvstore.KVStores, nbThreads in
 	}()
 
 	// Now, add up the results from the results channel until closed
+	timeStart := time.Now()
 	counts := 0
 	for v := range results {
 		counts += v
+		if counts % 100000 == 0 {
+			fmt.Printf("Processed %d proteins in %f seconds\n", counts, time.Since(timeStart).Minutes())
+		}
 	}
 
 	return counts
 
 }
 
-func readBuffer(jobs <-chan string, results chan<- int, wg *sync.WaitGroup, kmerSize int, kvStores *kvstore.KVStores) {
+func readBuffer(jobs <-chan string, results chan<- int, wg *sync.WaitGroup, kmerSize int, kvStores *kvstore.KVStores, threadId int) {
 
 	defer wg.Done()
 	// line by line
 	for j := range jobs {
-		processProteinInput(j, kmerSize, kvStores)
+		processProteinInput(j, kmerSize, kvStores, threadId)
+		results <- 1
 	}
-	results <- 1
 
 }
 
-func processProteinInput(line string, kmerSize int, kvStores *kvstore.KVStores) {
+func processProteinInput(line string, kmerSize int, kvStores *kvstore.KVStores, threadId int) {
 
 	s := strings.Split(line, "\t")
 
@@ -164,65 +176,159 @@ func processProteinInput(line string, kmerSize int, kvStores *kvstore.KVStores) 
 		key := kvStores.K_batch.CreateBytesKey(c.Sequence[i:i+kmerSize])
 
 		var isNewValue = false
-		var currentValue []byte
 
 		newValues := [4][]byte{nil,nil,nil,nil}
 
-		kvStores.K_batch.Mu.Lock()
-		__val, ok := kvStores.K_batch.GetValue(key)
-
-		// Old value found
-		if ok {
-			kvStores.KK_batch.Mu.Lock()
-			_val, _ := kvStores.KK_batch.GetValue(__val)
-			kvStores.KK_batch.Mu.Unlock()
-			currentValue = _val
-			for i, _ := range newValues {
-				newValues[i] = currentValue[(i)*20:(i+1)*20]
-			}
-		} else {
-			isNewValue = true
-		}
-
 		// Gene Ontology
-		if gVal, new := kvStores.G_batch.CreateValues(c.GeneOntology, newValues[0], kvStores.GG_batch); new {
+		if gVal, new := kvStores.G_batch.CreateValues(c.GeneOntology, newValues[0], kvStores.GG_batch, threadId); new {
 			isNewValue = isNewValue || new
 			newValues[0] = gVal
 		}
 
 		// Protein Function
-		if fVal, new := kvStores.F_batch.CreateValues(c.FunctionCC, newValues[1], kvStores.FF_batch); new {
+		if fVal, new := kvStores.F_batch.CreateValues(c.FunctionCC, newValues[1], kvStores.FF_batch, threadId); new {
 			isNewValue = isNewValue || new
 			newValues[1] = fVal
 		}
 
 		// Protein Pathway
-		if pVal, new := kvStores.P_batch.CreateValues(c.Pathway, newValues[2], kvStores.PP_batch); new {
+		if pVal, new := kvStores.P_batch.CreateValues(c.Pathway, newValues[2], kvStores.PP_batch, threadId); new {
 			isNewValue = isNewValue || new
 			newValues[2] = pVal
 		}
 
 		// Protein Organism
-		if oVal, new := kvStores.O_batch.CreateValues(c.TaxonomicLineage, newValues[3], kvStores.OO_batch); new {
+		if oVal, new := kvStores.O_batch.CreateValues(c.TaxonomicLineage, newValues[3], kvStores.OO_batch, threadId); new {
 			isNewValue = isNewValue || new
 			newValues[3] = oVal
 		}
 
 		if isNewValue {
-			kvStores.KK_batch.Mu.Lock()
 			combinedKey, combinedVal := kvStores.KK_batch.CreateValues(newValues[:], false)
-			kvStores.KK_batch.AddValue(combinedKey, combinedVal)
-			kvStores.KK_batch.Mu.Unlock()
-			kvStores.K_batch.AddValue(key, combinedKey)
+			kvStores.KK_batch.AddValue(combinedKey, combinedVal, threadId)
+			kvStores.K_batch.AddValue(key, combinedKey, threadId)
 		}
-
-		kvStores.K_batch.Mu.Unlock()
 
 	}
 
-	fmt.Printf("%#v done\n", c.Entry)
+	// fmt.Printf("%#v done\n", c.Entry)
 
 }
+
+
+
+func MergeValues (kvStores *kvstore.KVStores) {
+
+
+	// Stream keys
+	stream := kvStores.K_batch.DB.NewStream()
+
+	// db.NewStreamAt(readTs) for managed mode.
+
+	// -- Optional settings
+	stream.NumGo = 16                     // Set number of goroutines to use for iteration.
+	stream.Prefix = nil                   // Leave nil for iteration over the whole DB.
+	stream.LogPrefix = "Badger.Streaming" // For identifying stream logs. Outputs to Logger.
+
+	// ChooseKey is called concurrently for every key. If left nil, assumes true by default.
+	stream.ChooseKey = nil
+
+	// KeyToList is called concurrently for chosen keys. This can be used to convert
+	// Badger data into custom key-values. If nil, uses stream.ToList, a default
+	// implementation, which picks all valid key-values.
+	stream.KeyToList = func(key []byte, it *badger.Iterator) (*pb.KVList, error) {
+
+		nbOfItem := 0
+
+		kvList := new(pb.KVList)
+
+		// kvList.Kv = new([]*pb.KV)
+
+		for ; it.Valid(); it.Next() {
+
+			item := it.Item()
+			if item.IsDeletedOrExpired() {
+				break
+			}
+			if ! bytes.Equal(key, item.Key()) {
+				break
+			}
+
+			kmer := kvStores.K_batch.DecodeKmer(item.KeyCopy(nil))
+			val := []byte{}
+			val, err := item.ValueCopy(val)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+			if item.DiscardEarlierVersions() {
+				break
+			}
+
+			kvNew := new(pb.KV)
+			kvNew.Key = []byte(kmer)
+			kvNew.Value = val
+
+			kvList.Kv = append(kvList.Kv, kvNew)
+			nbOfItem += 1
+
+			// _val, _ := kvStores.KK_batch.GetValue(val)
+			// fmt.Printf("Kmer=%s\tvalue=%x\n", kmer, val)
+
+		}
+
+		if nbOfItem > 1 {
+
+			// merge values
+
+		}
+
+		return nil, nil
+	}
+
+	// stream.KeyToList = nil
+
+	// -- End of optional settings.
+
+
+	// Send is called serially, while Stream.Orchestrate is running.
+
+	stream.Send = func(list *pb.KVList) error {
+		// for _, kv := range list.GetKv() {
+		// 	// kv.GetKey()
+		// 	kmer := kvStores.K_batch.DecodeKmer(kv.GetKey())
+		// 	fmt.Printf("Kmer=%s\tvalue=%x\n", kmer, kv.GetValue())
+		// }
+		return nil
+	}
+
+	// Run the stream
+	if err := stream.Orchestrate(context.Background()); err != nil {
+		log.Fatal(err.Error)
+	}
+
+	// Done.
+
+	// kvStores.Close()
+
+
+}
+
+
+
+
+func MergeKmerValues (kvStores *kvstore.KVStores, key []byte, values [][]byte) (value []byte) {
+
+	// uniqueValues := kvstore.RemoveDuplicatesFromSlice(values)
+
+	// for i, _ := range uniqueValues {
+	// 	newValues[i] = currentValue[(i)*20:(i+1)*20]
+	// }
+
+	return []byte{}
+
+}
+
+
 
 
 func PrintKStore (kvStores *kvstore.KVStores) {
