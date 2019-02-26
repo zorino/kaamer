@@ -23,8 +23,8 @@ import (
 // uniprotkb-bacteria (https://github.com/zorino/microbe-dbs)
 type Protein struct {
 	Entry            string
-	Status           string  // reviewed ?= Swisprot
-	ProteinNames     string
+	Status           string  // reviewed / unreviewed
+	ProteinName      string  // n_store
 	TaxonomicLineage string  // o_store
 	GeneOntology     string  // g_store
 	FunctionCC       string  // f_store
@@ -157,7 +157,7 @@ func processProteinInput(line string, kmerSize int, kvStores *kvstore.KVStores, 
 	c := Protein{}
 	c.Entry = s[0]
 	c.Status = s[1]
-	c.ProteinNames = s[2]
+	c.ProteinName = s[2]
 	c.TaxonomicLineage = s[3]
 	c.GeneOntology = s[4]
 	c.FunctionCC = s[5]
@@ -177,7 +177,7 @@ func processProteinInput(line string, kmerSize int, kvStores *kvstore.KVStores, 
 
 		var isNewValue = false
 
-		newValues := [4][]byte{nil,nil,nil,nil}
+		newValues := [5][]byte{nil,nil,nil,nil,nil}
 
 		// Gene Ontology
 		if gVal, new := kvStores.G_batch.CreateValues(c.GeneOntology, newValues[0], kvStores.GG_batch, threadId); new {
@@ -201,6 +201,12 @@ func processProteinInput(line string, kmerSize int, kvStores *kvstore.KVStores, 
 		if oVal, new := kvStores.O_batch.CreateValues(c.TaxonomicLineage, newValues[3], kvStores.OO_batch, threadId); new {
 			isNewValue = isNewValue || new
 			newValues[3] = oVal
+		}
+
+		// Protein Name
+		if nVal, new := kvStores.N_batch.CreateValues(c.ProteinName, newValues[4], kvStores.NN_batch, threadId); new {
+			isNewValue = isNewValue || new
+			newValues[4] = nVal
 		}
 
 		if isNewValue {
