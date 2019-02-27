@@ -38,6 +38,8 @@ type KVStores struct {
 	PP_batch        *H_
 	O_batch         *O_
 	OO_batch        *H_
+	N_batch         *N_
+	NN_batch        *H_
 }
 
 func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
@@ -124,6 +126,23 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	//oo_opts.SyncWrites = false
 	oo_opts.NumVersionsToKeep = math.MaxUint32
 
+	n_opts := badger.DefaultOptions
+	n_opts.Dir = dbPath+"/n_store"
+	n_opts.ValueDir = dbPath+"/n_store"
+	n_opts.ValueLogLoadingMode = options.FileIO
+	n_opts.TableLoadingMode = options.MemoryMap
+	//n_opts.SyncWrites = false
+	n_opts.NumVersionsToKeep = math.MaxUint32
+
+	nn_opts := badger.DefaultOptions
+	nn_opts.Dir = dbPath+"/nn_store"
+	nn_opts.ValueDir = dbPath+"/nn_store"
+	nn_opts.ValueLogLoadingMode = options.FileIO
+	nn_opts.TableLoadingMode = options.MemoryMap
+	//nn_opts.SyncWrites = false
+	nn_opts.NumVersionsToKeep = math.MaxUint32
+
+
 	kvStores.K_batch = K_New(k_opts, 1000, nbOfThreads)
 	kvStores.KK_batch = H_New(kk_opts, 1000, nbOfThreads)
 	kvStores.G_batch = G_New(g_opts, 1000, nbOfThreads)
@@ -134,6 +153,8 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	kvStores.PP_batch = H_New(pp_opts, 1000, nbOfThreads)
 	kvStores.O_batch = O_New(o_opts, 1000, nbOfThreads)
 	kvStores.OO_batch = H_New(oo_opts, 1000, nbOfThreads)
+	kvStores.N_batch = N_New(n_opts, 1000, nbOfThreads)
+	kvStores.NN_batch = H_New(nn_opts, 1000, nbOfThreads)
 
 	return &kvStores
 
@@ -151,6 +172,8 @@ func (kvStores *KVStores) Flush () {
 	kvStores.PP_batch.Flush()
 	kvStores.O_batch.Flush()
 	kvStores.OO_batch.Flush()
+	kvStores.N_batch.Flush()
+	kvStores.NN_batch.Flush()
 }
 
 
@@ -166,4 +189,6 @@ func (kvStores *KVStores) Close () {
 	kvStores.PP_batch.Close()
 	kvStores.O_batch.Close()
 	kvStores.OO_batch.Close()
+	kvStores.N_batch.Close()
+	kvStores.NN_batch.Close()
 }
