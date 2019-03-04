@@ -32,12 +32,6 @@ func (n *N_) CreateValues(entry string, oldKey []byte, nn_ *H_, threadId int) ([
 		return nn_.NilVal, false
 	}
 
-	// reg := regexp.MustCompile(` \{.*\}\.`)
-
-	// protFunction := reg.ReplaceAllString(entry, "${1}")
-
-	// protFunction =  protFunction[10:]
-
 	protName := entry
 
 	if oldKey == nil {
