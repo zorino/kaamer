@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"sort"
 	"crypto/sha1"
-	// "fmt"
 	"github.com/dgraph-io/badger"
-	// "sort"
 	"sync"
 	"log"
 )
@@ -20,10 +18,11 @@ type TxBatch struct {
 
 // Key Value Store
 type KVStore struct {
-	DB              *badger.DB
-	TxBatches       []*TxBatch
-	NilVal          []byte
-	Mu              sync.Mutex
+	DB                  *badger.DB
+	TxBatches           []*TxBatch
+	TxBatchWithDiscard  *TxBatch
+	NilVal              []byte
+	Mu                  sync.Mutex
 }
 
 
@@ -43,6 +42,7 @@ func NewKVStore(kv *KVStore, options badger.Options, flushSize int, nbOfThreads 
 		kv.TxBatches[i] = &TxBatch{NbOfTx: 0, TxBufferSize: flushSize, Entries: new(sync.Map) }
 	}
 
+	kv.TxBatchWithDiscard = &TxBatch{NbOfTx: 0, TxBufferSize: flushSize, Entries: new(sync.Map) }
 
 }
 
@@ -52,9 +52,11 @@ func (kv *KVStore) Close() {
 }
 
 func (kv *KVStore) Flush() {
+
 	for i, _ := range kv.TxBatches {
 		kv.CreateBatch(i)
 	}
+	kv.CreateBatchWithDiscardVersions()
 }
 
 func (kv *KVStore) HasKey(key []byte) (bool, []byte) {
@@ -82,20 +84,21 @@ func (kv *KVStore) AddValue(key []byte, newVal []byte, threadId int) {
 	oldVal, hasKey := kv.TxBatches[threadId].Entries.LoadOrStore(string(key), newVal)
 	if hasKey {
 		oV, okOld := oldVal.([]byte)
-		if okOld && ! bytes.Equal([]byte(oV), newVal) {
+		if okOld && ! bytes.Equal(newVal, oV) {
 			kv.CreateBatch(threadId)
 			kv.TxBatches[threadId].Entries.LoadOrStore(string(key), newVal)
+			kv.TxBatches[threadId].NbOfTx += 1
 		}
+	} else {
+		kv.TxBatches[threadId].NbOfTx += 1
 	}
-
-	kv.TxBatches[threadId].NbOfTx += 1
 
 }
 
-func (kv *KVStore) CreateBatch(threadId int) {
+func (kv *KVStore) CreateBatch(threadId int) error {
 
 	if kv.TxBatches[threadId].NbOfTx == 0 {
-		return
+		return nil
 	}
 
 	WB := kv.DB.NewWriteBatch()
@@ -105,14 +108,75 @@ func (kv *KVStore) CreateBatch(threadId int) {
 		value, okValue := v.([]byte)
 		if okKey && okValue {
 			WB.Set([]byte(key), value, 0) // Will create txns as needed.
+		} else {
+			log.Fatal("Couldn't insert key val")
 		}
 		return true
 	})
 
 	WB.Flush()
+	WB.Cancel()
 
 	kv.TxBatches[threadId].NbOfTx = 0
 	kv.TxBatches[threadId].Entries = new(sync.Map)
+
+	return nil
+
+}
+
+
+func (kv *KVStore) AddValueWithDiscardVersions(key []byte, newVal []byte){
+
+
+	bufferFull := (kv.TxBatchWithDiscard.NbOfTx == kv.TxBatchWithDiscard.TxBufferSize)
+
+	if bufferFull {
+		kv.CreateBatchWithDiscardVersions()
+	}
+
+	oldVal, hasKey := kv.TxBatchWithDiscard.Entries.LoadOrStore(string(key), newVal)
+	if hasKey {
+		oV, okOld := oldVal.([]byte)
+		if okOld && ! bytes.Equal([]byte(oV), newVal) {
+			kv.CreateBatchWithDiscardVersions()
+			kv.TxBatchWithDiscard.Entries.LoadOrStore(string(key), newVal)
+		}
+	}
+
+	kv.TxBatchWithDiscard.NbOfTx += 1
+
+}
+
+
+func (kv *KVStore) CreateBatchWithDiscardVersions() error {
+
+	if kv.TxBatchWithDiscard.NbOfTx == 0 {
+		return nil
+	}
+
+	txn := kv.DB.NewTransaction(true)
+
+	kv.TxBatchWithDiscard.Entries.Range(func(k, v interface{}) bool {
+		key, okKey := k.(string)
+		value, okValue := v.([]byte)
+		if okKey && okValue {
+
+			if err := txn.SetWithDiscard([]byte(key), value, 0); err != nil {
+				_ = txn.Commit()
+				txn = kv.DB.NewTransaction(true)
+				_ = txn.SetWithDiscard([]byte(key), value, 0)
+			}
+
+		}
+		return true
+	})
+	_ = txn.Commit()
+
+
+	kv.TxBatchWithDiscard.Entries = new(sync.Map)
+	kv.TxBatchWithDiscard.NbOfTx = 0
+
+	return nil
 
 }
 
@@ -137,7 +201,9 @@ func (kv *KVStore) GetValueFromBadger(key []byte) ([]byte, error) {
 	var valCopy []byte
 
 	err := kv.DB.View(func(txn *badger.Txn) error {
+
 		item, errTx := txn.Get(key)
+
 		if errTx == nil {
 			item.Value(func(val []byte) error {
 				// Copying new value
@@ -146,15 +212,58 @@ func (kv *KVStore) GetValueFromBadger(key []byte) ([]byte, error) {
 			})
 		}
 		return errTx
+
 	})
 
 	if err == nil {
 		return valCopy, err
+	} else {
+		log.Fatal(err.Error())
 	}
 
 	return nil, err
 
 }
+
+func (kv *KVStore) MergeCombinationKeys(combKeys [][]byte, threadId int) ([]byte) {
+
+	kv.Mu.Lock()
+	ids := [][]byte{}
+
+	findKey := false
+	for _, combKey := range combKeys {
+		if bytes.Equal(combKey, kv.NilVal) {
+			continue
+		}
+		oldValues, err := kv.GetValueFromBadger(combKey)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		if err == nil && oldValues != nil {
+			findKey = true
+			for i:=0; (i+1)<len(oldValues); i+=20 {
+				ids = append(ids, oldValues[i:i+20])
+			}
+		}
+	}
+
+	if !findKey {
+		return nil
+	}
+
+	if (len(ids) < 1) {
+		return nil
+	}
+
+	newKey, newVal := CreateHashValue(ids, true)
+	kv.AddValue(newKey, newVal, threadId)
+
+	kv.Mu.Unlock()
+
+	return newKey
+
+}
+
 
 // Utility functions
 func RemoveDuplicatesFromSlice(s [][]byte) [][]byte {

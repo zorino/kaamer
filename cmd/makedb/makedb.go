@@ -13,8 +13,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"encoding/hex"
-	"unicode/utf8"
 	"log"
 	"context"
 	"time"
@@ -86,6 +84,13 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 		kvStores_holder[i].Close()
 	}
 
+	// DEBUG print Kmer store
+	// for i, _ := range files {
+	// 	_dbPath := dbPath + fmt.Sprintf("/store_%d", i)
+	// 	kvStores := kvstore.KVStoresNew(_dbPath, 1)
+	// 	PrintKStore(kvStores)
+	// 	kvStores.Close()
+	// }
 
 }
 
@@ -93,8 +98,8 @@ func run(fileName string, kmerSize int, kvStores *kvstore.KVStores, nbThreads in
 
 	file, _ := os.Open(fileName)
 
-	jobs := make(chan string, 3)
-	results := make(chan int, 3)
+	jobs := make(chan string, 100)
+	results := make(chan int, 100)
 	wg := new(sync.WaitGroup)
 
 	// thread pool
@@ -126,8 +131,8 @@ func run(fileName string, kmerSize int, kvStores *kvstore.KVStores, nbThreads in
 	counts := 0
 	for v := range results {
 		counts += v
-		if counts % 100000 == 0 {
-			fmt.Printf("Processed %d proteins in %f seconds\n", counts, time.Since(timeStart).Minutes())
+		if counts % 10000 == 0 {
+			fmt.Printf("Processed %d proteins in %f minutes\n", counts, time.Since(timeStart).Minutes())
 		}
 	}
 
@@ -226,6 +231,8 @@ func processProteinInput(line string, kmerSize int, kvStores *kvstore.KVStores, 
 func MergeValues (kvStores *kvstore.KVStores) {
 
 
+	fmt.Println("# Merging Key Values...")
+
 	// Stream keys
 	stream := kvStores.K_batch.DB.NewStream()
 
@@ -234,7 +241,8 @@ func MergeValues (kvStores *kvstore.KVStores) {
 	// -- Optional settings
 	stream.NumGo = 16                     // Set number of goroutines to use for iteration.
 	stream.Prefix = nil                   // Leave nil for iteration over the whole DB.
-	stream.LogPrefix = "Badger.Streaming" // For identifying stream logs. Outputs to Logger.
+	// stream.LogPrefix = "Badger.Streaming" // For identifying stream logs. Outputs to Logger.
+	stream.LogPrefix = ""
 
 	// ChooseKey is called concurrently for every key. If left nil, assumes true by default.
 	stream.ChooseKey = nil
@@ -248,7 +256,11 @@ func MergeValues (kvStores *kvstore.KVStores) {
 
 		kvList := new(pb.KVList)
 
+		currentKey := []byte{}
+		valueList := [][]byte{}
+
 		// kvList.Kv = new([]*pb.KV)
+
 
 		for ; it.Valid(); it.Next() {
 
@@ -260,7 +272,8 @@ func MergeValues (kvStores *kvstore.KVStores) {
 				break
 			}
 
-			kmer := kvStores.K_batch.DecodeKmer(item.KeyCopy(nil))
+			currentKey = item.KeyCopy(currentKey)
+
 			val := []byte{}
 			val, err := item.ValueCopy(val)
 			if err != nil {
@@ -270,40 +283,34 @@ func MergeValues (kvStores *kvstore.KVStores) {
 				break
 			}
 
-			kvNew := new(pb.KV)
-			kvNew.Key = []byte(kmer)
-			kvNew.Value = val
+			valueList = append(valueList, val)
 
-			kvList.Kv = append(kvList.Kv, kvNew)
 			nbOfItem += 1
 
-			// _val, _ := kvStores.KK_batch.GetValue(val)
-			// fmt.Printf("Kmer=%s\tvalue=%x\n", kmer, val)
-
 		}
+
+		it.Close()
 
 		if nbOfItem > 1 {
 
 			// merge values
+			if combKey, _, isNew := MergeKmerValues(kvStores, currentKey, valueList); isNew {
+				kvStores.K_batch.AddValueWithDiscardVersions(currentKey, combKey)
+			} else {
+				kvStores.K_batch.AddValueWithDiscardVersions(currentKey, combKey)
+			}
 
 		}
 
-		return nil, nil
-	}
+		return kvList, nil
 
-	// stream.KeyToList = nil
+	}
 
 	// -- End of optional settings.
 
 
 	// Send is called serially, while Stream.Orchestrate is running.
-
 	stream.Send = func(list *pb.KVList) error {
-		// for _, kv := range list.GetKv() {
-		// 	// kv.GetKey()
-		// 	kmer := kvStores.K_batch.DecodeKmer(kv.GetKey())
-		// 	fmt.Printf("Kmer=%s\tvalue=%x\n", kmer, kv.GetValue())
-		// }
 		return nil
 	}
 
@@ -314,23 +321,101 @@ func MergeValues (kvStores *kvstore.KVStores) {
 
 	// Done.
 
-	// kvStores.Close()
-
-
 }
 
 
 
 
-func MergeKmerValues (kvStores *kvstore.KVStores, key []byte, values [][]byte) (value []byte) {
+func MergeKmerValues (kvStores *kvstore.KVStores, key []byte, values [][]byte) ([]byte, []byte, bool) {
 
-	// uniqueValues := kvstore.RemoveDuplicatesFromSlice(values)
+	newValueIds := [][]byte{}
+	uniqueValues := kvstore.RemoveDuplicatesFromSlice(values)
 
-	// for i, _ := range uniqueValues {
-	// 	newValues[i] = currentValue[(i)*20:(i+1)*20]
-	// }
+	if (len(uniqueValues) < 2) {
+		return key, nil, false
+	}
 
-	return []byte{}
+	g_values := make(map[string]bool)
+	f_values := make(map[string]bool)
+	p_values := make(map[string]bool)
+	o_values := make(map[string]bool)
+	n_values := make(map[string]bool)
+
+	for _, value := range uniqueValues {
+		val, _ := kvStores.KK_batch.GetValueFromBadger(value)
+		i := 0
+		g_values[string(val[(i)*20:(i+1)*20])] = true
+		i += 1
+		f_values[string(val[(i)*20:(i+1)*20])] = true
+		i += 1
+		p_values[string(val[(i)*20:(i+1)*20])] = true
+		i += 1
+		o_values[string(val[(i)*20:(i+1)*20])] = true
+		i += 1
+		n_values[string(val[(i)*20:(i+1)*20])] = true
+	}
+
+	i := 0
+	g_CombKeys := make([][]byte, len(g_values))
+	for k, _ := range g_values {
+		g_CombKeys[i] = []byte(k)
+		i++
+	}
+	i = 0
+	f_CombKeys := make([][]byte, len(f_values))
+	for k, _ := range f_values {
+		f_CombKeys[i] = []byte(k)
+		i++
+	}
+	i = 0
+	p_CombKeys := make([][]byte, len(p_values))
+	for k, _ := range p_values {
+		p_CombKeys[i] = []byte(k)
+		i++
+	}
+	i = 0
+	o_CombKeys := make([][]byte, len(o_values))
+	for k, _ := range o_values {
+		o_CombKeys[i] = []byte(k)
+		i++
+	}
+	i = 0
+	n_CombKeys := make([][]byte, len(n_values))
+	for k, _ := range n_values {
+		n_CombKeys[i] = []byte(k)
+		i++
+	}
+
+	if len(g_CombKeys) > 1 {
+		newValueIds = append(newValueIds, kvStores.GG_batch.MergeCombinationKeys(g_CombKeys, 0))
+	} else {
+		newValueIds = append(newValueIds, g_CombKeys[0])
+	}
+	if len(f_CombKeys) > 1 {
+		newValueIds = append(newValueIds, kvStores.FF_batch.MergeCombinationKeys(f_CombKeys, 0))
+	} else {
+		newValueIds = append(newValueIds, f_CombKeys[0])
+	}
+	if len(p_CombKeys) > 1 {
+		newValueIds = append(newValueIds, kvStores.PP_batch.MergeCombinationKeys(p_CombKeys, 0))
+	} else {
+		newValueIds = append(newValueIds, p_CombKeys[0])
+	}
+	if len(o_CombKeys) > 1 {
+		newValueIds = append(newValueIds, kvStores.OO_batch.MergeCombinationKeys(o_CombKeys, 0))
+	} else {
+		newValueIds = append(newValueIds, o_CombKeys[0])
+	}
+	if len(n_CombKeys) > 1 {
+		newValueIds = append(newValueIds, kvStores.NN_batch.MergeCombinationKeys(n_CombKeys, 0))
+	} else {
+		newValueIds = append(newValueIds, n_CombKeys[0])
+	}
+
+	newKey, newVal := kvstore.CreateHashValue(newValueIds, false)
+	kvStores.KK_batch.AddValueWithDiscardVersions(newKey, newVal)
+
+	return newKey, newVal, true
 
 }
 
@@ -339,33 +424,122 @@ func MergeKmerValues (kvStores *kvstore.KVStores, key []byte, values [][]byte) (
 
 func PrintKStore (kvStores *kvstore.KVStores) {
 
-	kvStores.K_batch.DB.View(func(txn *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-		opts.PrefetchSize = 10
-		it := txn.NewIterator(opts)
-		defer it.Close()
+	// Stream keys
+	stream := kvStores.K_batch.DB.NewStream()
 
-		for it.Rewind(); it.Valid(); it.Next() {
+	// db.NewStreamAt(readTs) for managed mode.
+
+	// -- Optional settings
+	stream.NumGo = 16                     // Set number of goroutines to use for iteration.
+	stream.Prefix = nil                   // Leave nil for iteration over the whole DB.
+	// stream.LogPrefix = "Badger.Streaming" // For identifying stream logs. Outputs to Logger.
+	stream.LogPrefix = ""
+
+	// ChooseKey is called concurrently for every key. If left nil, assumes true by default.
+	stream.ChooseKey = nil
+
+	// KeyToList is called concurrently for chosen keys. This can be used to convert
+	// Badger data into custom key-values. If nil, uses stream.ToList, a default
+	// implementation, which picks all valid key-values.
+	stream.KeyToList = func(key []byte, it *badger.Iterator) (*pb.KVList, error) {
+
+		for ; it.Valid(); it.Next() {
+
 			item := it.Item()
-			k := item.Key()
-			err := item.Value(func(v []byte) error {
-				val := hex.EncodeToString(v)
-				if utf8.ValidString(string(v)) {
-					val = string(v)
-				}
-				if len(val) < 41 {
-					fmt.Printf("Kmer: key=%s, value=%s\n", kvStores.K_batch.DecodeKmer(k), val)
-				} else {
-					fmt.Printf("Hash: key=%s, value=%s\n", hex.EncodeToString(k), val)
-				}
-
-				return nil
-			})
-			if err != nil {
-				return err
+			if item.IsDeletedOrExpired() {
+				break
 			}
+			if ! bytes.Equal(key, item.Key()) {
+				break
+			}
+
+			val := []byte{}
+			val, err := item.ValueCopy(val)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+			if item.DiscardEarlierVersions() {
+				kmer := kvStores.K_batch.DecodeKmer(item.KeyCopy(nil))
+				fmt.Printf("Kmer=%s\tvalue=%x\n", kmer, string(val))
+				break
+			} else {
+				kmer := kvStores.K_batch.DecodeKmer(item.KeyCopy(nil))
+				fmt.Printf("Kmer=%s\tvalue=%x\n", kmer, string(val))
+			}
+
 		}
+
+		return nil, nil
+	}
+
+
+	stream.Send = func(list *pb.KVList) error {
 		return nil
-	})
+	}
+
+	// Run the stream
+	if err := stream.Orchestrate(context.Background()); err != nil {
+		log.Fatal(err.Error)
+	}
+
+}
+
+func PrintHStore (kvStore *kvstore.H_) {
+
+	// Stream keys
+	stream := kvStore.DB.NewStream()
+
+	// db.NewStreamAt(readTs) for managed mode.
+
+	// -- Optional settings
+	stream.NumGo = 16                     // Set number of goroutines to use for iteration.
+	stream.Prefix = nil                   // Leave nil for iteration over the whole DB.
+	// stream.LogPrefix = "Badger.Streaming" // For identifying stream logs. Outputs to Logger.
+	stream.LogPrefix = ""
+
+	// ChooseKey is called concurrently for every key. If left nil, assumes true by default.
+	stream.ChooseKey = nil
+
+	// KeyToList is called concurrently for chosen keys. This can be used to convert
+	// Badger data into custom key-values. If nil, uses stream.ToList, a default
+	// implementation, which picks all valid key-values.
+	stream.KeyToList = func(key []byte, it *badger.Iterator) (*pb.KVList, error) {
+
+		for ; it.Valid(); it.Next() {
+
+			item := it.Item()
+			if item.IsDeletedOrExpired() {
+				continue
+			}
+			if ! bytes.Equal(key, item.Key()) {
+				break
+			}
+
+			val := []byte{}
+			val, errVal := item.ValueCopy(val)
+			if errVal != nil {
+				log.Fatal(errVal.Error())
+			}
+			key := []byte{}
+			key = item.KeyCopy(key)
+
+			// fmt.Printf("Kmer=%s\tvalue=%x\n", kmer, val)
+			fmt.Printf("Key=%x\tValue=%x\n", string(key), string(val))
+
+		}
+
+
+		return nil, nil
+	}
+
+
+	stream.Send = func(list *pb.KVList) error {
+		return nil
+	}
+
+	// Run the stream
+	if err := stream.Orchestrate(context.Background()); err != nil {
+		log.Fatal(err.Error)
+	}
 
 }
