@@ -13,6 +13,7 @@ type TxBatch struct {
 	NbOfTx         int
 	TxBufferSize   int
 	Entries        *sync.Map
+	Mu             sync.Mutex
 }
 
 
@@ -127,6 +128,7 @@ func (kv *KVStore) CreateBatch(threadId int) error {
 
 func (kv *KVStore) AddValueWithDiscardVersions(key []byte, newVal []byte){
 
+	kv.TxBatchWithDiscard.Mu.Lock()
 
 	bufferFull := (kv.TxBatchWithDiscard.NbOfTx == kv.TxBatchWithDiscard.TxBufferSize)
 
@@ -144,6 +146,8 @@ func (kv *KVStore) AddValueWithDiscardVersions(key []byte, newVal []byte){
 	}
 
 	kv.TxBatchWithDiscard.NbOfTx += 1
+
+	kv.TxBatchWithDiscard.Mu.Unlock()
 
 }
 
