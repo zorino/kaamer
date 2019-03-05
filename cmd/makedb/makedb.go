@@ -261,7 +261,6 @@ func MergeValues (kvStores *kvstore.KVStores) {
 
 		// kvList.Kv = new([]*pb.KV)
 
-
 		for ; it.Valid(); it.Next() {
 
 			item := it.Item()
@@ -288,8 +287,6 @@ func MergeValues (kvStores *kvstore.KVStores) {
 			nbOfItem += 1
 
 		}
-
-		it.Close()
 
 		if nbOfItem > 1 {
 
