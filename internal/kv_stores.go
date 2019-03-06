@@ -229,6 +229,8 @@ func (kvStores *KVStores) MergeKmerValues (nbOfThreads int) {
 		currentKey := []byte{}
 		valueList := [][]byte{}
 
+		kvList := &pb.KVList{}
+
 		for ; it.Valid(); it.Next() {
 
 			item := it.Item()
@@ -258,16 +260,23 @@ func (kvStores *KVStores) MergeKmerValues (nbOfThreads int) {
 
 		if nbOfItem > 1 {
 
-			// merge values
-			if combKey, _, isNew := kvStores.CreateNewKmerValue(currentKey, valueList); isNew {
-				kvStores.K_batch.AddValueWithDiscardVersions(currentKey, combKey)
-			} else {
-				kvStores.K_batch.AddValueWithDiscardVersions(currentKey, combKey)
+			combKey, _, _ := kvStores.CreateNewKmerValue(currentKey, valueList)
+			kv := &pb.KV{
+				Key:       currentKey,
+				Value:     combKey,
 			}
+			kvList.Kv = append(kvList.Kv, kv)
+
+			// // merge values
+			// if combKey, _, isNew := kvStores.CreateNewKmerValue(currentKey, valueList); isNew {
+			//	kvStores.K_batch.AddValueWithDiscardVersions(currentKey, combKey)
+			// } else {
+			//	kvStores.K_batch.AddValueWithDiscardVersions(currentKey, combKey)
+			// }
 
 		}
 
-		return nil, nil
+		return kvList, nil
 
 	}
 
@@ -276,6 +285,11 @@ func (kvStores *KVStores) MergeKmerValues (nbOfThreads int) {
 
 	// Send is called serially, while Stream.Orchestrate is running.
 	stream.Send = func(list *pb.KVList) error {
+
+		for _, kv := range list.GetKv() {
+			kvStores.K_batch.AddValueWithDiscardVersions(kv.GetKey(), kv.GetValue())
+		}
+
 		return nil
 	}
 
