@@ -14,6 +14,10 @@ import (
 	"time"
 )
 
+const (
+	KMER_SIZE = 7
+)
+
 type Protein struct {
 	Entry            string
 	Status           string  // reviewed / unreviewed
@@ -27,11 +31,13 @@ type Protein struct {
 }
 
 
-func NewMakedb(dbPath string, inputPath string, kmerSize int) {
+func NewMakedb(dbPath string, inputPath string) {
 
 	// For SSD throughput (as done in badger/graphdb) see :
 	// https://groups.google.com/forum/#!topic/golang-nuts/jPb_h3TvlKE/discussion
 	runtime.GOMAXPROCS(128)
+
+	kmerSize := KMER_SIZE
 
 	fi, err := os.Stat(inputPath)
 	if err != nil {
@@ -94,24 +100,6 @@ func NewMakedb(dbPath string, inputPath string, kmerSize int) {
 		kvStores_holder[i].Close()
 	}
 
-	// i := 10000
-	// err = kvStores_holder[0].KK_batch.DB.RunValueLogGC(0.0001)
-	// for err != nil && i > 0 {
-	//	err = kvStores_holder[0].KK_batch.DB.RunValueLogGC(0.0001)
-	//	i--
-	// }
-
-	// for i, _ := range files {
-	//	kvStores_holder[i].Close()
-	// }
-
-	// DEBUG print Kmer store
-	// for i, _ := range files {
-	//	_dbPath := dbPath + fmt.Sprintf("/store_%d", i)
-	//	kvStores := kvstore.KVStoresNew(_dbPath, 1)
-	//	PrintKStore(kvStores)
-	//	kvStores.Close()
-	// }
 
 }
 

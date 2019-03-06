@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/zorino/metaprot/cmd/makedb"
+	"github.com/zorino/metaprot/cmd/mergedb"
 	"os"
 )
 
@@ -12,35 +13,50 @@ func main() {
 	usage := `
  metaprot
 
-       -makedb       make the protein database
+	   -makedb       make the protein database
 
-               -i    input raw files dir // if doesn't exist metaprot will download from Uniprot (~50 GB)
-               -d    badger database dir path
-               -k    kmer size (default: 11)
+			   -i    input raw files dir // if doesn't exist metaprot will download from Uniprot (~50 GB)
+			   -d    badger database dir path
+
+	   -mergedb      merge two metaprot badger databases
+
+			   -d1   badger db 1
+			   -d2   badger db 2
+
 
 `
 
 	var makedbOpt = flag.Bool("makedb", false, "program")
+	var inputPath = flag.String("i", "", "db path argument")
+	var dbPath = flag.String("d", "", "db path argument")
+
+	var mergedbOpt = flag.Bool("mergedb", false, "program")
+	var dbPath_1 = flag.String("d1", "", "db path argument")
+	var dbPath_2 = flag.String("d2", "", "db path argument")
 
 	var analyseOpt = flag.Bool("analyse", false, "program")
-
-	var dbPath = flag.String("d", "./badger", "db path argument")
-	var inputPath = flag.String("i", "", "db path argument")
-	var kmerSize = flag.Int("k", 11, "kmer size argument")
 
 	flag.Parse()
 
 	if *makedbOpt == true {
 
-		// fmt.Println(*dbPath)
-		// fmt.Println(*inputPath)
-		// fmt.Println(*kmerSize)
-		// if *inputPath == "" {
-		// 	fmt.Println("No input file path !")
-		// }
+		if *inputPath == "" {
+			fmt.Println("No input file path !")
+		} else if *dbPath == "" {
+			fmt.Println("No db path !")
+		} else {
+			makedb.NewMakedb(*dbPath, *inputPath)
+		}
 
-		makedb.NewMakedb(*dbPath, *inputPath, *kmerSize)
+		os.Exit(0)
+	}
 
+	if *mergedbOpt == true {
+		if *dbPath_1 == "" || *dbPath_2 == "" {
+			fmt.Println("Need to have 2 valid databases path !")
+		} else {
+			mergedb.NewMergedb(*dbPath_1, *dbPath_2)
+		}
 		os.Exit(0)
 	}
 
