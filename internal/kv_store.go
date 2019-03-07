@@ -55,9 +55,9 @@ func (kv *KVStore) Close() {
 func (kv *KVStore) Flush() {
 
 	for i, _ := range kv.TxBatches {
-		kv.CreateBatch(i)
+		kv.FlushTxBatch(i)
 	}
-	kv.CreateBatchWithDiscardVersions()
+	kv.FlushTxBatchWithDiscardVersions()
 }
 
 func (kv *KVStore) HasKey(key []byte) (bool, []byte) {
@@ -79,7 +79,7 @@ func (kv *KVStore) AddValue(key []byte, newVal []byte, threadId int) {
 	bufferFull := (kv.TxBatches[threadId].NbOfTx == kv.TxBatches[threadId].TxBufferSize)
 
 	if bufferFull {
-		kv.CreateBatch(threadId)
+		kv.FlushTxBatch(threadId)
 	}
 
 	// Check if key is already in batch buffer - insert the new one otherwise
@@ -88,7 +88,7 @@ func (kv *KVStore) AddValue(key []byte, newVal []byte, threadId int) {
 		// key is already listed, check the old value
 		oV, okOld := oldVal.([]byte)
 		if okOld && ! bytes.Equal(newVal, oV) {
-			kv.CreateBatch(threadId)
+			kv.FlushTxBatch(threadId)
 			kv.TxBatches[threadId].Entries.LoadOrStore(string(key), newVal)
 			kv.TxBatches[threadId].NbOfTx += 1
 		}
@@ -98,7 +98,7 @@ func (kv *KVStore) AddValue(key []byte, newVal []byte, threadId int) {
 
 }
 
-func (kv *KVStore) CreateBatch(threadId int) error {
+func (kv *KVStore) FlushTxBatch(threadId int) error {
 
 	if kv.TxBatches[threadId].NbOfTx == 0 {
 		// OK, nothing to flush.
@@ -136,7 +136,7 @@ func (kv *KVStore) AddValueWithDiscardVersions(key []byte, newVal []byte){
 	bufferFull := (kv.TxBatchWithDiscard.NbOfTx == kv.TxBatchWithDiscard.TxBufferSize)
 
 	if bufferFull {
-		kv.CreateBatchWithDiscardVersions()
+		kv.FlushTxBatchWithDiscardVersions()
 	}
 
 	// Check if key is already in batch buffer - insert the new one otherwise
@@ -145,7 +145,7 @@ func (kv *KVStore) AddValueWithDiscardVersions(key []byte, newVal []byte){
 		// key is already listed, check the old value
 		oV, okOld := oldVal.([]byte)
 		if okOld && ! bytes.Equal([]byte(oV), newVal) {
-			kv.CreateBatchWithDiscardVersions()
+			kv.FlushTxBatchWithDiscardVersions()
 			kv.TxBatchWithDiscard.Entries.LoadOrStore(string(key), newVal)
 			kv.TxBatchWithDiscard.NbOfTx += 1
 		}
@@ -158,7 +158,7 @@ func (kv *KVStore) AddValueWithDiscardVersions(key []byte, newVal []byte){
 }
 
 
-func (kv *KVStore) CreateBatchWithDiscardVersions() error {
+func (kv *KVStore) FlushTxBatchWithDiscardVersions() error {
 
 	if kv.TxBatchWithDiscard.NbOfTx == 0 {
 		// OK, nothing to flush.
