@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"log"
 	"fmt"
-	"github.com/zorino/metaprot/internal"
+	"github.com/zorino/metaprot/pkg/kvstore"
 	"github.com/zorino/metaprot/cmd/downloaddb"
 	"os"
 	"path/filepath"

@@ -1,7 +1,7 @@
 package mergedb
 
 import (
-	"github.com/zorino/metaprot/internal"
+	"github.com/zorino/metaprot/pkg/kvstore"
 	// "github.com/dgraph-io/badger"
 	// "github.com/dgraph-io/badger/options"
 	bpb "github.com/dgraph-io/badger/pb"
