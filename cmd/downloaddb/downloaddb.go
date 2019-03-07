@@ -1,4 +1,4 @@
-package download_db
+package downloaddb
 
 import (
 	"fmt"

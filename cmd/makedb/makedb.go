@@ -57,7 +57,7 @@ func NewMakedb(dbPath string, inputPath string) {
 	}
 
 	if len(files) == 0 {
-		download_db.Download(inputPath)
+		downloaddb.Download(inputPath)
 		os.Exit(0)
 	}
 
