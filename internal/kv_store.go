@@ -147,10 +147,11 @@ func (kv *KVStore) AddValueWithDiscardVersions(key []byte, newVal []byte){
 		if okOld && ! bytes.Equal([]byte(oV), newVal) {
 			kv.CreateBatchWithDiscardVersions()
 			kv.TxBatchWithDiscard.Entries.LoadOrStore(string(key), newVal)
+			kv.TxBatchWithDiscard.NbOfTx += 1
 		}
+	} else {
+		kv.TxBatchWithDiscard.NbOfTx += 1
 	}
-
-	kv.TxBatchWithDiscard.NbOfTx += 1
 
 	kv.TxBatchWithDiscard.Mu.Unlock()
 
