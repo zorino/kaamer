@@ -69,7 +69,7 @@ func (k *K_) CreateBytesKey64Bit (kmer string) []byte {
 
 	for _, rune := range kmer {
 		kmerBits = append(kmerBits, GetAminoAcidBits(rune)...)
-        }
+	}
 	kmerBitsString := strings.Trim(strings.Replace(fmt.Sprint(kmerBits), " ", "", -1), "[]")
 
 	// to decode : strconv.FormatInt(v, 2)
@@ -195,4 +195,3 @@ func GetAminoAcidBits (aminoAcid rune) []int {
 	}
 
 }
-
