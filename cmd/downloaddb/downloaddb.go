@@ -78,6 +78,7 @@ func Download(inputPath string) {
 
 	fmt.Println("  UniprotKB (2:Bacteria) release " + uniprotVersion)
 	fmt.Println("  Number of Proteins : " + nbResults)
+	fmt.Println("  Be patient size of DB > 25GB ! ")
 
 	// Create the file
 	out, err := os.Create(filePath)
@@ -114,7 +115,6 @@ func PrepareFiles(filePath string, nbOfFiles int) {
 
 	fmt.Println("# Preparing Files..")
 
-
 	bufferArray := []*TSVOutputWriter{}
 	baseFile := strings.Replace(filePath, ".tsv.gz", "-", -1)
 	for i := 0; i < nbOfFiles; i++ {
@@ -140,10 +140,15 @@ func PrepareFiles(filePath string, nbOfFiles int) {
 	}
 
 	scan := bufio.NewScanner(r)
-        buf := make([]byte, 0, 64*1024)
-        scan.Buffer(buf, 1024*1024)
+	buf := make([]byte, 0, 64*1024)
+	scan.Buffer(buf, 1024*1024)
 
 	n := 0
+
+	// skip first line header
+	if scan.Scan() {
+		scan.Text()
+	}
 
 	for scan.Scan() {
 
