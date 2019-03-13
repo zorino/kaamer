@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/zorino/metaprot/cmd/makedb"
 	"github.com/zorino/metaprot/cmd/mergedb"
+	"github.com/zorino/metaprot/cmd/backupdb"
 	"os"
 )
 
@@ -16,14 +17,17 @@ func main() {
 	   -makedb       make the protein database
 
 			   -i    input tsv file or dir // if doesn't exist metaprot will download from Uniprot (>60 GB)
-			   -d    badger database dir path
+			   -d    badger database directory
 
 	   -mergedb      merge two metaprot badger databases
 
-			   -d1   badger db 1
-			   -d2   badger db 2
+			   -d1   badger db 1 directory
+			   -d2   badger db 2 directory
 
+	   -backupdb     backup database
 
+			   -d    badger db directory
+			   -o    badger backup output directory
 `
 
 	var makedbOpt = flag.Bool("makedb", false, "program")
@@ -35,6 +39,9 @@ func main() {
 	var dbPath_2 = flag.String("d2", "", "db path argument")
 
 	var analyseOpt = flag.Bool("analyse", false, "program")
+
+	var backupdbOpt = flag.Bool("backupdb", false, "program")
+	var backupOutput = flag.String("o", "", "db path argument")
 
 	flag.Parse()
 
@@ -56,6 +63,17 @@ func main() {
 			fmt.Println("Need to have 2 valid databases path !")
 		} else {
 			mergedb.NewMergedb(*dbPath_1, *dbPath_2)
+		}
+		os.Exit(0)
+	}
+
+	if *backupdbOpt == true {
+		if *dbPath == "" {
+			fmt.Println("Need to have a valid databases path !")
+		} else if *backupOutput == "" {
+			fmt.Println("Need to have a valid backup directory path !")
+		} else {
+			backupdb.Backupdb(*dbPath, *backupOutput)
 		}
 		os.Exit(0)
 	}
