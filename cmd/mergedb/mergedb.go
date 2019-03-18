@@ -32,23 +32,27 @@ func NewMergedb(dbPath_1 string, dbPath_2 string) {
 	}
 
 	kvStores1 := kvstore.KVStoresNew(dbPath_1, nbOfThreads)
-	kvStores2 := kvstore.KVStoresNew(dbPath_2, nbOfThreads)
 
-	MergeStores(kvStores1.K_batch.KVStore, kvStores2.K_batch.KVStore, nbOfThreads)
-	MergeStores(kvStores1.KK_batch.KVStore, kvStores2.KK_batch.KVStore, nbOfThreads)
-	MergeStores(kvStores1.G_batch.KVStore, kvStores2.G_batch.KVStore, nbOfThreads)
-	MergeStores(kvStores1.GG_batch.KVStore, kvStores2.GG_batch.KVStore, nbOfThreads)
-	MergeStores(kvStores1.F_batch.KVStore, kvStores2.F_batch.KVStore, nbOfThreads)
-	MergeStores(kvStores1.FF_batch.KVStore, kvStores2.FF_batch.KVStore, nbOfThreads)
-	MergeStores(kvStores1.P_batch.KVStore, kvStores2.P_batch.KVStore, nbOfThreads)
-	MergeStores(kvStores1.PP_batch.KVStore, kvStores2.PP_batch.KVStore, nbOfThreads)
-	MergeStores(kvStores1.O_batch.KVStore, kvStores2.O_batch.KVStore, nbOfThreads)
-	MergeStores(kvStores1.OO_batch.KVStore, kvStores2.OO_batch.KVStore, nbOfThreads)
-	MergeStores(kvStores1.N_batch.KVStore, kvStores2.N_batch.KVStore, nbOfThreads)
-	MergeStores(kvStores1.NN_batch.KVStore, kvStores2.NN_batch.KVStore, nbOfThreads)
+	if (dbPath_2 != "") {
+		kvStores2 := kvstore.KVStoresNew(dbPath_2, nbOfThreads)
+
+		MergeStores(kvStores1.K_batch.KVStore, kvStores2.K_batch.KVStore, nbOfThreads)
+		MergeStores(kvStores1.KK_batch.KVStore, kvStores2.KK_batch.KVStore, nbOfThreads)
+		MergeStores(kvStores1.G_batch.KVStore, kvStores2.G_batch.KVStore, nbOfThreads)
+		MergeStores(kvStores1.GG_batch.KVStore, kvStores2.GG_batch.KVStore, nbOfThreads)
+		MergeStores(kvStores1.F_batch.KVStore, kvStores2.F_batch.KVStore, nbOfThreads)
+		MergeStores(kvStores1.FF_batch.KVStore, kvStores2.FF_batch.KVStore, nbOfThreads)
+		MergeStores(kvStores1.P_batch.KVStore, kvStores2.P_batch.KVStore, nbOfThreads)
+		MergeStores(kvStores1.PP_batch.KVStore, kvStores2.PP_batch.KVStore, nbOfThreads)
+		MergeStores(kvStores1.O_batch.KVStore, kvStores2.O_batch.KVStore, nbOfThreads)
+		MergeStores(kvStores1.OO_batch.KVStore, kvStores2.OO_batch.KVStore, nbOfThreads)
+		MergeStores(kvStores1.N_batch.KVStore, kvStores2.N_batch.KVStore, nbOfThreads)
+		MergeStores(kvStores1.NN_batch.KVStore, kvStores2.NN_batch.KVStore, nbOfThreads)
+
+		kvStores2.Close()
+	}
 
 	kvStores1.Close()
-	kvStores2.Close()
 
 	kvStores1 = kvstore.KVStoresNew(dbPath_1, nbOfThreads)
 	kvStores1.MergeKmerValues(nbOfThreads)

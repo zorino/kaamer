@@ -59,8 +59,8 @@ func main() {
 	}
 
 	if *mergedbOpt == true {
-		if *dbPath_1 == "" || *dbPath_2 == "" {
-			fmt.Println("Need to have 2 valid databases path !")
+		if *dbPath_1 == "" {
+			fmt.Println("Need to have a valid databases path !")
 		} else {
 			mergedb.NewMergedb(*dbPath_1, *dbPath_2)
 		}
