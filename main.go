@@ -16,7 +16,7 @@ func main() {
 
 	   -makedb       make the protein database
 
-			   -i    input tsv file or dir // if doesn't exist metaprot will download from Uniprot (>60 GB)
+			   -i    input tsv file (raw tsv file from -downloaddb -r)
 			   -d    badger database directory
 
 	   -mergedb      merge two metaprot badger databases

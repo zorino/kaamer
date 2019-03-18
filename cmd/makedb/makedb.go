@@ -2,12 +2,12 @@ package makedb
 
 import (
 	"bufio"
-	"log"
+	// "log"
 	"fmt"
 	"github.com/zorino/metaprot/pkg/kvstore"
-	"github.com/zorino/metaprot/cmd/downloaddb"
+	// "github.com/zorino/metaprot/cmd/downloaddb"
 	"os"
-	"path/filepath"
+	// "path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -37,69 +37,26 @@ func NewMakedb(dbPath string, inputPath string) {
 	// https://groups.google.com/forum/#!topic/golang-nuts/jPb_h3TvlKE/discussion
 	runtime.GOMAXPROCS(128)
 
-	kmerSize := KMER_SIZE
-
-	fi, err := os.Stat(inputPath)
-	if err != nil {
-		log.Fatal(err.Error())
-		return
-	}
-
-	files := []string{}
-
-	switch mode := fi.Mode(); {
-	case mode.IsDir():
-		// do directory stuff
-		files, _ = filepath.Glob(inputPath + "/*.tsv")
-	case mode.IsRegular():
-		// do file stuff
-		files = append(files, inputPath)
-	}
-
-	if len(files) == 0 {
-		downloaddb.Download(inputPath)
-		os.Exit(0)
-	}
-
 	os.Mkdir(dbPath, 0700)
 
-	threadByWorker := runtime.NumCPU()*2/len(files)
+	threadByWorker := runtime.NumCPU()*2
+
 	if threadByWorker < 1 {
 		threadByWorker = 1
 	}
 
-	wgDB := new(sync.WaitGroup)
-	wgDB.Add(len(files))
 
-	kvStores_holder := make([]*kvstore.KVStores, len(files))
+	os.Mkdir(dbPath, 0700)
 
-	for i, file := range files {
+	fmt.Printf("# Making Database %s from %s\n", dbPath, inputPath)
 
-		_dbPath := dbPath + fmt.Sprintf("/store_%d",i)
-		os.Mkdir(_dbPath, 0700)
+	kvStores := kvstore.KVStoresNew(dbPath, threadByWorker)
+	run(inputPath, KMER_SIZE, kvStores, threadByWorker)
+	kvStores.Close()
 
-		fmt.Printf("# Making Database %s from %s\n", _dbPath, file)
-
-		kvStores := kvstore.KVStoresNew(_dbPath, threadByWorker)
-		kvStores_holder[i] = kvStores
-
-		go func(file string, dbPath string, i int, threadByWorker int, kvStores *kvstore.KVStores) {
-
-			defer wgDB.Done()
-			run(file, kmerSize, kvStores, threadByWorker)
-
-		}(file, dbPath, i, threadByWorker, kvStores)
-
-	}
-
-	wgDB.Wait()
-
-	for i, _ := range files {
-		kvStores_holder[i].Flush()
-		kvStores_holder[i].MergeKmerValues(runtime.NumCPU())
-		kvStores_holder[i].Close()
-	}
-
+	kvStores = kvstore.KVStoresNew(dbPath, threadByWorker)
+	kvStores.MergeKmerValues(runtime.NumCPU())
+	kvStores.Close()
 
 }
 
