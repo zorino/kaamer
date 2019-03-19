@@ -50,11 +50,13 @@ func NewMergedb(dbPath_1 string, dbPath_2 string) {
 		MergeStores(kvStores1.NN_batch.KVStore, kvStores2.NN_batch.KVStore, nbOfThreads)
 
 		kvStores2.Close()
+
+		kvStores1.Close()
+
+		kvStores1 = kvstore.KVStoresNew(dbPath_1, nbOfThreads)
+
 	}
 
-	kvStores1.Close()
-
-	kvStores1 = kvstore.KVStoresNew(dbPath_1, nbOfThreads)
 	kvStores1.MergeKmerValues(nbOfThreads)
 	kvStores1.Close()
 
