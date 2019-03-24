@@ -57,7 +57,7 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	k_opts := badger.DefaultOptions
 	k_opts.Dir = dbPath+"/k_store"
 	k_opts.ValueDir = dbPath+"/k_store"
-	k_opts.ValueLogLoadingMode = options.FileIO
+	k_opts.ValueLogLoadingMode = options.MemoryMap
 	k_opts.TableLoadingMode = options.MemoryMap
 	//k_opts.SyncWrites = false
 	k_opts.NumVersionsToKeep = math.MaxUint32
@@ -67,7 +67,7 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	kk_opts := badger.DefaultOptions
 	kk_opts.Dir = dbPath+"/kk_store"
 	kk_opts.ValueDir = dbPath+"/kk_store"
-	kk_opts.ValueLogLoadingMode = options.FileIO
+	kk_opts.ValueLogLoadingMode = options.MemoryMap
 	kk_opts.TableLoadingMode = options.MemoryMap
 	//kk_opts.SyncWrites = false
 	kk_opts.NumVersionsToKeep = 1
@@ -77,7 +77,7 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	g_opts := badger.DefaultOptions
 	g_opts.Dir = dbPath+"/g_store"
 	g_opts.ValueDir = dbPath+"/g_store"
-	g_opts.ValueLogLoadingMode = options.FileIO
+	g_opts.ValueLogLoadingMode = options.MemoryMap
 	g_opts.TableLoadingMode = options.MemoryMap
 	//g_opts.SyncWrites = false
 	g_opts.NumVersionsToKeep = 1
@@ -87,7 +87,7 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	gg_opts := badger.DefaultOptions
 	gg_opts.Dir = dbPath+"/gg_store"
 	gg_opts.ValueDir = dbPath+"/gg_store"
-	gg_opts.ValueLogLoadingMode = options.FileIO
+	gg_opts.ValueLogLoadingMode = options.MemoryMap
 	gg_opts.TableLoadingMode = options.MemoryMap
 	//gg_opts.SyncWrites = false
 	gg_opts.NumVersionsToKeep = 1
@@ -97,7 +97,7 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	f_opts := badger.DefaultOptions
 	f_opts.Dir = dbPath+"/f_store"
 	f_opts.ValueDir = dbPath+"/f_store"
-	f_opts.ValueLogLoadingMode = options.FileIO
+	f_opts.ValueLogLoadingMode = options.MemoryMap
 	f_opts.TableLoadingMode = options.MemoryMap
 	//f_opts.SyncWrites = false
 	f_opts.NumVersionsToKeep = 1
@@ -107,7 +107,7 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	ff_opts := badger.DefaultOptions
 	ff_opts.Dir = dbPath+"/ff_store"
 	ff_opts.ValueDir = dbPath+"/ff_store"
-	ff_opts.ValueLogLoadingMode = options.FileIO
+	ff_opts.ValueLogLoadingMode = options.MemoryMap
 	ff_opts.TableLoadingMode = options.MemoryMap
 	//ff_opts.SyncWrites = false
 	ff_opts.NumVersionsToKeep = 1
@@ -117,7 +117,7 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	p_opts := badger.DefaultOptions
 	p_opts.Dir = dbPath+"/p_store"
 	p_opts.ValueDir = dbPath+"/p_store"
-	p_opts.ValueLogLoadingMode = options.FileIO
+	p_opts.ValueLogLoadingMode = options.MemoryMap
 	p_opts.TableLoadingMode = options.MemoryMap
 	//p_opts.SyncWrites = false
 	p_opts.NumVersionsToKeep = 1
@@ -127,7 +127,7 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	pp_opts := badger.DefaultOptions
 	pp_opts.Dir = dbPath+"/pp_store"
 	pp_opts.ValueDir = dbPath+"/pp_store"
-	pp_opts.ValueLogLoadingMode = options.FileIO
+	pp_opts.ValueLogLoadingMode = options.MemoryMap
 	pp_opts.TableLoadingMode = options.MemoryMap
 	//pp_opts.SyncWrites = false
 	pp_opts.NumVersionsToKeep = 1
@@ -137,7 +137,7 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	o_opts := badger.DefaultOptions
 	o_opts.Dir = dbPath+"/o_store"
 	o_opts.ValueDir = dbPath+"/o_store"
-	o_opts.ValueLogLoadingMode = options.FileIO
+	o_opts.ValueLogLoadingMode = options.MemoryMap
 	o_opts.TableLoadingMode = options.MemoryMap
 	//o_opts.SyncWrites = false
 	o_opts.NumVersionsToKeep = 1
@@ -147,7 +147,7 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	oo_opts := badger.DefaultOptions
 	oo_opts.Dir = dbPath+"/oo_store"
 	oo_opts.ValueDir = dbPath+"/oo_store"
-	oo_opts.ValueLogLoadingMode = options.FileIO
+	oo_opts.ValueLogLoadingMode = options.MemoryMap
 	oo_opts.TableLoadingMode = options.MemoryMap
 	//oo_opts.SyncWrites = false
 	oo_opts.NumVersionsToKeep = 1
@@ -157,7 +157,7 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	n_opts := badger.DefaultOptions
 	n_opts.Dir = dbPath+"/n_store"
 	n_opts.ValueDir = dbPath+"/n_store"
-	n_opts.ValueLogLoadingMode = options.FileIO
+	n_opts.ValueLogLoadingMode = options.MemoryMap
 	n_opts.TableLoadingMode = options.MemoryMap
 	//n_opts.SyncWrites = false
 	n_opts.NumVersionsToKeep = 1
@@ -167,7 +167,7 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	nn_opts := badger.DefaultOptions
 	nn_opts.Dir = dbPath+"/nn_store"
 	nn_opts.ValueDir = dbPath+"/nn_store"
-	nn_opts.ValueLogLoadingMode = options.FileIO
+	nn_opts.ValueLogLoadingMode = options.MemoryMap
 	nn_opts.TableLoadingMode = options.MemoryMap
 	//nn_opts.SyncWrites = false
 	nn_opts.NumVersionsToKeep = 1
