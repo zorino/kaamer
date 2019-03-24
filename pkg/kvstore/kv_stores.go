@@ -284,19 +284,20 @@ func (kvStores *KVStores) MergeKmerValues (nbOfThreads int) {
 
 		if nbOfItem > 1 {
 
-			combKey, _, _ := kvStores.CreateNewKmerValue(currentKey, valueList)
-			kv := &pb.KV{
-				Key:       currentKey,
-				Value:     combKey,
+			combKey, _, new := kvStores.CreateNewKmerValue(currentKey, valueList)
+			if new {
+				kv := &pb.KV{
+					Key:       currentKey,
+					Value:     combKey,
+				}
+				kvList.Kv = append(kvList.Kv, kv)
+			} else {
+				kv := &pb.KV{
+					Key:       currentKey,
+					Value:     valueList[0],
+				}
+				kvList.Kv = append(kvList.Kv, kv)
 			}
-			kvList.Kv = append(kvList.Kv, kv)
-
-			// // merge values
-			// if combKey, _, isNew := kvStores.CreateNewKmerValue(currentKey, valueList); isNew {
-			//	kvStores.K_batch.AddValueWithDiscardVersions(currentKey, combKey)
-			// } else {
-			//	kvStores.K_batch.AddValueWithDiscardVersions(currentKey, combKey)
-			// }
 
 		}
 
@@ -332,7 +333,7 @@ func (kvStores *KVStores) CreateNewKmerValue (key []byte, values [][]byte) ([]by
 	uniqueValues := RemoveDuplicatesFromSlice(values)
 
 	if (len(uniqueValues) < 2) {
-		return key, nil, false
+		return nil, nil, false
 	}
 
 	g_values := make(map[string]bool)
