@@ -522,7 +522,7 @@ func PrintCombinationStore (kvStore *H_) {
 				break
 			}
 
-			val, err := item.ValueCopy(nil)
+			val, errVal := item.ValueCopy(nil)
 			if errVal != nil {
 				log.Fatal(errVal.Error())
 			}
