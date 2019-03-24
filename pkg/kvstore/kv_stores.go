@@ -261,19 +261,19 @@ func (kvStores *KVStores) MergeKmerValues (nbOfThreads int) {
 			if item.IsDeletedOrExpired() {
 				break
 			}
+			if item.DiscardEarlierVersions() {
+				break
+			}
 			if ! bytes.Equal(key, item.Key()) {
 				break
 			}
+			if len(currentKey) < 1 {
+				currentKey = item.KeyCopy(currentKey)
+			}
 
-			currentKey = item.KeyCopy(currentKey)
-
-			val := []byte{}
-			val, err := item.ValueCopy(val)
+			val, err := item.ValueCopy(nil)
 			if err != nil {
 				log.Fatal(err.Error())
-			}
-			if item.DiscardEarlierVersions() {
-				break
 			}
 
 			valueList = append(valueList, val)
@@ -459,8 +459,7 @@ func (kvStores *KVStores) PrintKmerStore() {
 				break
 			}
 
-			val := []byte{}
-			val, err := item.ValueCopy(val)
+			val, err := item.ValueCopy(nil)
 			if err != nil {
 				log.Fatal(err.Error())
 			}
@@ -523,8 +522,7 @@ func PrintCombinationStore (kvStore *H_) {
 				break
 			}
 
-			val := []byte{}
-			val, errVal := item.ValueCopy(val)
+			val, err := item.ValueCopy(nil)
 			if errVal != nil {
 				log.Fatal(errVal.Error())
 			}
