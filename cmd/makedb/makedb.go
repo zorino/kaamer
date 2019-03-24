@@ -39,16 +39,16 @@ func NewMakedb(dbPath string, inputPath string) {
 
 	os.Mkdir(dbPath, 0700)
 
-	threadByWorker := runtime.NumCPU()*2
+	threadByWorker := runtime.NumCPU()
 
 	if threadByWorker < 1 {
 		threadByWorker = 1
 	}
 
-
 	os.Mkdir(dbPath, 0700)
 
 	fmt.Printf("# Making Database %s from %s\n", dbPath, inputPath)
+	fmt.Printf("# Using %d CPU\n", threadByWorker)
 
 	kvStores := kvstore.KVStoresNew(dbPath, threadByWorker)
 	run(inputPath, KMER_SIZE, kvStores, threadByWorker)
@@ -64,8 +64,8 @@ func run(fileName string, kmerSize int, kvStores *kvstore.KVStores, nbThreads in
 
 	file, _ := os.Open(fileName)
 
-	jobs := make(chan string, 100)
-	results := make(chan int, 100)
+	jobs := make(chan string, 1000)
+	results := make(chan int, 1000)
 	wg := new(sync.WaitGroup)
 
 	// thread pool
