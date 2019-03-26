@@ -54,10 +54,6 @@ func NewMakedb(dbPath string, inputPath string) {
 	run(inputPath, KMER_SIZE, kvStores, threadByWorker)
 	kvStores.Close()
 
-	kvStores = kvstore.KVStoresNew(dbPath, threadByWorker)
-	kvStores.MergeKmerValues(runtime.NumCPU())
-	kvStores.Close()
-
 }
 
 func run(fileName string, kmerSize int, kvStores *kvstore.KVStores, nbThreads int) int {
