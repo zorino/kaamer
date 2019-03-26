@@ -98,6 +98,17 @@ func (kv *KVStore) AddValue(key []byte, newVal []byte, threadId int) {
 
 }
 
+func (kv *KVStore) GarbageCollect(count int) {
+
+	for i:=0; i<count; i++ {
+		err := kv.DB.RunValueLogGC(0.5)
+		if err != nil {
+			i = count;
+		}
+	}
+
+}
+
 func (kv *KVStore) FlushTxBatch(threadId int) error {
 
 	if kv.TxBatches[threadId].NbOfTx == 0 {
@@ -120,6 +131,8 @@ func (kv *KVStore) FlushTxBatch(threadId int) error {
 
 	WB.Flush()
 	WB.Cancel()
+
+	kv.GarbageCollect(100)
 
 	kv.TxBatches[threadId].NbOfTx = 0
 	kv.TxBatches[threadId].Entries = new(sync.Map)
@@ -152,6 +165,8 @@ func (kv *KVStore) AddValueWithDiscardVersions(key []byte, newVal []byte){
 	} else {
 		kv.TxBatchWithDiscard.NbOfTx += 1
 	}
+
+	kv.GarbageCollect(100)
 
 	kv.TxBatchWithDiscard.Mu.Unlock()
 
