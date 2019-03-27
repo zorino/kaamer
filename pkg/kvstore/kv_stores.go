@@ -227,7 +227,7 @@ func (kvStores *KVStores) Close () {
 
 func (kvStores *KVStores) MergeKmerValues (nbOfThreads int) {
 
-	fmt.Println("# Merging Key Values...")
+	fmt.Println("# Merging kmers multiple value versions...")
 
 	// Stream keys
 	stream := kvStores.K_batch.DB.NewStream()
