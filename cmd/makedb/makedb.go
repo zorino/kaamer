@@ -44,8 +44,6 @@ func NewMakedb(dbPath string, inputPath string) {
 		threadByWorker = 1
 	}
 
-	os.Mkdir(dbPath, 0700)
-
 	fmt.Printf("# Making Database %s from %s\n", dbPath, inputPath)
 	fmt.Printf("# Using %d CPU\n", threadByWorker)
 
