@@ -14,34 +14,59 @@ func main() {
 	usage := `
  metaprot
 
+  // Analyses
+
+	   -server       start a metaprot server - database
+
+		  (input)
+			   -d    database directory
+
+
+
+  // Database Management
+
+	   -downloadb    download metaprot database
+
+		   (flag)
+			   -m    metaprot release database
+			   -r    raw UniprotKB database (to use with -makedb)
+
+		  (input)
+			   -o    output directory of database
+
 	   -makedb       make the protein database
 
+		  (input)
 			   -i    input tsv file (raw tsv file from -downloaddb -r)
 			   -d    badger database directory
 
-	   -mergedb      merge two metaprot badger databases
+	   -mergedb      merge metaprot badger databases
 
-			   -d1   badger db 1 directory
-			   -d2   badger db 2 directory
+		  (input)
+			   -dbs  badger databases directory
+			   -o    merged database output
 
 	   -backupdb     backup database
 
+		  (input)
 			   -d    badger db directory
 			   -o    badger backup output directory
+
 `
+
+	// var serverOpt = flag.Bool("server", false, "program")
 
 	var makedbOpt = flag.Bool("makedb", false, "program")
 	var inputPath = flag.String("i", "", "db path argument")
 	var dbPath = flag.String("d", "", "db path argument")
 
 	var mergedbOpt = flag.Bool("mergedb", false, "program")
-	var dbPath_1 = flag.String("d1", "", "db path argument")
-	var dbPath_2 = flag.String("d2", "", "db path argument")
+	var dbsPath = flag.String("dbs", "", "db path argument")
+	var outPath = flag.String("o", "", "db path argument")
 
 	var analyseOpt = flag.Bool("analyse", false, "program")
 
 	var backupdbOpt = flag.Bool("backupdb", false, "program")
-	var backupOutput = flag.String("o", "", "db path argument")
 
 	flag.Parse()
 
@@ -59,10 +84,10 @@ func main() {
 	}
 
 	if *mergedbOpt == true {
-		if *dbPath_1 == "" {
+		if *dbsPath == "" || *outPath == "" {
 			fmt.Println("Need to have a valid databases path !")
 		} else {
-			mergedb.NewMergedb(*dbPath_1, *dbPath_2)
+			mergedb.NewMergedb(*dbsPath, *outPath)
 		}
 		os.Exit(0)
 	}
@@ -70,10 +95,10 @@ func main() {
 	if *backupdbOpt == true {
 		if *dbPath == "" {
 			fmt.Println("Need to have a valid databases path !")
-		} else if *backupOutput == "" {
+		} else if *outPath == "" {
 			fmt.Println("Need to have a valid backup directory path !")
 		} else {
-			backupdb.Backupdb(*dbPath, *backupOutput)
+			backupdb.Backupdb(*dbPath, *outPath)
 		}
 		os.Exit(0)
 	}
