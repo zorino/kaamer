@@ -108,6 +108,9 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 	// stream.KeyToList = nil
 	stream.KeyToList = func(key []byte, it *badger.Iterator) (*pb.KVList, error) {
 
+		valCopy := []byte{}
+		keyCopy := []byte{}
+
 		for ; it.Valid(); it.Next() {
 
 			item := it.Item()
@@ -120,14 +123,16 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 			if !bytes.Equal(key, item.Key()) {
 				break
 			}
-			val, err := item.ValueCopy(nil)
+
+			_, err := item.ValueCopy(valCopy)
 			if err != nil {
 				log.Fatal(err.Error())
 			}
 
-			key := item.KeyCopy(nil)
+			item.KeyCopy(keyCopy)
 
-			kvStore1.AddValueWithLock(key, val)
+			kvStore1.AddValueWithLock(keyCopy, valCopy)
+
 		}
 
 		return nil, nil
