@@ -20,16 +20,15 @@ const (
 
 type Protein struct {
 	Entry            string
-	Status           string  // reviewed / unreviewed
-	ProteinName      string  // n_store
-	TaxonomicLineage string  // o_store
-	GeneOntology     string  // g_store
-	FunctionCC       string  // f_store
-	Pathway          string  // p_store
+	Status           string // reviewed / unreviewed
+	ProteinName      string // n_store
+	TaxonomicLineage string // o_store
+	GeneOntology     string // g_store
+	FunctionCC       string // f_store
+	Pathway          string // p_store
 	EC_Number        string
-	Sequence         string  // k_store
+	Sequence         string // k_store
 }
-
 
 func NewMakedb(dbPath string, inputPath string) {
 
@@ -93,7 +92,7 @@ func run(fileName string, kmerSize int, kvStores *kvstore.KVStores, nbThreads in
 	counts := 0
 	for v := range results {
 		counts += v
-		if counts % 10000 == 0 {
+		if counts%10000 == 0 {
 			fmt.Printf("Processed %d proteins in %f minutes\n", counts, time.Since(timeStart).Minutes())
 		}
 	}
@@ -140,11 +139,11 @@ func processProteinInput(line string, kmerSize int, kvStores *kvstore.KVStores, 
 	// sliding windows of kmerSize on Sequence
 	for i := 0; i < len(c.Sequence)-kmerSize+1; i++ {
 
-		key := kvStores.K_batch.CreateBytesKey(c.Sequence[i:i+kmerSize])
+		key := kvStores.K_batch.CreateBytesKey(c.Sequence[i : i+kmerSize])
 
 		var isNewValue = false
 
-		newValues := [5][]byte{nil,nil,nil,nil,nil}
+		newValues := [5][]byte{nil, nil, nil, nil, nil}
 
 		// Gene Ontology
 		if gVal, new := kvStores.G_batch.CreateValues(c.GeneOntology, newValues[0], kvStores.GG_batch, threadId); new {

@@ -1,19 +1,18 @@
 package kvstore
 
 import (
-	"github.com/dgraph-io/badger"
-	"strings"
-	"strconv"
-	"fmt"
 	"encoding/binary"
-	// "encoding/hex"
+	"fmt"
+	"github.com/dgraph-io/badger"
+	"strconv"
+	"strings"
 )
 
 // Kmer Entries
 type K_ struct {
 	*KVStore
-	aaTable     map[[2]rune]uint32
-	aaBinTable  map[uint32][2]rune
+	aaTable    map[[2]rune]uint32
+	aaBinTable map[uint32][2]rune
 }
 
 func K_New(opts badger.Options, flushSize int, nbOfThreads int) *K_ {
@@ -26,7 +25,7 @@ func K_New(opts badger.Options, flushSize int, nbOfThreads int) *K_ {
 
 func NewAATable() (map[[2]rune]uint32, map[uint32][2]rune) {
 
-	aa := []rune{'A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','U','V','W','Y'}
+	aa := []rune{'A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Y'}
 
 	aaTable := make(map[[2]rune]uint32)
 	aaBinTable := make(map[uint32][2]rune)
@@ -35,12 +34,12 @@ func NewAATable() (map[[2]rune]uint32, map[uint32][2]rune) {
 
 	for j, a := range aa {
 		aaBin := uint32(j)
-		_key := [2]rune{a,'.'}
+		_key := [2]rune{a, '.'}
 		aaTable[_key] = aaBin
 		aaBinTable[aaBin] = _key
 		for _, b := range aa {
 			aaBin := i
-			__key:= [2]rune{a,b}
+			__key := [2]rune{a, b}
 			aaTable[__key] = aaBin
 			aaBinTable[aaBin] = __key
 			i++
@@ -51,7 +50,7 @@ func NewAATable() (map[[2]rune]uint32, map[uint32][2]rune) {
 
 }
 
-func (k *K_) CreateBytesKey (kmer string) []byte {
+func (k *K_) CreateBytesKey(kmer string) []byte {
 	// expect kmers of length 7
 	kmerInt := k.EncodeKmer(kmer)
 	byteArrayKmer := make([]byte, 4)
@@ -63,9 +62,9 @@ func (k *K_) CreateBytesKey (kmer string) []byte {
 	return byteArrayKmer
 }
 
-func (k *K_) CreateBytesKey64Bit (kmer string) []byte {
+func (k *K_) CreateBytesKey64Bit(kmer string) []byte {
 
-	kmerBits := []int{1,1,1,1,1}
+	kmerBits := []int{1, 1, 1, 1, 1}
 
 	for _, rune := range kmer {
 		kmerBits = append(kmerBits, GetAminoAcidBits(rune)...)
@@ -97,10 +96,10 @@ func (k *K_) EncodeKmer(kmer string) uint32 {
 	shiftIndex := uint8(1)
 
 	// aa pairs
-	for (i+2) < len(kmer) {
+	for (i + 2) < len(kmer) {
 		// fmt.Printf("%s => %x\n", kmer[i:i+2], aaTable[kmer[i:i+2]])
 		_key := [2]rune{rune(kmer[i]), rune(kmer[i+1])}
-		kmerInt |= k.aaTable[_key] << (32-(shiftIndex*9))
+		kmerInt |= k.aaTable[_key] << (32 - (shiftIndex * 9))
 		shiftIndex++
 		i += 2
 	}
@@ -144,8 +143,7 @@ func (k *K_) DecodeKmer(key []byte) string {
 
 }
 
-
-func GetAminoAcidBits (aminoAcid rune) []int {
+func GetAminoAcidBits(aminoAcid rune) []int {
 
 	switch aminoAcid {
 	case 'A', 'a':

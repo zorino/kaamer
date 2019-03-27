@@ -1,14 +1,14 @@
 package kvstore
 
 import (
-	"github.com/dgraph-io/badger"
-	"github.com/dgraph-io/badger/pb"
-	"github.com/dgraph-io/badger/options"
-	"math"
-	"fmt"
-	"context"
 	"bytes"
+	"context"
+	"fmt"
+	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/options"
+	"github.com/dgraph-io/badger/pb"
 	"log"
+	"math"
 )
 
 // # Stores :
@@ -34,29 +34,28 @@ import (
 //              '_213a326b89b' => '[g_key,f_key,p_key,o_key]'
 //
 
-
 type KVStores struct {
-	K_batch         *K_
-	KK_batch        *H_
-	G_batch         *G_
-	GG_batch        *H_
-	F_batch         *F_
-	FF_batch        *H_
-	P_batch         *P_
-	PP_batch        *H_
-	O_batch         *O_
-	OO_batch        *H_
-	N_batch         *N_
-	NN_batch        *H_
+	K_batch  *K_
+	KK_batch *H_
+	G_batch  *G_
+	GG_batch *H_
+	F_batch  *F_
+	FF_batch *H_
+	P_batch  *P_
+	PP_batch *H_
+	O_batch  *O_
+	OO_batch *H_
+	N_batch  *N_
+	NN_batch *H_
 }
 
-func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
+func KVStoresNew(dbPath string, nbOfThreads int) *KVStores {
 
 	var kvStores KVStores
 
 	k_opts := badger.DefaultOptions
-	k_opts.Dir = dbPath+"/k_store"
-	k_opts.ValueDir = dbPath+"/k_store"
+	k_opts.Dir = dbPath + "/k_store"
+	k_opts.ValueDir = dbPath + "/k_store"
 	k_opts.ValueLogLoadingMode = options.MemoryMap
 	k_opts.TableLoadingMode = options.MemoryMap
 	//k_opts.SyncWrites = false
@@ -65,8 +64,8 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	k_opts.ValueLogMaxEntries = 100000000
 
 	kk_opts := badger.DefaultOptions
-	kk_opts.Dir = dbPath+"/kk_store"
-	kk_opts.ValueDir = dbPath+"/kk_store"
+	kk_opts.Dir = dbPath + "/kk_store"
+	kk_opts.ValueDir = dbPath + "/kk_store"
 	kk_opts.ValueLogLoadingMode = options.MemoryMap
 	kk_opts.TableLoadingMode = options.MemoryMap
 	//kk_opts.SyncWrites = false
@@ -75,8 +74,8 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	kk_opts.ValueLogMaxEntries = 100000000
 
 	g_opts := badger.DefaultOptions
-	g_opts.Dir = dbPath+"/g_store"
-	g_opts.ValueDir = dbPath+"/g_store"
+	g_opts.Dir = dbPath + "/g_store"
+	g_opts.ValueDir = dbPath + "/g_store"
 	g_opts.ValueLogLoadingMode = options.MemoryMap
 	g_opts.TableLoadingMode = options.MemoryMap
 	//g_opts.SyncWrites = false
@@ -85,8 +84,8 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	g_opts.ValueLogMaxEntries = 100000000
 
 	gg_opts := badger.DefaultOptions
-	gg_opts.Dir = dbPath+"/gg_store"
-	gg_opts.ValueDir = dbPath+"/gg_store"
+	gg_opts.Dir = dbPath + "/gg_store"
+	gg_opts.ValueDir = dbPath + "/gg_store"
 	gg_opts.ValueLogLoadingMode = options.MemoryMap
 	gg_opts.TableLoadingMode = options.MemoryMap
 	//gg_opts.SyncWrites = false
@@ -95,8 +94,8 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	gg_opts.ValueLogMaxEntries = 100000000
 
 	f_opts := badger.DefaultOptions
-	f_opts.Dir = dbPath+"/f_store"
-	f_opts.ValueDir = dbPath+"/f_store"
+	f_opts.Dir = dbPath + "/f_store"
+	f_opts.ValueDir = dbPath + "/f_store"
 	f_opts.ValueLogLoadingMode = options.MemoryMap
 	f_opts.TableLoadingMode = options.MemoryMap
 	//f_opts.SyncWrites = false
@@ -105,8 +104,8 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	f_opts.ValueLogMaxEntries = 100000000
 
 	ff_opts := badger.DefaultOptions
-	ff_opts.Dir = dbPath+"/ff_store"
-	ff_opts.ValueDir = dbPath+"/ff_store"
+	ff_opts.Dir = dbPath + "/ff_store"
+	ff_opts.ValueDir = dbPath + "/ff_store"
 	ff_opts.ValueLogLoadingMode = options.MemoryMap
 	ff_opts.TableLoadingMode = options.MemoryMap
 	//ff_opts.SyncWrites = false
@@ -115,8 +114,8 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	ff_opts.ValueLogMaxEntries = 100000000
 
 	p_opts := badger.DefaultOptions
-	p_opts.Dir = dbPath+"/p_store"
-	p_opts.ValueDir = dbPath+"/p_store"
+	p_opts.Dir = dbPath + "/p_store"
+	p_opts.ValueDir = dbPath + "/p_store"
 	p_opts.ValueLogLoadingMode = options.MemoryMap
 	p_opts.TableLoadingMode = options.MemoryMap
 	//p_opts.SyncWrites = false
@@ -125,8 +124,8 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	p_opts.ValueLogMaxEntries = 100000000
 
 	pp_opts := badger.DefaultOptions
-	pp_opts.Dir = dbPath+"/pp_store"
-	pp_opts.ValueDir = dbPath+"/pp_store"
+	pp_opts.Dir = dbPath + "/pp_store"
+	pp_opts.ValueDir = dbPath + "/pp_store"
 	pp_opts.ValueLogLoadingMode = options.MemoryMap
 	pp_opts.TableLoadingMode = options.MemoryMap
 	//pp_opts.SyncWrites = false
@@ -135,8 +134,8 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	pp_opts.ValueLogMaxEntries = 100000000
 
 	o_opts := badger.DefaultOptions
-	o_opts.Dir = dbPath+"/o_store"
-	o_opts.ValueDir = dbPath+"/o_store"
+	o_opts.Dir = dbPath + "/o_store"
+	o_opts.ValueDir = dbPath + "/o_store"
 	o_opts.ValueLogLoadingMode = options.MemoryMap
 	o_opts.TableLoadingMode = options.MemoryMap
 	//o_opts.SyncWrites = false
@@ -145,8 +144,8 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	o_opts.ValueLogMaxEntries = 100000000
 
 	oo_opts := badger.DefaultOptions
-	oo_opts.Dir = dbPath+"/oo_store"
-	oo_opts.ValueDir = dbPath+"/oo_store"
+	oo_opts.Dir = dbPath + "/oo_store"
+	oo_opts.ValueDir = dbPath + "/oo_store"
 	oo_opts.ValueLogLoadingMode = options.MemoryMap
 	oo_opts.TableLoadingMode = options.MemoryMap
 	//oo_opts.SyncWrites = false
@@ -155,8 +154,8 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	oo_opts.ValueLogMaxEntries = 100000000
 
 	n_opts := badger.DefaultOptions
-	n_opts.Dir = dbPath+"/n_store"
-	n_opts.ValueDir = dbPath+"/n_store"
+	n_opts.Dir = dbPath + "/n_store"
+	n_opts.ValueDir = dbPath + "/n_store"
 	n_opts.ValueLogLoadingMode = options.MemoryMap
 	n_opts.TableLoadingMode = options.MemoryMap
 	//n_opts.SyncWrites = false
@@ -165,8 +164,8 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 	n_opts.ValueLogMaxEntries = 100000000
 
 	nn_opts := badger.DefaultOptions
-	nn_opts.Dir = dbPath+"/nn_store"
-	nn_opts.ValueDir = dbPath+"/nn_store"
+	nn_opts.Dir = dbPath + "/nn_store"
+	nn_opts.ValueDir = dbPath + "/nn_store"
 	nn_opts.ValueLogLoadingMode = options.MemoryMap
 	nn_opts.TableLoadingMode = options.MemoryMap
 	//nn_opts.SyncWrites = false
@@ -192,7 +191,7 @@ func KVStoresNew (dbPath string, nbOfThreads int) *KVStores {
 
 }
 
-func (kvStores *KVStores) Flush () {
+func (kvStores *KVStores) Flush() {
 	// Last DB flushes
 	kvStores.K_batch.Flush()
 	kvStores.KK_batch.Flush()
@@ -208,8 +207,7 @@ func (kvStores *KVStores) Flush () {
 	kvStores.NN_batch.Flush()
 }
 
-
-func (kvStores *KVStores) Close () {
+func (kvStores *KVStores) Close() {
 	// Last DB flushes
 	kvStores.K_batch.Close()
 	kvStores.KK_batch.Close()
@@ -225,7 +223,7 @@ func (kvStores *KVStores) Close () {
 	kvStores.NN_batch.Close()
 }
 
-func (kvStores *KVStores) MergeKmerValues (nbOfThreads int) {
+func (kvStores *KVStores) MergeKmerValues(nbOfThreads int) {
 
 	fmt.Println("# Merging kmers multiple value versions...")
 
@@ -235,8 +233,8 @@ func (kvStores *KVStores) MergeKmerValues (nbOfThreads int) {
 	// db.NewStreamAt(readTs) for managed mode.
 
 	// -- Optional settings
-	stream.NumGo = nbOfThreads            // Set number of goroutines to use for iteration.
-	stream.Prefix = nil                   // Leave nil for iteration over the whole DB.
+	stream.NumGo = nbOfThreads // Set number of goroutines to use for iteration.
+	stream.Prefix = nil        // Leave nil for iteration over the whole DB.
 	// stream.LogPrefix = "Badger.Streaming" // For identifying stream logs. Outputs to Logger.
 	stream.LogPrefix = ""
 
@@ -262,7 +260,7 @@ func (kvStores *KVStores) MergeKmerValues (nbOfThreads int) {
 			if item.DiscardEarlierVersions() {
 				break
 			}
-			if ! bytes.Equal(key, item.Key()) {
+			if !bytes.Equal(key, item.Key()) {
 				break
 			}
 			if len(currentKey) < 1 {
@@ -300,7 +298,6 @@ func (kvStores *KVStores) MergeKmerValues (nbOfThreads int) {
 
 	// -- End of optional settings.
 
-
 	// Send is called serially, while Stream.Orchestrate is running.
 	stream.Send = nil
 
@@ -315,12 +312,12 @@ func (kvStores *KVStores) MergeKmerValues (nbOfThreads int) {
 
 }
 
-func (kvStores *KVStores) CreateNewKmerValue (key []byte, values [][]byte) ([]byte, []byte, bool) {
+func (kvStores *KVStores) CreateNewKmerValue(key []byte, values [][]byte) ([]byte, []byte, bool) {
 
 	newValueIds := [][]byte{}
 	uniqueValues := RemoveDuplicatesFromSlice(values)
 
-	if (len(uniqueValues) < 2) {
+	if len(uniqueValues) < 2 {
 		return nil, nil, false
 	}
 
@@ -414,8 +411,6 @@ func (kvStores *KVStores) PrintStores() {
 
 }
 
-
-
 func (kvStores *KVStores) PrintKmerStore() {
 
 	// Stream keys
@@ -424,8 +419,8 @@ func (kvStores *KVStores) PrintKmerStore() {
 	// db.NewStreamAt(readTs) for managed mode.
 
 	// -- Optional settings
-	stream.NumGo = 16                     // Set number of goroutines to use for iteration.
-	stream.Prefix = nil                   // Leave nil for iteration over the whole DB.
+	stream.NumGo = 16   // Set number of goroutines to use for iteration.
+	stream.Prefix = nil // Leave nil for iteration over the whole DB.
 	// stream.LogPrefix = "Badger.Streaming" // For identifying stream logs. Outputs to Logger.
 	stream.LogPrefix = ""
 
@@ -443,7 +438,7 @@ func (kvStores *KVStores) PrintKmerStore() {
 			if item.IsDeletedOrExpired() {
 				break
 			}
-			if ! bytes.Equal(key, item.Key()) {
+			if !bytes.Equal(key, item.Key()) {
 				break
 			}
 
@@ -466,7 +461,6 @@ func (kvStores *KVStores) PrintKmerStore() {
 		return nil, nil
 	}
 
-
 	stream.Send = func(list *pb.KVList) error {
 		return nil
 	}
@@ -478,8 +472,7 @@ func (kvStores *KVStores) PrintKmerStore() {
 
 }
 
-
-func PrintCombinationStore (kvStore *H_) {
+func PrintCombinationStore(kvStore *H_) {
 
 	// Stream keys
 	stream := kvStore.DB.NewStream()
@@ -487,8 +480,8 @@ func PrintCombinationStore (kvStore *H_) {
 	// db.NewStreamAt(readTs) for managed mode.
 
 	// -- Optional settings
-	stream.NumGo = 16                     // Set number of goroutines to use for iteration.
-	stream.Prefix = nil                   // Leave nil for iteration over the whole DB.
+	stream.NumGo = 16   // Set number of goroutines to use for iteration.
+	stream.Prefix = nil // Leave nil for iteration over the whole DB.
 	// stream.LogPrefix = "Badger.Streaming" // For identifying stream logs. Outputs to Logger.
 	stream.LogPrefix = ""
 
@@ -506,7 +499,7 @@ func PrintCombinationStore (kvStore *H_) {
 			if item.IsDeletedOrExpired() {
 				continue
 			}
-			if ! bytes.Equal(key, item.Key()) {
+			if !bytes.Equal(key, item.Key()) {
 				break
 			}
 
@@ -522,10 +515,8 @@ func PrintCombinationStore (kvStore *H_) {
 
 		}
 
-
 		return nil, nil
 	}
-
 
 	stream.Send = func(list *pb.KVList) error {
 		return nil

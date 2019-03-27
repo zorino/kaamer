@@ -2,8 +2,8 @@ package kvstore
 
 import (
 	"bytes"
-	"regexp"
 	"github.com/dgraph-io/badger"
+	"regexp"
 )
 
 // Protein Pathways Entries (HAMAP or manually defined in uniprot/swissprot)
@@ -27,7 +27,7 @@ func (p *P_) CreateValues(entry string, oldKey []byte, pp_ *H_, threadId int) ([
 
 	if entry == "" && oldKey == nil {
 		return pp_.NilVal, true
-	} else if (entry == "" && oldKey != nil) {
+	} else if entry == "" && oldKey != nil {
 		return pp_.NilVal, false
 	}
 
@@ -37,7 +37,7 @@ func (p *P_) CreateValues(entry string, oldKey []byte, pp_ *H_, threadId int) ([
 	regStep := regexp.MustCompile(`: step [0-9]/[0-9]`)
 	protPathway = regStep.ReplaceAllString(protPathway, "${1}")
 
-	protPathway =  protPathway[9:]
+	protPathway = protPathway[9:]
 
 	if oldKey == nil {
 		new = true
@@ -54,7 +54,7 @@ func (p *P_) CreateValues(entry string, oldKey []byte, pp_ *H_, threadId int) ([
 	var newCombinedKey = pp_.NilVal
 	var newCombinedVal = pp_.NilVal
 
-	if ! bytes.Equal(combinedKey, oldKey) {
+	if !bytes.Equal(combinedKey, oldKey) {
 		new = true
 		newCombinedKey, newCombinedVal = pp_.CreateValues(ids, true)
 		pp_.AddValue(newCombinedKey, newCombinedVal, threadId)

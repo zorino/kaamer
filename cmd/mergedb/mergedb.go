@@ -1,17 +1,17 @@
 package mergedb
 
 import (
-	copy "github.com/zorino/metaprot/internal/helper"
-	"github.com/zorino/metaprot/pkg/kvstore"
+	"bytes"
+	"context"
+	"fmt"
 	"github.com/dgraph-io/badger"
 	"github.com/dgraph-io/badger/pb"
-	"context"
+	copy "github.com/zorino/metaprot/internal/helper"
+	"github.com/zorino/metaprot/pkg/kvstore"
 	"log"
 	"path/filepath"
 	"runtime"
 	"sync"
-	"bytes"
-	"fmt"
 )
 
 type DBMerger struct {
@@ -115,7 +115,7 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 			if item.DiscardEarlierVersions() {
 				break
 			}
-			if ! bytes.Equal(key, item.Key()) {
+			if !bytes.Equal(key, item.Key()) {
 				break
 			}
 			val, err := item.ValueCopy(nil)

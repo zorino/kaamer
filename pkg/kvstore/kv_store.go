@@ -2,35 +2,33 @@ package kvstore
 
 import (
 	"bytes"
-	"sort"
 	"crypto/sha1"
 	"github.com/dgraph-io/badger"
-	"sync"
 	"log"
+	"sort"
+	"sync"
 )
 
 type TxBatch struct {
-	NbOfTx         int
-	TxBufferSize   int
-	Entries        *sync.Map
-	Mu             sync.Mutex
+	NbOfTx       int
+	TxBufferSize int
+	Entries      *sync.Map
+	Mu           sync.Mutex
 }
-
 
 // Key Value Store
 type KVStore struct {
-	DB                  *badger.DB
-	TxBatches           []*TxBatch
-	TxBatchWithDiscard  *TxBatch
-	TxBatchWithLock     *TxBatch
-	NilVal              []byte
-	Mu                  sync.Mutex
+	DB                 *badger.DB
+	TxBatches          []*TxBatch
+	TxBatchWithDiscard *TxBatch
+	TxBatchWithLock    *TxBatch
+	NilVal             []byte
+	Mu                 sync.Mutex
 }
-
 
 func NewKVStore(kv *KVStore, options badger.Options, flushSize int, nbOfThreads int) {
 
-	kv.NilVal = []byte{'0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'}
+	kv.NilVal = []byte{'0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0'}
 
 	err := error(nil)
 	kv.DB, err = badger.Open(options)
@@ -40,12 +38,12 @@ func NewKVStore(kv *KVStore, options badger.Options, flushSize int, nbOfThreads 
 
 	kv.TxBatches = make([]*TxBatch, nbOfThreads)
 
-	for i :=0; i<nbOfThreads; i++ {
-		kv.TxBatches[i] = &TxBatch{NbOfTx: 0, TxBufferSize: flushSize, Entries: new(sync.Map) }
+	for i := 0; i < nbOfThreads; i++ {
+		kv.TxBatches[i] = &TxBatch{NbOfTx: 0, TxBufferSize: flushSize, Entries: new(sync.Map)}
 	}
 
-	kv.TxBatchWithDiscard = &TxBatch{NbOfTx: 0, TxBufferSize: flushSize, Entries: new(sync.Map) }
-	kv.TxBatchWithLock = &TxBatch{NbOfTx: 0, TxBufferSize: flushSize, Entries: new(sync.Map) }
+	kv.TxBatchWithDiscard = &TxBatch{NbOfTx: 0, TxBufferSize: flushSize, Entries: new(sync.Map)}
+	kv.TxBatchWithLock = &TxBatch{NbOfTx: 0, TxBufferSize: flushSize, Entries: new(sync.Map)}
 
 }
 
@@ -91,7 +89,7 @@ func (kv *KVStore) AddValue(key []byte, newVal []byte, threadId int) {
 	if hasKey {
 		// key is already listed, check the old value
 		oV, okOld := oldVal.([]byte)
-		if okOld && ! bytes.Equal(newVal, oV) {
+		if okOld && !bytes.Equal(newVal, oV) {
 			kv.FlushTxBatch(threadId)
 			kv.TxBatches[threadId].Entries.LoadOrStore(string(key), newVal)
 			kv.TxBatches[threadId].NbOfTx += 1
@@ -104,10 +102,10 @@ func (kv *KVStore) AddValue(key []byte, newVal []byte, threadId int) {
 
 func (kv *KVStore) GarbageCollect(count int) {
 
-	for i:=0; i<count; i++ {
+	for i := 0; i < count; i++ {
 		err := kv.DB.RunValueLogGC(0.5)
 		if err != nil {
-			i = count;
+			i = count
 		}
 	}
 
@@ -145,7 +143,6 @@ func (kv *KVStore) FlushTxBatch(threadId int) error {
 
 }
 
-
 func (kv *KVStore) AddValueWithDiscardVersions(key []byte, newVal []byte) {
 
 	kv.TxBatchWithDiscard.Mu.Lock()
@@ -161,7 +158,7 @@ func (kv *KVStore) AddValueWithDiscardVersions(key []byte, newVal []byte) {
 	if hasKey {
 		// key is already listed, check the old value
 		oV, okOld := oldVal.([]byte)
-		if okOld && ! bytes.Equal([]byte(oV), newVal) {
+		if okOld && !bytes.Equal([]byte(oV), newVal) {
 			kv.FlushTxBatchWithDiscardVersions()
 			kv.TxBatchWithDiscard.Entries.LoadOrStore(string(key), newVal)
 			kv.TxBatchWithDiscard.NbOfTx += 1
@@ -175,7 +172,6 @@ func (kv *KVStore) AddValueWithDiscardVersions(key []byte, newVal []byte) {
 	kv.TxBatchWithDiscard.Mu.Unlock()
 
 }
-
 
 func (kv *KVStore) FlushTxBatchWithDiscardVersions() error {
 
@@ -202,7 +198,6 @@ func (kv *KVStore) FlushTxBatchWithDiscardVersions() error {
 	})
 	_ = txn.Commit()
 
-
 	kv.TxBatchWithDiscard.Entries = new(sync.Map)
 	kv.TxBatchWithDiscard.NbOfTx = 0
 
@@ -225,7 +220,7 @@ func (kv *KVStore) AddValueWithLock(key []byte, newVal []byte) {
 	if hasKey {
 		// key is already listed, check the old value
 		oV, okOld := oldVal.([]byte)
-		if okOld && ! bytes.Equal([]byte(oV), newVal) {
+		if okOld && !bytes.Equal([]byte(oV), newVal) {
 			kv.FlushTxBatchWithLock()
 			kv.TxBatchWithLock.Entries.LoadOrStore(string(key), newVal)
 			kv.TxBatchWithLock.NbOfTx += 1
@@ -239,7 +234,6 @@ func (kv *KVStore) AddValueWithLock(key []byte, newVal []byte) {
 	kv.TxBatchWithLock.Mu.Unlock()
 
 }
-
 
 func (kv *KVStore) FlushTxBatchWithLock() error {
 
@@ -265,7 +259,6 @@ func (kv *KVStore) FlushTxBatchWithLock() error {
 		return true
 	})
 	_ = txn.Commit()
-
 
 	kv.TxBatchWithDiscard.Entries = new(sync.Map)
 	kv.TxBatchWithDiscard.NbOfTx = 0
@@ -318,7 +311,7 @@ func (kv *KVStore) GetValueFromBadger(key []byte) ([]byte, error) {
 
 }
 
-func (kv *KVStore) MergeCombinationKeys(combKeys [][]byte, threadId int) ([]byte) {
+func (kv *KVStore) MergeCombinationKeys(combKeys [][]byte, threadId int) []byte {
 
 	kv.Mu.Lock()
 	ids := [][]byte{}
@@ -334,7 +327,7 @@ func (kv *KVStore) MergeCombinationKeys(combKeys [][]byte, threadId int) ([]byte
 		}
 		if err == nil && oldValues != nil {
 			findKey = true
-			for i:=0; (i+1)<len(oldValues); i+=20 {
+			for i := 0; (i + 1) < len(oldValues); i += 20 {
 				ids = append(ids, oldValues[i:i+20])
 			}
 		}
@@ -344,7 +337,7 @@ func (kv *KVStore) MergeCombinationKeys(combKeys [][]byte, threadId int) ([]byte
 		return nil
 	}
 
-	if (len(ids) < 1) {
+	if len(ids) < 1 {
 		return nil
 	}
 
@@ -356,7 +349,6 @@ func (kv *KVStore) MergeCombinationKeys(combKeys [][]byte, threadId int) ([]byte
 	return newKey
 
 }
-
 
 // Utility functions
 func RemoveDuplicatesFromSlice(s [][]byte) [][]byte {

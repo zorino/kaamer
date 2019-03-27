@@ -2,10 +2,9 @@ package kvstore
 
 import (
 	"bytes"
-	"strings"
-	"regexp"
 	"github.com/dgraph-io/badger"
-	// "encoding/hex"
+	"regexp"
+	"strings"
 )
 
 // Gene Ontology Entries
@@ -44,7 +43,7 @@ func (g *G_) CreateValues(entry string, oldKey []byte, gg_ *H_, threadId int) ([
 
 		// real id prefix = "."
 		// goId = "." + goId[5:len(goId)-1]
-		goId = goId[5:len(goId)-1]
+		goId = goId[5 : len(goId)-1]
 
 		goKey, _ := CreateHashValue([][]byte{[]byte(goId)}, false)
 		ids = append(ids, goKey)
@@ -59,14 +58,13 @@ func (g *G_) CreateValues(entry string, oldKey []byte, gg_ *H_, threadId int) ([
 
 	var new = false
 
-
 	if len(ids) == 0 {
 		combinedKey = gg_.NilVal
 	} else {
 
 		combinedKey, _ = gg_.CreateValues(ids, true)
 
-		if ! bytes.Equal(combinedKey, oldKey) {
+		if !bytes.Equal(combinedKey, oldKey) {
 			new = true
 			newCombinedKey, newCombinedVal = gg_.CreateValues(ids, true)
 			gg_.AddValue(newCombinedKey, newCombinedVal, threadId)

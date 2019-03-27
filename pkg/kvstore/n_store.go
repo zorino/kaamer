@@ -1,11 +1,8 @@
 package kvstore
 
 import (
-	// "fmt"
 	"bytes"
-	// "regexp"
 	"github.com/dgraph-io/badger"
-	// "encoding/hex"
 )
 
 // Protein Function Entries (HAMAP or manually defined in uniprot/swissprot)
@@ -28,7 +25,7 @@ func (n *N_) CreateValues(entry string, oldKey []byte, nn_ *H_, threadId int) ([
 
 	if entry == "" && oldKey == nil {
 		return nn_.NilVal, true
-	} else if (entry == "" && oldKey != nil) {
+	} else if entry == "" && oldKey != nil {
 		return nn_.NilVal, false
 	}
 
@@ -49,7 +46,7 @@ func (n *N_) CreateValues(entry string, oldKey []byte, nn_ *H_, threadId int) ([
 	var newCombinedKey = nn_.NilVal
 	var newCombinedVal = nn_.NilVal
 
-	if ! bytes.Equal(combinedKey, oldKey) {
+	if !bytes.Equal(combinedKey, oldKey) {
 		new = true
 		newCombinedKey, newCombinedVal = nn_.CreateValues(ids, true)
 		nn_.AddValue(newCombinedKey, newCombinedVal, threadId)

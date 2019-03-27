@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/zorino/metaprot/cmd/backupdb"
 	"github.com/zorino/metaprot/cmd/makedb"
 	"github.com/zorino/metaprot/cmd/mergedb"
-	"github.com/zorino/metaprot/cmd/backupdb"
 	"os"
 )
 

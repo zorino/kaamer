@@ -1,10 +1,8 @@
 package kvstore
 
 import (
-	// "fmt"
 	"bytes"
 	"github.com/dgraph-io/badger"
-	// "encoding/hex"
 )
 
 // Protein Pathways Entries (HAMAP or manually defined in uniprot/swissprot)
@@ -27,7 +25,7 @@ func (o *O_) CreateValues(entry string, oldKey []byte, oo_ *H_, threadId int) ([
 
 	if entry == "" && oldKey == nil {
 		return oo_.NilVal, true
-	} else if (entry == "" && oldKey != nil) {
+	} else if entry == "" && oldKey != nil {
 		return oo_.NilVal, false
 	}
 
@@ -48,7 +46,7 @@ func (o *O_) CreateValues(entry string, oldKey []byte, oo_ *H_, threadId int) ([
 	var newCombinedKey = oo_.NilVal
 	var newCombinedVal = oo_.NilVal
 
-	if ! bytes.Equal(combinedKey, oldKey) {
+	if !bytes.Equal(combinedKey, oldKey) {
 		new = true
 		newCombinedKey, newCombinedVal = oo_.CreateValues(ids, true)
 		oo_.AddValue(newCombinedKey, newCombinedVal, threadId)
