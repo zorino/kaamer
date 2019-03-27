@@ -167,8 +167,6 @@ func (kv *KVStore) AddValueWithDiscardVersions(key []byte, newVal []byte) {
 		kv.TxBatchWithDiscard.NbOfTx += 1
 	}
 
-	kv.GarbageCollect(100)
-
 	kv.TxBatchWithDiscard.Mu.Unlock()
 
 }
@@ -198,6 +196,7 @@ func (kv *KVStore) FlushTxBatchWithDiscardVersions() error {
 	})
 	_ = txn.Commit()
 
+	kv.GarbageCollect(100)
 	kv.TxBatchWithDiscard.Entries = new(sync.Map)
 	kv.TxBatchWithDiscard.NbOfTx = 0
 
@@ -229,8 +228,6 @@ func (kv *KVStore) AddValueWithLock(key []byte, newVal []byte) {
 		kv.TxBatchWithLock.NbOfTx += 1
 	}
 
-	kv.GarbageCollect(100)
-
 	kv.TxBatchWithLock.Mu.Unlock()
 
 }
@@ -260,6 +257,7 @@ func (kv *KVStore) FlushTxBatchWithLock() error {
 	})
 	_ = txn.Commit()
 
+	kv.GarbageCollect(100)
 	kv.TxBatchWithDiscard.Entries = new(sync.Map)
 	kv.TxBatchWithDiscard.NbOfTx = 0
 
