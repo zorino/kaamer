@@ -3,6 +3,7 @@ package kvstore
 import (
 	"bytes"
 	"crypto/sha1"
+	"fmt"
 	"github.com/dgraph-io/badger"
 	"log"
 	"sort"
@@ -60,6 +61,8 @@ func (kv *KVStore) Flush() {
 	kv.FlushTxBatchWithDiscardVersions()
 	kv.FlushTxBatchWithLock()
 
+	kv.GarbageCollect(1000)
+
 }
 
 func (kv *KVStore) HasKey(key []byte) (bool, []byte) {
@@ -102,6 +105,7 @@ func (kv *KVStore) AddValue(key []byte, newVal []byte, threadId int) {
 
 func (kv *KVStore) GarbageCollect(count int) {
 
+	fmt.Printf("Garbage collect %d times\n", count)
 	for i := 0; i < count; i++ {
 		err := kv.DB.RunValueLogGC(0.5)
 		if err != nil {
@@ -133,8 +137,6 @@ func (kv *KVStore) FlushTxBatch(threadId int) error {
 
 	WB.Flush()
 	WB.Cancel()
-
-	kv.GarbageCollect(100)
 
 	kv.TxBatches[threadId].NbOfTx = 0
 	kv.TxBatches[threadId].Entries = new(sync.Map)
@@ -196,7 +198,6 @@ func (kv *KVStore) FlushTxBatchWithDiscardVersions() error {
 	})
 	_ = txn.Commit()
 
-	kv.GarbageCollect(100)
 	kv.TxBatchWithDiscard.Entries = new(sync.Map)
 	kv.TxBatchWithDiscard.NbOfTx = 0
 
@@ -257,7 +258,6 @@ func (kv *KVStore) FlushTxBatchWithLock() error {
 	})
 	_ = txn.Commit()
 
-	kv.GarbageCollect(100)
 	kv.TxBatchWithDiscard.Entries = new(sync.Map)
 	kv.TxBatchWithDiscard.NbOfTx = 0
 
