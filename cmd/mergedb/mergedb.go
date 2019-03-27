@@ -9,6 +9,7 @@ import (
 	copy "github.com/zorino/metaprot/internal/helper"
 	"github.com/zorino/metaprot/pkg/kvstore"
 	"log"
+	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
@@ -32,6 +33,7 @@ func NewMergedb(dbsPath string, outPath string) {
 		log.Fatal(err.Error())
 	}
 
+	os.Mkdir(outPath, 0700)
 	copy.Dir(allDBs[0], outPath)
 	allDBs = allDBs[1:]
 
