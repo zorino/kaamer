@@ -22,6 +22,7 @@ type KVStore struct {
 	DB                  *badger.DB
 	TxBatches           []*TxBatch
 	TxBatchWithDiscard  *TxBatch
+	TxBatchWithLock     *TxBatch
 	NilVal              []byte
 	Mu                  sync.Mutex
 }
@@ -44,6 +45,7 @@ func NewKVStore(kv *KVStore, options badger.Options, flushSize int, nbOfThreads 
 	}
 
 	kv.TxBatchWithDiscard = &TxBatch{NbOfTx: 0, TxBufferSize: flushSize, Entries: new(sync.Map) }
+	kv.TxBatchWithLock = &TxBatch{NbOfTx: 0, TxBufferSize: flushSize, Entries: new(sync.Map) }
 
 }
 
@@ -58,6 +60,8 @@ func (kv *KVStore) Flush() {
 		kv.FlushTxBatch(i)
 	}
 	kv.FlushTxBatchWithDiscardVersions()
+	kv.FlushTxBatchWithLock()
+
 }
 
 func (kv *KVStore) HasKey(key []byte) (bool, []byte) {
@@ -142,7 +146,7 @@ func (kv *KVStore) FlushTxBatch(threadId int) error {
 }
 
 
-func (kv *KVStore) AddValueWithDiscardVersions(key []byte, newVal []byte){
+func (kv *KVStore) AddValueWithDiscardVersions(key []byte, newVal []byte) {
 
 	kv.TxBatchWithDiscard.Mu.Lock()
 
@@ -206,6 +210,69 @@ func (kv *KVStore) FlushTxBatchWithDiscardVersions() error {
 
 }
 
+func (kv *KVStore) AddValueWithLock(key []byte, newVal []byte) {
+
+	kv.TxBatchWithLock.Mu.Lock()
+
+	bufferFull := (kv.TxBatchWithLock.NbOfTx == kv.TxBatchWithLock.TxBufferSize)
+
+	if bufferFull {
+		kv.FlushTxBatchWithLock()
+	}
+
+	// Check if key is already in batch buffer - insert the new one otherwise
+	oldVal, hasKey := kv.TxBatchWithLock.Entries.LoadOrStore(string(key), newVal)
+	if hasKey {
+		// key is already listed, check the old value
+		oV, okOld := oldVal.([]byte)
+		if okOld && ! bytes.Equal([]byte(oV), newVal) {
+			kv.FlushTxBatchWithLock()
+			kv.TxBatchWithLock.Entries.LoadOrStore(string(key), newVal)
+			kv.TxBatchWithLock.NbOfTx += 1
+		}
+	} else {
+		kv.TxBatchWithLock.NbOfTx += 1
+	}
+
+	kv.GarbageCollect(100)
+
+	kv.TxBatchWithLock.Mu.Unlock()
+
+}
+
+
+func (kv *KVStore) FlushTxBatchWithLock() error {
+
+	if kv.TxBatchWithDiscard.NbOfTx == 0 {
+		// OK, nothing to flush.
+		return nil
+	}
+
+	txn := kv.DB.NewTransaction(true)
+
+	kv.TxBatchWithDiscard.Entries.Range(func(k, v interface{}) bool {
+		key, okKey := k.(string)
+		value, okValue := v.([]byte)
+		if okKey && okValue {
+
+			if err := txn.Set([]byte(key), value); err != nil {
+				_ = txn.Commit()
+				txn = kv.DB.NewTransaction(true)
+				_ = txn.Set([]byte(key), value)
+			}
+
+		}
+		return true
+	})
+	_ = txn.Commit()
+
+
+	kv.TxBatchWithDiscard.Entries = new(sync.Map)
+	kv.TxBatchWithDiscard.NbOfTx = 0
+
+	return nil
+
+}
 
 func (kv *KVStore) GetValue(key []byte) ([]byte, bool) {
 
