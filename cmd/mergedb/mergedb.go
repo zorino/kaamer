@@ -146,5 +146,6 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 	}
 
 	// Done.
+	kvStore1.Flush()
 
 }
