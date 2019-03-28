@@ -105,8 +105,9 @@ func (kv *KVStore) AddValue(key []byte, newVal []byte, threadId int) {
 func (kv *KVStore) GarbageCollect(count int) {
 
 	for i := 0; i < count; i++ {
-		err := kv.DB.RunValueLogGC(0.5)
+		err := kv.DB.RunValueLogGC(0.1)
 		if err != nil {
+			// stop iteration since we hit a GC error
 			i = count
 		}
 	}
