@@ -109,7 +109,9 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 	stream.KeyToList = func(key []byte, it *badger.Iterator) (*pb.KVList, error) {
 
 		valCopy := []byte{}
+		oldVal := []byte{}
 		keyCopy := []byte{}
+		oldKey := []byte{}
 
 		for ; it.Valid(); it.Next() {
 
@@ -124,14 +126,21 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 				break
 			}
 
-			_, err := item.ValueCopy(valCopy)
+			valCopy, err := item.ValueCopy(valCopy)
 			if err != nil {
 				log.Fatal(err.Error())
 			}
 
-			item.KeyCopy(keyCopy)
+			keyCopy = item.KeyCopy(keyCopy)
 
-			kvStore1.AddValueWithLock(keyCopy, valCopy)
+			// Only add key / value from src if not identical as previous iteration
+			// Multiple identical versions remain in unmerged databases
+			if !bytes.Equal(oldKey, keyCopy) && !bytes.Equal(oldVal, valCopy) {
+				kvStore1.AddValueWithLock(keyCopy, valCopy)
+			}
+
+			oldVal = valCopy
+			oldKey = keyCopy
 
 		}
 
