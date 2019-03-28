@@ -3,7 +3,6 @@ package kvstore
 import (
 	"bytes"
 	"crypto/sha1"
-	"fmt"
 	"github.com/dgraph-io/badger"
 	"log"
 	"sort"
@@ -105,7 +104,6 @@ func (kv *KVStore) AddValue(key []byte, newVal []byte, threadId int) {
 
 func (kv *KVStore) GarbageCollect(count int) {
 
-	fmt.Printf("Garbage collect %d times\n", count)
 	for i := 0; i < count; i++ {
 		err := kv.DB.RunValueLogGC(0.5)
 		if err != nil {
@@ -235,14 +233,15 @@ func (kv *KVStore) AddValueWithLock(key []byte, newVal []byte) {
 
 func (kv *KVStore) FlushTxBatchWithLock() error {
 
-	if kv.TxBatchWithDiscard.NbOfTx == 0 {
+	if kv.TxBatchWithLock.NbOfTx == 0 {
 		// OK, nothing to flush.
 		return nil
 	}
 
 	txn := kv.DB.NewTransaction(true)
-
-	kv.TxBatchWithDiscard.Entries.Range(func(k, v interface{}) bool {
+	i:=0
+	kv.TxBatchWithLock.Entries.Range(func(k, v interface{}) bool {
+		i++
 		key, okKey := k.(string)
 		value, okValue := v.([]byte)
 		if okKey && okValue {
@@ -258,8 +257,8 @@ func (kv *KVStore) FlushTxBatchWithLock() error {
 	})
 	_ = txn.Commit()
 
-	kv.TxBatchWithDiscard.Entries = new(sync.Map)
-	kv.TxBatchWithDiscard.NbOfTx = 0
+	kv.TxBatchWithLock.Entries = new(sync.Map)
+	kv.TxBatchWithLock.NbOfTx = 0
 
 	return nil
 
