@@ -71,6 +71,28 @@ func NewMergedb(dbsPath string, outPath string) {
 
 			wg.Wait()
 
+			wg.Add(2)
+			go func(wg *sync.WaitGroup) {
+				defer wg.Done()
+				kvStores1.K_batch.DB.Flatten(nbOfThreads/2)
+			}(wg)
+			go func(wg *sync.WaitGroup) {
+				defer wg.Done()
+				kvStores1.KK_batch.DB.Flatten(nbOfThreads/2)
+			}(wg)
+			wg.Wait()
+
+			wg.Add(2)
+			go func(wg *sync.WaitGroup) {
+				defer wg.Done()
+				kvStores1.K_batch.GarbageCollect(10000, 0.1)
+			}(wg)
+			go func(wg *sync.WaitGroup) {
+				defer wg.Done()
+				kvStores1.KK_batch.GarbageCollect(10000, 0.1)
+			}(wg)
+			wg.Wait()
+
 			kvStores2.Close()
 
 		}
@@ -82,8 +104,6 @@ func NewMergedb(dbsPath string, outPath string) {
 	kvStores1 = kvstore.KVStoresNew(outPath, nbOfThreads)
 
 	kvStores1.MergeKmerValues(nbOfThreads)
-
-	kvStores1.K_batch.GarbageCollect(10000, 0.1)
 
 	kvStores1.Close()
 
