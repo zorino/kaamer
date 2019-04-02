@@ -9,6 +9,7 @@ import (
 	"github.com/dgraph-io/badger/pb"
 	"log"
 	"math"
+	"sync"
 )
 
 // # Stores :
@@ -33,6 +34,11 @@ import (
 //              '.MSAVALPRVSG' => '_213a326b89b'
 //              '_213a326b89b' => '[g_key,f_key,p_key,o_key]'
 //
+
+type KVsToMerge struct {
+	Key    []byte
+	Values [][]byte
+}
 
 type KVStores struct {
 	K_batch  *K_
@@ -227,13 +233,31 @@ func (kvStores *KVStores) MergeKmerValues(nbOfThreads int) {
 
 	fmt.Println("# Merging kmers multiple value versions...")
 
+	jobs := make(chan KVsToMerge)
+	wg := new(sync.WaitGroup)
+
+	halfOfThreads := nbOfThreads
+	if halfOfThreads < 1 {
+		halfOfThreads = 1
+	}
+
+	// thread pool
+	for w := 1; w <= halfOfThreads; w++ {
+		wg.Add(1)
+		go kvStores.KmerValuesMerger(jobs, wg)
+	}
+
+	// Open K_batch insert channel for merged kmers / kcomb KVs
+	kvStores.K_batch.OpenInsertChannel()
+	kvStores.KK_batch.OpenInsertChannel()
+
 	// Stream keys
 	stream := kvStores.K_batch.DB.NewStream()
 
 	// db.NewStreamAt(readTs) for managed mode.
 
 	// -- Optional settings
-	stream.NumGo = nbOfThreads // Set number of goroutines to use for iteration.
+	stream.NumGo = halfOfThreads // Set number of goroutines to use for iteration.
 	stream.Prefix = nil        // Leave nil for iteration over the whole DB.
 	// stream.LogPrefix = "Badger.Streaming" // For identifying stream logs. Outputs to Logger.
 	stream.LogPrefix = ""
@@ -264,32 +288,24 @@ func (kvStores *KVStores) MergeKmerValues(nbOfThreads int) {
 				break
 			}
 			if len(currentKey) < 1 {
-				currentKey = item.KeyCopy(currentKey)
+				currentKey = item.KeyCopy(nil)
 			}
 
-			val, err := item.ValueCopy(nil)
+			valCopy, err := item.ValueCopy(nil)
 			if err != nil {
 				log.Fatal(err.Error())
 			}
 
-			valueList = append(valueList, val)
+			valueList = append(valueList, valCopy)
 
 			nbOfItem += 1
 
 		}
 
 		if nbOfItem > 1 {
-
-			combKey, _, new := kvStores.CreateNewKmerValue(currentKey, valueList)
-			if new {
-				// fmt.Printf("Add new KV %x %x\n", currentKey, combKey)
-				kvStores.K_batch.AddValueWithDiscardVersions(currentKey, combKey)
-
-			} else {
-				// fmt.Printf("Add existing KV %x %x\n", currentKey, valueList[0])
-				kvStores.K_batch.AddValueWithDiscardVersions(currentKey, valueList[0])
-			}
-
+			kvsToMerge := KVsToMerge{Key: currentKey, Values: valueList}
+			// fmt.Printf("Sending KVs to merge key %x\n", currentKey)
+			jobs <- kvsToMerge
 		}
 
 		return nil, nil
@@ -308,100 +324,120 @@ func (kvStores *KVStores) MergeKmerValues(nbOfThreads int) {
 
 	// Done.
 
+	fmt.Println("Closing jobs")
+
+	close(jobs)
+	wg.Wait()
+
+	// Close K_batch insert channel for merged kmers / kcomb KVs
+	kvStores.K_batch.CloseInsertChannel()
+	kvStores.KK_batch.CloseInsertChannel()
+
 	kvStores.K_batch.Flush()
+	kvStores.KK_batch.Flush()
+
 
 }
 
-func (kvStores *KVStores) CreateNewKmerValue(key []byte, values [][]byte) ([]byte, []byte, bool) {
+func (kvStores *KVStores) KmerValuesMerger(jobs <-chan KVsToMerge, wg *sync.WaitGroup) {
 
-	newValueIds := [][]byte{}
-	uniqueValues := RemoveDuplicatesFromSlice(values)
+	defer wg.Done()
 
-	if len(uniqueValues) < 2 {
-		return nil, nil, false
-	}
+	for kvs := range jobs {
 
-	g_values := make(map[string]bool)
-	f_values := make(map[string]bool)
-	p_values := make(map[string]bool)
-	o_values := make(map[string]bool)
-	n_values := make(map[string]bool)
+		// fmt.Printf("Receive KVs to merge key %x\n", kvs.Key)
+		uniqueValues := RemoveDuplicatesFromSlice(kvs.Values)
 
-	for _, value := range uniqueValues {
-		val, _ := kvStores.KK_batch.GetValueFromBadger(value)
+		if len(uniqueValues) < 2 {
+			kvStores.K_batch.AddValueToChannel(kvs.Key, kvs.Values[0], true)
+		}
+
+		g_values := make(map[string]bool)
+		f_values := make(map[string]bool)
+		p_values := make(map[string]bool)
+		o_values := make(map[string]bool)
+		n_values := make(map[string]bool)
+
+		for _, value := range uniqueValues {
+			val, _ := kvStores.KK_batch.GetValueFromBadger(value)
+			i := 0
+			g_values[string(val[(i)*20:(i+1)*20])] = true
+			i += 1
+			f_values[string(val[(i)*20:(i+1)*20])] = true
+			i += 1
+			p_values[string(val[(i)*20:(i+1)*20])] = true
+			i += 1
+			o_values[string(val[(i)*20:(i+1)*20])] = true
+			i += 1
+			n_values[string(val[(i)*20:(i+1)*20])] = true
+		}
+
 		i := 0
-		g_values[string(val[(i)*20:(i+1)*20])] = true
-		i += 1
-		f_values[string(val[(i)*20:(i+1)*20])] = true
-		i += 1
-		p_values[string(val[(i)*20:(i+1)*20])] = true
-		i += 1
-		o_values[string(val[(i)*20:(i+1)*20])] = true
-		i += 1
-		n_values[string(val[(i)*20:(i+1)*20])] = true
+		g_CombKeys := make([][]byte, len(g_values))
+		for k, _ := range g_values {
+			g_CombKeys[i] = []byte(k)
+			i++
+		}
+		i = 0
+		f_CombKeys := make([][]byte, len(f_values))
+		for k, _ := range f_values {
+			f_CombKeys[i] = []byte(k)
+			i++
+		}
+		i = 0
+		p_CombKeys := make([][]byte, len(p_values))
+		for k, _ := range p_values {
+			p_CombKeys[i] = []byte(k)
+			i++
+		}
+		i = 0
+		o_CombKeys := make([][]byte, len(o_values))
+		for k, _ := range o_values {
+			o_CombKeys[i] = []byte(k)
+			i++
+		}
+		i = 0
+		n_CombKeys := make([][]byte, len(n_values))
+		for k, _ := range n_values {
+			n_CombKeys[i] = []byte(k)
+			i++
+		}
+
+		newValueIds := [][]byte{}
+		if len(g_CombKeys) > 1 {
+			newValueIds = append(newValueIds, kvStores.GG_batch.MergeCombinationKeys(g_CombKeys, 0))
+		} else {
+			newValueIds = append(newValueIds, g_CombKeys[0])
+		}
+		if len(f_CombKeys) > 1 {
+			newValueIds = append(newValueIds, kvStores.FF_batch.MergeCombinationKeys(f_CombKeys, 0))
+		} else {
+			newValueIds = append(newValueIds, f_CombKeys[0])
+		}
+		if len(p_CombKeys) > 1 {
+			newValueIds = append(newValueIds, kvStores.PP_batch.MergeCombinationKeys(p_CombKeys, 0))
+		} else {
+			newValueIds = append(newValueIds, p_CombKeys[0])
+		}
+		if len(o_CombKeys) > 1 {
+			newValueIds = append(newValueIds, kvStores.OO_batch.MergeCombinationKeys(o_CombKeys, 0))
+		} else {
+			newValueIds = append(newValueIds, o_CombKeys[0])
+		}
+		if len(n_CombKeys) > 1 {
+			newValueIds = append(newValueIds, kvStores.NN_batch.MergeCombinationKeys(n_CombKeys, 0))
+		} else {
+			newValueIds = append(newValueIds, n_CombKeys[0])
+		}
+
+		newKey, newVal := CreateHashValue(newValueIds, false)
+
+		kvStores.KK_batch.AddValueToChannel(newKey, newVal, true)
+		kvStores.K_batch.AddValueToChannel(kvs.Key, newKey, true)
+
 	}
 
-	i := 0
-	g_CombKeys := make([][]byte, len(g_values))
-	for k, _ := range g_values {
-		g_CombKeys[i] = []byte(k)
-		i++
-	}
-	i = 0
-	f_CombKeys := make([][]byte, len(f_values))
-	for k, _ := range f_values {
-		f_CombKeys[i] = []byte(k)
-		i++
-	}
-	i = 0
-	p_CombKeys := make([][]byte, len(p_values))
-	for k, _ := range p_values {
-		p_CombKeys[i] = []byte(k)
-		i++
-	}
-	i = 0
-	o_CombKeys := make([][]byte, len(o_values))
-	for k, _ := range o_values {
-		o_CombKeys[i] = []byte(k)
-		i++
-	}
-	i = 0
-	n_CombKeys := make([][]byte, len(n_values))
-	for k, _ := range n_values {
-		n_CombKeys[i] = []byte(k)
-		i++
-	}
-
-	if len(g_CombKeys) > 1 {
-		newValueIds = append(newValueIds, kvStores.GG_batch.MergeCombinationKeys(g_CombKeys, 0))
-	} else {
-		newValueIds = append(newValueIds, g_CombKeys[0])
-	}
-	if len(f_CombKeys) > 1 {
-		newValueIds = append(newValueIds, kvStores.FF_batch.MergeCombinationKeys(f_CombKeys, 0))
-	} else {
-		newValueIds = append(newValueIds, f_CombKeys[0])
-	}
-	if len(p_CombKeys) > 1 {
-		newValueIds = append(newValueIds, kvStores.PP_batch.MergeCombinationKeys(p_CombKeys, 0))
-	} else {
-		newValueIds = append(newValueIds, p_CombKeys[0])
-	}
-	if len(o_CombKeys) > 1 {
-		newValueIds = append(newValueIds, kvStores.OO_batch.MergeCombinationKeys(o_CombKeys, 0))
-	} else {
-		newValueIds = append(newValueIds, o_CombKeys[0])
-	}
-	if len(n_CombKeys) > 1 {
-		newValueIds = append(newValueIds, kvStores.NN_batch.MergeCombinationKeys(n_CombKeys, 0))
-	} else {
-		newValueIds = append(newValueIds, n_CombKeys[0])
-	}
-
-	newKey, newVal := CreateHashValue(newValueIds, false)
-	kvStores.KK_batch.AddValueWithDiscardVersions(newKey, newVal)
-
-	return newKey, newVal, true
+	// return newKey, newVal, true
 
 }
 

@@ -25,7 +25,7 @@ func NewMergedb(dbsPath string, outPath string) {
 
 	// For SSD throughput (as done in badger/graphdb) see :
 	// https://groups.google.com/forum/#!topic/golang-nuts/jPb_h3TvlKE/discussion
-	runtime.GOMAXPROCS(128)
+	runtime.GOMAXPROCS(256)
 
 	pattern := dbsPath + "/*"
 	allDBs, err := filepath.Glob(pattern)
@@ -77,9 +77,13 @@ func NewMergedb(dbsPath string, outPath string) {
 
 	}
 
-	kvStores1.Flush()
+	// Close and reopen kvStores1 to prevent uncompleted transactions
+	kvStores1.Close()
+	kvStores1 = kvstore.KVStoresNew(outPath, nbOfThreads)
 
 	kvStores1.MergeKmerValues(nbOfThreads)
+
+	kvStores1.K_batch.GarbageCollect(10000, 0.1)
 
 	kvStores1.Close()
 
@@ -91,6 +95,7 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 	// Stream keys
 	stream := kvStore2.DB.NewStream()
 
+	kvStore1.OpenInsertChannel()
 	// db.NewStreamAt(readTs) for managed mode.
 
 	// -- Optional settings
@@ -136,7 +141,7 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 			// Only add key / value from src if not identical as previous iteration
 			// Multiple identical versions remain in unmerged databases
 			if !bytes.Equal(oldKey, keyCopy) && !bytes.Equal(oldVal, valCopy) {
-				kvStore1.AddValueWithLock(keyCopy, valCopy)
+				kvStore1.AddValueToChannel(keyCopy, valCopy, false)
 			}
 
 			oldVal = valCopy
@@ -160,6 +165,7 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 	}
 
 	// Done.
+	kvStore1.CloseInsertChannel()
 	kvStore1.Flush()
 
 }

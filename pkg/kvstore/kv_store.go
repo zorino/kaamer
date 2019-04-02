@@ -3,11 +3,19 @@ package kvstore
 import (
 	"bytes"
 	"crypto/sha1"
-	"github.com/dgraph-io/badger"
+	"fmt"
 	"log"
 	"sort"
 	"sync"
+
+	"github.com/dgraph-io/badger"
 )
+
+type KV struct {
+	Key    []byte
+	Val    []byte
+	Unique bool
+}
 
 type TxBatch struct {
 	NbOfTx       int
@@ -18,12 +26,18 @@ type TxBatch struct {
 
 // Key Value Store
 type KVStore struct {
-	DB                 *badger.DB
+	DB *badger.DB
+
 	TxBatches          []*TxBatch
-	TxBatchWithDiscard *TxBatch
-	TxBatchWithLock    *TxBatch
-	NilVal             []byte
-	Mu                 sync.Mutex
+
+	TxBatchChannel     []*TxBatch
+	TxBatchChannelWG   *sync.WaitGroup
+	TxBatchChannelJobs chan KV
+
+	NbOfThreads int
+	FlushSize   int
+	NilVal      []byte
+	Mu          sync.Mutex
 }
 
 func NewKVStore(kv *KVStore, options badger.Options, flushSize int, nbOfThreads int) {
@@ -42,8 +56,106 @@ func NewKVStore(kv *KVStore, options badger.Options, flushSize int, nbOfThreads 
 		kv.TxBatches[i] = &TxBatch{NbOfTx: 0, TxBufferSize: flushSize, Entries: new(sync.Map)}
 	}
 
-	kv.TxBatchWithDiscard = &TxBatch{NbOfTx: 0, TxBufferSize: flushSize, Entries: new(sync.Map)}
-	kv.TxBatchWithLock = &TxBatch{NbOfTx: 0, TxBufferSize: flushSize, Entries: new(sync.Map)}
+	kv.NbOfThreads = nbOfThreads
+	kv.FlushSize = flushSize
+
+}
+
+// OpenInsertChannell
+// Open a channel to concurrently do batch insert in the store
+func (kv *KVStore) OpenInsertChannel() {
+
+	// Tx batch channel
+	kv.TxBatchChannel = make([]*TxBatch, kv.NbOfThreads)
+	kv.TxBatchChannelWG = new(sync.WaitGroup)
+	kv.TxBatchChannelJobs = make(chan KV)
+
+	for i := 0; i < kv.NbOfThreads; i++ {
+		kv.TxBatchChannel[i] = &TxBatch{NbOfTx: 0, TxBufferSize: kv.FlushSize, Entries: new(sync.Map)}
+		kv.TxBatchChannelWG.Add(1)
+		go kv.AddValueChanWorker(kv.TxBatchChannel[i])
+	}
+
+}
+
+func (kv *KVStore) CloseInsertChannel() {
+	close(kv.TxBatchChannelJobs)
+	kv.TxBatchChannelWG.Wait()
+}
+
+func (kv *KVStore) AddValueToChannel(key []byte, newVal []byte, unique bool) {
+	newKV := KV{Key: key, Val: newVal, Unique: unique}
+	kv.TxBatchChannelJobs <- newKV
+}
+
+func (kv *KVStore) AddValueChanWorker(batch *TxBatch) {
+
+	defer kv.TxBatchChannelWG.Done()
+
+	for i := range kv.TxBatchChannelJobs {
+
+		// fmt.Printf("Received KV from chan %x %x\n", i.Key, i.Val)
+
+		bufferFull := (batch.NbOfTx == batch.TxBufferSize)
+
+		if bufferFull {
+			kv.FlushBatchChan(batch)
+		}
+
+		// Check if key is already in batch buffer - insert the new one otherwise
+		oldVal, hasKey := batch.Entries.LoadOrStore(string(i.Key), i)
+		if hasKey {
+			// key is already listed, check the old value
+			oV, okOld := oldVal.([]byte)
+			if okOld && !bytes.Equal([]byte(oV), i.Val) {
+				kv.FlushBatchChan(batch)
+				batch.Entries.LoadOrStore(string(i.Key), i)
+				batch.NbOfTx += 1
+			}
+		} else {
+			batch.NbOfTx += 1
+		}
+
+	}
+
+}
+
+func (kv *KVStore) FlushBatchChan(batch *TxBatch) {
+
+	if batch.NbOfTx == 0 {
+		// OK, nothing to flush.
+		return
+	}
+
+	// fmt.Printf("Flushing Batch Chan with %d Txs\n", batch.NbOfTx)
+
+	txn := kv.DB.NewTransaction(true)
+	batch.Entries.Range(func(k, v interface{}) bool {
+		key, okKey := k.(string)
+		item, okValue := v.(KV)
+		if okKey && okValue {
+
+			if item.Unique {
+				if err := txn.SetWithDiscard([]byte(key), item.Val, 0); err != nil {
+					_ = txn.Commit()
+					txn = kv.DB.NewTransaction(true)
+					_ = txn.SetWithDiscard([]byte(key), item.Val, 0)
+				}
+			} else {
+				if err := txn.Set([]byte(key), item.Val); err != nil {
+					_ = txn.Commit()
+					txn = kv.DB.NewTransaction(true)
+					_ = txn.Set([]byte(key), item.Val)
+				}
+			}
+
+		}
+		return true
+	})
+	_ = txn.Commit()
+
+	batch.Entries = new(sync.Map)
+	batch.NbOfTx = 0
 
 }
 
@@ -57,10 +169,12 @@ func (kv *KVStore) Flush() {
 	for i, _ := range kv.TxBatches {
 		kv.FlushTxBatch(i)
 	}
-	kv.FlushTxBatchWithDiscardVersions()
-	kv.FlushTxBatchWithLock()
 
-	kv.GarbageCollect(1000)
+	for _, c := range kv.TxBatchChannel {
+		kv.FlushBatchChan(c)
+	}
+
+	kv.GarbageCollect(1000, 0.1)
 
 }
 
@@ -102,13 +216,16 @@ func (kv *KVStore) AddValue(key []byte, newVal []byte, threadId int) {
 
 }
 
-func (kv *KVStore) GarbageCollect(count int) {
+func (kv *KVStore) GarbageCollect(count int, ratio float64) {
 
-	for i := 0; i < count; i++ {
-		err := kv.DB.RunValueLogGC(0.1)
-		if err != nil {
-			// stop iteration since we hit a GC error
-			i = count
+	fmt.Println("# Garbage collect...")
+	for x := 0; x < 10; x++ {
+		for i := 0; i < count; i++ {
+			err := kv.DB.RunValueLogGC(ratio)
+			if err != nil {
+				// stop iteration since we hit a GC error
+				i = count
+			}
 		}
 	}
 
@@ -139,127 +256,6 @@ func (kv *KVStore) FlushTxBatch(threadId int) error {
 
 	kv.TxBatches[threadId].NbOfTx = 0
 	kv.TxBatches[threadId].Entries = new(sync.Map)
-
-	return nil
-
-}
-
-func (kv *KVStore) AddValueWithDiscardVersions(key []byte, newVal []byte) {
-
-	kv.TxBatchWithDiscard.Mu.Lock()
-
-	bufferFull := (kv.TxBatchWithDiscard.NbOfTx == kv.TxBatchWithDiscard.TxBufferSize)
-
-	if bufferFull {
-		kv.FlushTxBatchWithDiscardVersions()
-	}
-
-	// Check if key is already in batch buffer - insert the new one otherwise
-	oldVal, hasKey := kv.TxBatchWithDiscard.Entries.LoadOrStore(string(key), newVal)
-	if hasKey {
-		// key is already listed, check the old value
-		oV, okOld := oldVal.([]byte)
-		if okOld && !bytes.Equal([]byte(oV), newVal) {
-			kv.FlushTxBatchWithDiscardVersions()
-			kv.TxBatchWithDiscard.Entries.LoadOrStore(string(key), newVal)
-			kv.TxBatchWithDiscard.NbOfTx += 1
-		}
-	} else {
-		kv.TxBatchWithDiscard.NbOfTx += 1
-	}
-
-	kv.TxBatchWithDiscard.Mu.Unlock()
-
-}
-
-func (kv *KVStore) FlushTxBatchWithDiscardVersions() error {
-
-	if kv.TxBatchWithDiscard.NbOfTx == 0 {
-		// OK, nothing to flush.
-		return nil
-	}
-
-	txn := kv.DB.NewTransaction(true)
-
-	kv.TxBatchWithDiscard.Entries.Range(func(k, v interface{}) bool {
-		key, okKey := k.(string)
-		value, okValue := v.([]byte)
-		if okKey && okValue {
-
-			if err := txn.SetWithDiscard([]byte(key), value, 0); err != nil {
-				_ = txn.Commit()
-				txn = kv.DB.NewTransaction(true)
-				_ = txn.SetWithDiscard([]byte(key), value, 0)
-			}
-
-		}
-		return true
-	})
-	_ = txn.Commit()
-
-	kv.TxBatchWithDiscard.Entries = new(sync.Map)
-	kv.TxBatchWithDiscard.NbOfTx = 0
-
-	return nil
-
-}
-
-func (kv *KVStore) AddValueWithLock(key []byte, newVal []byte) {
-
-	kv.TxBatchWithLock.Mu.Lock()
-
-	bufferFull := (kv.TxBatchWithLock.NbOfTx == kv.TxBatchWithLock.TxBufferSize)
-
-	if bufferFull {
-		kv.FlushTxBatchWithLock()
-	}
-
-	// Check if key is already in batch buffer - insert the new one otherwise
-	oldVal, hasKey := kv.TxBatchWithLock.Entries.LoadOrStore(string(key), newVal)
-	if hasKey {
-		// key is already listed, check the old value
-		oV, okOld := oldVal.([]byte)
-		if okOld && !bytes.Equal([]byte(oV), newVal) {
-			kv.FlushTxBatchWithLock()
-			kv.TxBatchWithLock.Entries.LoadOrStore(string(key), newVal)
-			kv.TxBatchWithLock.NbOfTx += 1
-		}
-	} else {
-		kv.TxBatchWithLock.NbOfTx += 1
-	}
-
-	kv.TxBatchWithLock.Mu.Unlock()
-
-}
-
-func (kv *KVStore) FlushTxBatchWithLock() error {
-
-	if kv.TxBatchWithLock.NbOfTx == 0 {
-		// OK, nothing to flush.
-		return nil
-	}
-
-	txn := kv.DB.NewTransaction(true)
-	i:=0
-	kv.TxBatchWithLock.Entries.Range(func(k, v interface{}) bool {
-		i++
-		key, okKey := k.(string)
-		value, okValue := v.([]byte)
-		if okKey && okValue {
-
-			if err := txn.Set([]byte(key), value); err != nil {
-				_ = txn.Commit()
-				txn = kv.DB.NewTransaction(true)
-				_ = txn.Set([]byte(key), value)
-			}
-
-		}
-		return true
-	})
-	_ = txn.Commit()
-
-	kv.TxBatchWithLock.Entries = new(sync.Map)
-	kv.TxBatchWithLock.NbOfTx = 0
 
 	return nil
 
