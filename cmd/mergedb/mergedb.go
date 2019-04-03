@@ -74,11 +74,11 @@ func NewMergedb(dbsPath string, outPath string) {
 			wg.Add(2)
 			go func(wg *sync.WaitGroup) {
 				defer wg.Done()
-				kvStores1.K_batch.DB.Flatten(nbOfThreads/2)
+				kvStores1.K_batch.DB.Flatten(2)
 			}(wg)
 			go func(wg *sync.WaitGroup) {
 				defer wg.Done()
-				kvStores1.KK_batch.DB.Flatten(nbOfThreads/2)
+				kvStores1.KK_batch.DB.Flatten(2)
 			}(wg)
 			wg.Wait()
 
