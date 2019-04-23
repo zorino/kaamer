@@ -2,10 +2,7 @@ package kvstore
 
 import (
 	"encoding/binary"
-	"fmt"
 	"github.com/dgraph-io/badger"
-	"strconv"
-	"strings"
 )
 
 // Kmer Entries
@@ -62,29 +59,18 @@ func (k *K_) CreateBytesKey(kmer string) []byte {
 	return byteArrayKmer
 }
 
-func (k *K_) CreateBytesKey64Bit(kmer string) []byte {
+func (k *K_) CreateBytesVal(entry string) []byte {
+	// expect kmers of length 7
+	entryInt := k.EncodeEntry(entry)
+	byteArrayKmer := make([]byte, 4)
+	binary.BigEndian.PutUint32(byteArrayKmer, entryInt)
 
-	kmerBits := []int{1, 1, 1, 1, 1}
-
-	for _, rune := range kmer {
-		kmerBits = append(kmerBits, GetAminoAcidBits(rune)...)
-	}
-	kmerBitsString := strings.Trim(strings.Replace(fmt.Sprint(kmerBits), " ", "", -1), "[]")
-
-	// to decode : strconv.FormatInt(v, 2)
-	kmerInt64, _ := strconv.ParseInt(kmerBitsString, 2, 64)
-
-	// to decode :
-	// i := int64(binary.LittleEndian.Uint64(byteArrayKmer))
-	// fmt.Println(i)
-	byteArrayKmer := make([]byte, 8)
-	binary.LittleEndian.PutUint64(byteArrayKmer, uint64(kmerInt64))
-
-	// fmt.Println(byteArrayKmer)
+	// kmerString := fmt.Sprintf("%x", kmerInt)
+	// kmerHex := hex.EncodeToString(byteArrayKmer)
 
 	return byteArrayKmer
-
 }
+
 
 // expect kmers of length 7
 func (k *K_) EncodeKmer(kmer string) uint32 {
@@ -143,53 +129,31 @@ func (k *K_) DecodeKmer(key []byte) string {
 
 }
 
-func GetAminoAcidBits(aminoAcid rune) []int {
 
-	switch aminoAcid {
-	case 'A', 'a':
-		return []int{0, 0, 0, 0, 0}
-	case 'C', 'c':
-		return []int{0, 0, 0, 0, 1}
-	case 'D', 'd':
-		return []int{0, 0, 0, 1, 0}
-	case 'E', 'e':
-		return []int{0, 0, 0, 1, 1}
-	case 'F', 'f':
-		return []int{0, 0, 1, 0, 0}
-	case 'G', 'g':
-		return []int{0, 0, 1, 0, 1}
-	case 'H', 'h':
-		return []int{0, 0, 1, 1, 0}
-	case 'I', 'i':
-		return []int{0, 0, 1, 1, 1}
-	case 'K', 'k':
-		return []int{0, 1, 0, 0, 0}
-	case 'L', 'l':
-		return []int{0, 1, 0, 0, 1}
-	case 'M', 'm':
-		return []int{0, 1, 0, 1, 0}
-	case 'N', 'n':
-		return []int{0, 1, 0, 1, 1}
-	case 'P', 'p':
-		return []int{0, 1, 1, 0, 0}
-	case 'Q', 'q':
-		return []int{0, 1, 1, 0, 1}
-	case 'R', 'r':
-		return []int{0, 1, 1, 1, 1}
-	case 'S', 's':
-		return []int{1, 0, 0, 0, 0}
-	case 'T', 't':
-		return []int{1, 0, 0, 0, 1}
-	case 'U', 'u':
-		return []int{1, 0, 0, 1, 0}
-	case 'V', 'v':
-		return []int{1, 0, 0, 1, 1}
-	case 'W', 'w':
-		return []int{1, 0, 1, 0, 0}
-	case 'Y', 'y':
-		return []int{1, 0, 1, 0, 1}
-	default:
-		return []int{0, 0, 0, 0, 0}
+func (k *K_) EncodeEntry(kmer string) uint32 {
+
+	// fmt.Println("#Encoding")
+
+	kmerInt := uint32(0)
+	i := 0
+	shiftIndex := uint8(1)
+
+	// aa pairs
+	for (i + 2) < len(kmer) {
+		// fmt.Printf("%s => %x\n", kmer[i:i+2], aaTable[kmer[i:i+2]])
+		_key := [2]rune{rune(kmer[i]), rune(kmer[i+1])}
+		kmerInt |= k.aaTable[_key] << (32 - (shiftIndex * 9))
+		shiftIndex++
+		i += 2
 	}
+
+	// last aa
+	_key := [2]rune{rune(kmer[len(kmer)-1]), '.'}
+	kmerInt |= k.aaTable[_key]
+
+	// fmt.Printf("%s => %x\n", kmer[len(kmer)-1:], aaTable[kmer[len(kmer)-1:]])
+	// fmt.Println(kmerInt)
+
+	return kmerInt
 
 }

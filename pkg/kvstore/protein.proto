@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package kvstore;
+
+message Protein {
+	string Entry = 1;
+	string ProteinName = 2;
+	string Organism = 3;
+	string Taxonomy = 4;
+	string EC = 5;
+	string Sequence = 6;
+	int32 Length = 7;
+
+	repeated string GO = 8;
+	repeated string HAMAP = 9;
+	repeated string KEGG = 10;
+	repeated string BioCyc = 11;
+}

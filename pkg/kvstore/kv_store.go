@@ -3,12 +3,21 @@ package kvstore
 import (
 	"bytes"
 	"crypto/sha1"
+	"errors"
 	"fmt"
+	"github.com/dgraph-io/badger"
 	"log"
 	"sort"
 	"sync"
+	"sync/atomic"
+)
 
-	"github.com/dgraph-io/badger"
+const (
+	G_STORE = 0
+	F_STORE = 1
+	P_STORE = 2
+	O_STORE = 3
+	N_STORE = 4
 )
 
 type KV struct {
@@ -28,16 +37,15 @@ type TxBatch struct {
 type KVStore struct {
 	DB *badger.DB
 
-	TxBatches          []*TxBatch
-
 	TxBatchChannel     []*TxBatch
 	TxBatchChannelWG   *sync.WaitGroup
 	TxBatchChannelJobs chan KV
 
-	NbOfThreads int
-	FlushSize   int
-	NilVal      []byte
-	Mu          sync.Mutex
+	BatchCounter uint64
+	NbOfThreads  int
+	FlushSize    int
+	NilVal       []byte
+	Mu           sync.Mutex
 }
 
 func NewKVStore(kv *KVStore, options badger.Options, flushSize int, nbOfThreads int) {
@@ -50,12 +58,7 @@ func NewKVStore(kv *KVStore, options badger.Options, flushSize int, nbOfThreads 
 		log.Fatal(err)
 	}
 
-	kv.TxBatches = make([]*TxBatch, nbOfThreads)
-
-	for i := 0; i < nbOfThreads; i++ {
-		kv.TxBatches[i] = &TxBatch{NbOfTx: 0, TxBufferSize: flushSize, Entries: new(sync.Map)}
-	}
-
+	kv.BatchCounter = 0
 	kv.NbOfThreads = nbOfThreads
 	kv.FlushSize = flushSize
 
@@ -68,7 +71,7 @@ func (kv *KVStore) OpenInsertChannel() {
 	// Tx batch channel
 	kv.TxBatchChannel = make([]*TxBatch, kv.NbOfThreads)
 	kv.TxBatchChannelWG = new(sync.WaitGroup)
-	kv.TxBatchChannelJobs = make(chan KV)
+	kv.TxBatchChannelJobs = make(chan KV, 10)
 
 	for i := 0; i < kv.NbOfThreads; i++ {
 		kv.TxBatchChannel[i] = &TxBatch{NbOfTx: 0, TxBufferSize: kv.FlushSize, Entries: new(sync.Map)}
@@ -137,12 +140,14 @@ func (kv *KVStore) FlushBatchChan(batch *TxBatch) {
 
 			if item.Unique {
 				if err := txn.SetWithDiscard([]byte(key), item.Val, 0); err != nil {
+					fmt.Println(err)
 					_ = txn.Commit()
 					txn = kv.DB.NewTransaction(true)
 					_ = txn.SetWithDiscard([]byte(key), item.Val, 0)
 				}
 			} else {
 				if err := txn.Set([]byte(key), item.Val); err != nil {
+					fmt.Println(err)
 					_ = txn.Commit()
 					txn = kv.DB.NewTransaction(true)
 					_ = txn.Set([]byte(key), item.Val)
@@ -157,18 +162,23 @@ func (kv *KVStore) FlushBatchChan(batch *TxBatch) {
 	batch.Entries = new(sync.Map)
 	batch.NbOfTx = 0
 
+	// Do Value GC pseudo every 500 flushes
+	atomic.AddUint64(&kv.BatchCounter, 1)
+	if atomic.LoadUint64(&kv.BatchCounter) >= 499 {
+		atomic.StoreUint64(&kv.BatchCounter, 0)
+		kv.GarbageCollect(1, 0.5)
+	}
+
 }
 
 func (kv *KVStore) Close() {
 	kv.Flush()
+	// kv.DB.Flatten(kv.NbOfThreads)
+	// kv.GarbageCollect(10000, 0.1)
 	kv.DB.Close()
 }
 
 func (kv *KVStore) Flush() {
-
-	for i, _ := range kv.TxBatches {
-		kv.FlushTxBatch(i)
-	}
 
 	for _, c := range kv.TxBatchChannel {
 		kv.FlushBatchChan(c)
@@ -178,43 +188,19 @@ func (kv *KVStore) Flush() {
 
 }
 
-func (kv *KVStore) HasKey(key []byte) (bool, []byte) {
+// func (kv *KVStore) HasKey(key []byte) (bool, []byte) {
 
-	for _, batch := range kv.TxBatches {
-		if val, ok := batch.Entries.Load(string(key)); ok {
-			if _val, okType := val.([]byte); okType {
-				return ok, []byte(_val)
-			}
-		}
-	}
+//	for _, batch := range kv.TxBatches {
+//		if val, ok := batch.Entries.Load(string(key)); ok {
+//			if _val, okType := val.([]byte); okType {
+//				return ok, []byte(_val)
+//			}
+//		}
+//	}
 
-	return false, []byte{}
+//	return false, []byte{}
 
-}
-
-func (kv *KVStore) AddValue(key []byte, newVal []byte, threadId int) {
-
-	bufferFull := (kv.TxBatches[threadId].NbOfTx == kv.TxBatches[threadId].TxBufferSize)
-
-	if bufferFull {
-		kv.FlushTxBatch(threadId)
-	}
-
-	// Check if key is already in batch buffer - insert the new one otherwise
-	oldVal, hasKey := kv.TxBatches[threadId].Entries.LoadOrStore(string(key), newVal)
-	if hasKey {
-		// key is already listed, check the old value
-		oV, okOld := oldVal.([]byte)
-		if okOld && !bytes.Equal(newVal, oV) {
-			kv.FlushTxBatch(threadId)
-			kv.TxBatches[threadId].Entries.LoadOrStore(string(key), newVal)
-			kv.TxBatches[threadId].NbOfTx += 1
-		}
-	} else {
-		kv.TxBatches[threadId].NbOfTx += 1
-	}
-
-}
+// }
 
 func (kv *KVStore) GarbageCollect(count int, ratio float64) {
 
@@ -231,41 +217,7 @@ func (kv *KVStore) GarbageCollect(count int, ratio float64) {
 
 }
 
-func (kv *KVStore) FlushTxBatch(threadId int) error {
-
-	if kv.TxBatches[threadId].NbOfTx == 0 {
-		// OK, nothing to flush.
-		return nil
-	}
-
-	WB := kv.DB.NewWriteBatch()
-
-	kv.TxBatches[threadId].Entries.Range(func(k, v interface{}) bool {
-		key, okKey := k.(string)
-		value, okValue := v.([]byte)
-		if okKey && okValue {
-			WB.Set([]byte(key), value, 0) // Will create txns as needed.
-		} else {
-			log.Fatal("Couldn't insert key val")
-		}
-		return true
-	})
-
-	WB.Flush()
-	WB.Cancel()
-
-	kv.TxBatches[threadId].NbOfTx = 0
-	kv.TxBatches[threadId].Entries = new(sync.Map)
-
-	return nil
-
-}
-
 func (kv *KVStore) GetValue(key []byte) ([]byte, bool) {
-
-	if hasKey, val := kv.HasKey(key); hasKey {
-		return val, true
-	}
 
 	val, err := kv.GetValueFromBadger(key)
 	if err == nil && val != nil {
@@ -297,11 +249,39 @@ func (kv *KVStore) GetValueFromBadger(key []byte) ([]byte, error) {
 
 	if err == nil {
 		return valCopy, err
-	} else {
-		log.Fatal(err.Error())
 	}
 
 	return nil, err
+
+}
+
+func (kv *KVStore) GetValues(key []byte) ([][]byte, error) {
+
+	var values [][]byte
+
+	var iteratorOptions badger.IteratorOptions
+	iteratorOptions.PrefetchValues = true
+	iteratorOptions.PrefetchSize = 20
+	iteratorOptions.AllVersions = true
+
+	err := kv.DB.View(func(txn *badger.Txn) error {
+
+		it := txn.NewIterator(iteratorOptions)
+		defer it.Close()
+		for it.Seek(key); it.ValidForPrefix(key); it.Next() {
+			item := it.Item()
+			val, _ := item.ValueCopy(nil)
+			values = append(values, val)
+			// fmt.Printf("key=%s, value=%s\n", key, val)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return RemoveDuplicatesFromSlice(values), err
 
 }
 
@@ -336,7 +316,7 @@ func (kv *KVStore) MergeCombinationKeys(combKeys [][]byte, threadId int) []byte 
 	}
 
 	newKey, newVal := CreateHashValue(ids, true)
-	kv.AddValue(newKey, newVal, threadId)
+	kv.AddValueToChannel(newKey, newVal, false)
 
 	kv.Mu.Unlock()
 
@@ -381,5 +361,20 @@ func CreateHashValue(ids [][]byte, unique bool) ([]byte, []byte) {
 	bs := h.Sum(nil)
 
 	return bs, joinedIds
+
+}
+
+func SplitHashValue(hashValue []byte) ([][]byte, error) {
+
+	if len(hashValue)%20 != 0 {
+		return nil, errors.New("Wrong hash size")
+	}
+
+	values := [][]byte{}
+	for i := 0; i < len(hashValue)/20; i++ {
+		values = append(values, hashValue[(i)*20:(i+1)*20])
+	}
+
+	return values, nil
 
 }

@@ -2,39 +2,42 @@ package makedb
 
 import (
 	"bufio"
+	"compress/gzip"
+
 	// "log"
 	"fmt"
+	"log"
+	"regexp"
+
 	"github.com/zorino/metaprot/pkg/kvstore"
+
 	// "github.com/zorino/metaprot/cmd/downloaddb"
 	"os"
 	// "path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/golang/protobuf/proto"
 )
 
 const (
 	KMER_SIZE = 7
 )
 
-type Protein struct {
-	Entry            string
-	Status           string // reviewed / unreviewed
-	ProteinName      string // n_store
-	TaxonomicLineage string // o_store
-	GeneOntology     string // g_store
-	FunctionCC       string // f_store
-	Pathway          string // p_store
-	EC_Number        string
-	Sequence         string // k_store
-}
+var buildFullDB = false
 
-func NewMakedb(dbPath string, inputPath string) {
+func NewMakedb(dbPath string, inputPath string, isFullDb bool) {
 
-	// For SSD throughput (as done in badger/graphdb) see :
-	// https://groups.google.com/forum/#!topic/golang-nuts/jPb_h3TvlKE/discussion
-	runtime.GOMAXPROCS(128)
+	buildFullDB = isFullDb
+	runtime.GOMAXPROCS(512)
+
+	if inputPath == "" {
+		Download(".")
+		inputPath = "./uniprotkb.txt.gz"
+	}
 
 	os.Mkdir(dbPath, 0700)
 
@@ -48,32 +51,50 @@ func NewMakedb(dbPath string, inputPath string) {
 	fmt.Printf("# Using %d CPU\n", threadByWorker)
 
 	kvStores := kvstore.KVStoresNew(dbPath, threadByWorker)
-	run(inputPath, KMER_SIZE, kvStores, threadByWorker)
+	kvStores.OpenInsertChannel()
+	run(inputPath, kvStores, threadByWorker)
+	kvStores.CloseInsertChannel()
 	kvStores.Close()
 
 }
 
-func run(fileName string, kmerSize int, kvStores *kvstore.KVStores, nbThreads int) int {
+func run(fileName string, kvStores *kvstore.KVStores, nbThreads int) int {
 
 	file, _ := os.Open(fileName)
+	defer file.Close()
 
-	jobs := make(chan string, 1000)
-	results := make(chan int, 1000)
+	jobs := make(chan string, 10)
+	results := make(chan int)
 	wg := new(sync.WaitGroup)
 
 	// thread pool
-	for w := 1; w <= nbThreads; w++ {
+	for w := 1; w <= nbThreads*2; w++ {
 		wg.Add(1)
-		go readBuffer(jobs, results, wg, kmerSize, kvStores, w-1)
+		go readBuffer(jobs, results, wg, kvStores)
 	}
 
 	// Go over a file line by line and queue up a ton of work
 	go func() {
-		scanner := bufio.NewScanner(file)
+
+		gz, err := gzip.NewReader(file)
+		defer gz.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+		scanner := bufio.NewScanner(gz)
 		buf := make([]byte, 0, 64*1024)
 		scanner.Buffer(buf, 1024*1024)
+		proteinEntry := ""
+		line := ""
 		for scanner.Scan() {
-			jobs <- scanner.Text()
+			line = scanner.Text()
+			if line == "//" {
+				jobs <- proteinEntry
+				proteinEntry = ""
+			} else {
+				proteinEntry += line
+				proteinEntry += "\n"
+			}
 		}
 		close(jobs)
 	}()
@@ -99,88 +120,109 @@ func run(fileName string, kmerSize int, kvStores *kvstore.KVStores, nbThreads in
 
 }
 
-func readBuffer(jobs <-chan string, results chan<- int, wg *sync.WaitGroup, kmerSize int, kvStores *kvstore.KVStores, threadId int) {
+func readBuffer(jobs <-chan string, results chan<- int, wg *sync.WaitGroup, kvStores *kvstore.KVStores) {
 
 	defer wg.Done()
 	// line by line
 	for j := range jobs {
-		processProteinInput(j, kmerSize, kvStores, threadId)
+		processProteinInput(j, kvStores)
 		results <- 1
 	}
 
 }
 
-func processProteinInput(line string, kmerSize int, kvStores *kvstore.KVStores, threadId int) {
+func processProteinInput(textEntry string, kvStores *kvstore.KVStores) {
 
-	s := strings.Split(line, "\t")
+	protein := &kvstore.Protein{}
+	reg := regexp.MustCompile(` \{.*\}\.`)
+	var fields []string
 
-	if len(s) < 9 {
+	for _, l := range strings.Split(textEntry, "\n") {
+
+		if len(l) < 2 {
+			continue
+		}
+		switch l[0:2] {
+		case "ID":
+			protein.Entry = strings.Fields(l[5:])[0]
+		case "DE":
+			if strings.Contains(l[5:], "RecName") {
+				protein.ProteinName = strings.TrimRight(reg.ReplaceAllString(l[19:], "${1}"), ";")
+			} else if strings.Contains(l[5:], "SubName") {
+				if protein.ProteinName != "" {
+					protein.ProteinName += ";;"
+					protein.ProteinName += strings.TrimRight(reg.ReplaceAllString(l[19:], "${1}"), ";")
+				} else {
+					protein.ProteinName = strings.TrimRight(reg.ReplaceAllString(l[19:], "${1}"), ";")
+				}
+			} else if strings.Contains(l[5:], "EC=") {
+				protein.EC = strings.TrimRight(reg.ReplaceAllString(l[17:], "${1}"), ";")
+			}
+		case "OS":
+			protein.Organism = strings.TrimRight(l[5:], ".")
+		case "OC":
+			protein.Taxonomy += l[5:]
+			if protein.Taxonomy != "" {
+				protein.Taxonomy += " "
+			}
+			protein.Taxonomy += l[5:]
+		case "DR":
+			fields = strings.Fields(l[5:])
+			switch fields[0] {
+			case "KEGG;":
+				protein.KEGG = append(protein.KEGG, strings.TrimRight(fields[1], ";"))
+			case "GO;":
+				protein.GO = append(protein.GO, strings.TrimRight(fields[1], ";"))
+			case "BioCyc;":
+				protein.BioCyc = append(protein.BioCyc, strings.TrimRight(fields[1], ";"))
+			case "HAMAP;":
+				protein.HAMAP = append(protein.HAMAP, strings.TrimRight(fields[1], ";"))
+			}
+		case "SQ":
+			fields = strings.Fields(l[5:])
+			len, _ := strconv.Atoi(fields[1])
+			protein.Length = int32(len)
+
+		case "  ":
+			protein.Sequence += strings.ReplaceAll(l[5:], " ", "")
+		}
+	}
+
+	missingFeature := !buildFullDB
+	missingFeature = missingFeature && (protein.GetEC() == "")
+	missingFeature = missingFeature && len(protein.GetGO()) < 1
+	missingFeature = missingFeature && len(protein.GetBioCyc()) < 1
+	missingFeature = missingFeature && len(protein.GetKEGG()) < 1
+	missingFeature = missingFeature && len(protein.GetHAMAP()) < 1
+
+	if missingFeature {
 		return
 	}
 
-	c := Protein{}
-	c.Entry = s[0]
-	c.Status = s[1]
-	c.ProteinName = s[2]
-	c.TaxonomicLineage = s[3]
-	c.GeneOntology = s[4]
-	c.FunctionCC = s[5]
-	c.Pathway = s[6]
-	c.EC_Number = s[7]
-	c.Sequence = s[8]
+	data, err := proto.Marshal(protein)
+	if err != nil {
+		log.Fatal(err.Error())
+	} else {
+		kvStores.ProteinStore.AddValueToChannel([]byte(protein.Entry), data, false)
+	}
+
+	// newProt := &kvstore.Protein{}
+	// err = proto.Unmarshal(data, newProt)
+	// if err != nil {
+	//	log.Fatal("unmarshaling error: ", err)
+	// }
 
 	// skip peptide shorter than kmerSize
-	if len(c.Sequence) < kmerSize {
+	if protein.Length < KMER_SIZE {
 		return
 	}
 
 	// sliding windows of kmerSize on Sequence
-	for i := 0; i < len(c.Sequence)-kmerSize+1; i++ {
+	for i := 0; i < int(protein.Length)-KMER_SIZE+1; i++ {
 
-		key := kvStores.K_batch.CreateBytesKey(c.Sequence[i : i+kmerSize])
-
-		var isNewValue = false
-
-		newValues := [5][]byte{nil, nil, nil, nil, nil}
-
-		// Gene Ontology
-		if gVal, new := kvStores.G_batch.CreateValues(c.GeneOntology, newValues[0], kvStores.GG_batch, threadId); new {
-			isNewValue = isNewValue || new
-			newValues[0] = gVal
-		}
-
-		// Protein Function
-		if fVal, new := kvStores.F_batch.CreateValues(c.FunctionCC, newValues[1], kvStores.FF_batch, threadId); new {
-			isNewValue = isNewValue || new
-			newValues[1] = fVal
-		}
-
-		// Protein Pathway
-		if pVal, new := kvStores.P_batch.CreateValues(c.Pathway, newValues[2], kvStores.PP_batch, threadId); new {
-			isNewValue = isNewValue || new
-			newValues[2] = pVal
-		}
-
-		// Protein Organism
-		if oVal, new := kvStores.O_batch.CreateValues(c.TaxonomicLineage, newValues[3], kvStores.OO_batch, threadId); new {
-			isNewValue = isNewValue || new
-			newValues[3] = oVal
-		}
-
-		// Protein Name
-		if nVal, new := kvStores.N_batch.CreateValues(c.ProteinName, newValues[4], kvStores.NN_batch, threadId); new {
-			isNewValue = isNewValue || new
-			newValues[4] = nVal
-		}
-
-		if isNewValue {
-			combinedKey, combinedVal := kvStores.KK_batch.CreateValues(newValues[:], false)
-			kvStores.KK_batch.AddValue(combinedKey, combinedVal, threadId)
-			kvStores.K_batch.AddValue(key, combinedKey, threadId)
-		}
+		kmerKey := kvStores.KmerStore.CreateBytesKey(protein.Sequence[i : i+KMER_SIZE])
+		kvStores.KmerStore.AddValueToChannel(kmerKey, []byte(protein.Entry), false)
 
 	}
-
-	// fmt.Printf("%#v done\n", c.Entry)
 
 }
