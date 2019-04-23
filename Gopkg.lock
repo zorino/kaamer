@@ -56,12 +56,28 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:1c70b4d7285f792bd387c1adac08825715147fa210b3d2826ffd2bf56be9455b"
+  name = "github.com/go-chi/chi"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "da24bba8dcd4021cafac38724bf10dccc97c3e36"
+  version = "v4.0.2"
+
+[[projects]]
   digest = "1:318f1c959a8a740366fce4b1e1eb2fd914036b4af58fbd0a003349b305f118ad"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
   pruneopts = "UT"
   revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
   version = "v1.3.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:0b1d1971f31c5aefaf5ef78fa12191797782fe178583f0358826a7e575acb5bd"
+  name = "github.com/jlaffaye/ftp"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9b5a3addd7c69b8f3767ce9624198265241f350f"
 
 [[projects]]
   digest = "1:cbf515e2ef22155a1ccaa9e6d8c86f7c84cc7f95f13341d06649492bf8e5d9d5"
@@ -121,6 +137,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:6ad8386de785fb6f27510386094ab36f9bb04b9cbe41c11bf917bde9f2664765"
+  name = "github.com/zorino/counters"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "6ea0e007435b10ca7fe236feaebe03019898bf0a"
+
+[[projects]]
+  branch = "master"
   digest = "1:e0efd295a10a5703f556a97b7f90f9b3a02ee5080b26ee5374d100a6131aea68"
   name = "golang.org/x/net"
   packages = [
@@ -150,10 +174,14 @@
     "github.com/dgraph-io/badger/options",
     "github.com/dgraph-io/badger/pb",
     "github.com/dustin/go-humanize",
+    "github.com/go-chi/chi",
+    "github.com/golang/protobuf/proto",
+    "github.com/jlaffaye/ftp",
     "github.com/klauspost/pgzip",
     "github.com/spaolacci/murmur3",
     "github.com/willf/bitset",
     "github.com/willf/bloom",
+    "github.com/zorino/counters",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
