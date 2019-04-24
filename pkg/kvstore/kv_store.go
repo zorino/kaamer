@@ -109,8 +109,8 @@ func (kv *KVStore) AddValueChanWorker(batch *TxBatch) {
 		oldVal, hasKey := batch.Entries.LoadOrStore(string(i.Key), i)
 		if hasKey {
 			// key is already listed, check the old value
-			oV, okOld := oldVal.([]byte)
-			if okOld && !bytes.Equal([]byte(oV), i.Val) {
+			oV, okOld := oldVal.(KV)
+			if okOld && !bytes.Equal([]byte(oV.Val), i.Val) {
 				kv.FlushBatchChan(batch)
 				batch.Entries.LoadOrStore(string(i.Key), i)
 				batch.NbOfTx += 1
