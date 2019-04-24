@@ -32,7 +32,7 @@ var buildFullDB = false
 func NewMakedb(dbPath string, inputPath string, isFullDb bool) {
 
 	buildFullDB = isFullDb
-	runtime.GOMAXPROCS(512)
+	runtime.GOMAXPROCS(128)
 
 	if inputPath == "" {
 		Download(".")
@@ -68,7 +68,7 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int) int {
 	wg := new(sync.WaitGroup)
 
 	// thread pool
-	for w := 1; w <= nbThreads*2; w++ {
+	for w := 1; w <= nbThreads; w++ {
 		wg.Add(1)
 		go readBuffer(jobs, results, wg, kvStores)
 	}
