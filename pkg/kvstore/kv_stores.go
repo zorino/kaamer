@@ -53,8 +53,8 @@ func KVStoresNew(dbPath string, nbOfThreads int) *KVStores {
 	p_opts.ValueLogMaxEntries = 100000000
 
 	// Open all store
-	kvStores.KmerStore = K_New(k_opts, 5000, nbOfThreads)
-	kvStores.ProteinStore = H_New(p_opts, 5000, nbOfThreads)
+	kvStores.KmerStore = K_New(k_opts, 1000, nbOfThreads)
+	kvStores.ProteinStore = H_New(p_opts, 1000, nbOfThreads)
 
 	return &kvStores
 
