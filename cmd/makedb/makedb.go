@@ -75,7 +75,6 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int) int {
 
 	// Go over a file line by line and queue up a ton of work
 	go func() {
-
 		gz, err := gzip.NewReader(file)
 		defer gz.Close()
 		if err != nil {
@@ -219,10 +218,8 @@ func processProteinInput(textEntry string, kvStores *kvstore.KVStores) {
 
 	// sliding windows of kmerSize on Sequence
 	for i := 0; i < int(protein.Length)-KMER_SIZE+1; i++ {
-
 		kmerKey := kvStores.KmerStore.CreateBytesKey(protein.Sequence[i : i+KMER_SIZE])
 		kvStores.KmerStore.AddValueToChannel(kmerKey, []byte(protein.Entry), false)
-
 	}
 
 }
