@@ -1,15 +1,9 @@
 package kvstore
 
 import (
-	// "bytes"
-	// "context"
-	// "fmt"
 	"github.com/dgraph-io/badger"
 	"github.com/dgraph-io/badger/options"
-	// "github.com/dgraph-io/badger/pb"
-	// "log"
 	"math"
-	// "sync"
 )
 
 // # Stores :
