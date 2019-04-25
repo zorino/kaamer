@@ -63,8 +63,8 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int) int {
 	file, _ := os.Open(fileName)
 	defer file.Close()
 
-	jobs := make(chan string, 10)
-	results := make(chan int)
+	jobs := make(chan string)
+	results := make(chan int, 10)
 	wg := new(sync.WaitGroup)
 
 	// thread pool
@@ -108,12 +108,27 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int) int {
 	// Now, add up the results from the results channel until closed
 	timeStart := time.Now()
 	counts := 0
+	wgGC := new(sync.WaitGroup)
 	for v := range results {
 		counts += v
 		if counts%10000 == 0 {
 			fmt.Printf("Processed %d proteins in %f minutes\n", counts, time.Since(timeStart).Minutes())
 		}
+		// Valuelog GC every 100K processed proteins
+		if counts%100000 == 0 {
+			wgGC.Wait()
+			wgGC.Add(2)
+			go func() {
+				kvStores.KmerStore.GarbageCollect(1, 0.5)
+				wgGC.Done()
+			}()
+			go func() {
+				kvStores.ProteinStore.GarbageCollect(1, 0.5)
+				wgGC.Done()
+			}()
+		}
 	}
+	wgGC.Wait()
 
 	return counts
 
