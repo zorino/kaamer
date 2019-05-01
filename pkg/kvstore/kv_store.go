@@ -9,7 +9,6 @@ import (
 	"log"
 	"sort"
 	"sync"
-	"sync/atomic"
 )
 
 type KV struct {
@@ -109,7 +108,6 @@ func (kv *KVStore) AddValueChanWorker() {
 	kv.TxBatchChannelWG.Done()
 
 }
-
 
 func (kv *KVStore) Close() {
 	kv.Flush()
