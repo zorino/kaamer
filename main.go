@@ -6,9 +6,13 @@ import (
 	"github.com/zorino/metaprot/cmd/makedb"
 	// "github.com/zorino/metaprot/cmd/backupdb"
 	// "github.com/zorino/metaprot/cmd/mergedb"
+	"github.com/zorino/metaprot/api"
 	"github.com/zorino/metaprot/cmd/search"
-	// "github.com/zorino/metaprot/api"
 	"os"
+)
+
+var (
+	MaxInt uint64 = 1<<64 - 1
 )
 
 func main() {
@@ -20,6 +24,7 @@ func main() {
 
 
 	   -serve        start a metaprot server
+
 		  (input)
 			   -d    database directory
 
@@ -52,8 +57,11 @@ func main() {
 			   -i    input tsv file (raw tsv file from -downloaddb -r)
 			   -d    badger database directory
 
+			   -offset    start processing raw uniprot file at protein number x
+			   -length    process x number of proteins (-1 == infinity)
+
 		   (flag)
-			-full    to make a full database (default is the light version)
+			   -full      to make a full database (default is the light version)
 
 
 	   -backupdb     backup database
@@ -64,8 +72,8 @@ func main() {
 
 `
 
-	// var serverOpt = flag.Bool("server", false, "program")
-	// var portNumber = flag.Int("p", 8321, "port argument")
+	var serverOpt = flag.Bool("server", false, "program")
+	var portNumber = flag.Int("p", 8321, "port argument")
 
 	var searchOpt = flag.Bool("search", false, "program")
 	var filePath = flag.String("f", "", "file path argument")
@@ -75,6 +83,8 @@ func main() {
 	var inputPath = flag.String("i", "", "db path argument")
 	var dbPath = flag.String("d", "", "db path argument")
 	var fullDb = flag.Bool("full", false, "to build full database")
+	var makedbOffset = flag.Uint64("offset", 0, "offset to process raw file")
+	var makedbLenght = flag.Uint64("length", MaxInt, "process x number of files")
 
 	// var mergedbOpt = flag.Bool("mergedb", false, "program")
 	// var dbsPath = flag.String("dbs", "", "db path argument")
@@ -86,25 +96,25 @@ func main() {
 
 	flag.Parse()
 
-	// if *serverOpt == true {
-	//	if *dbPath == "" {
-	//		fmt.Println("No db path !")
-	//	} else {
-	//		server.NewServer(*dbPath, *portNumber)
-	//	}
-	//	os.Exit(0)
-	// }
+	if *serverOpt == true {
+		if *dbPath == "" {
+			fmt.Println("No db path !")
+		} else {
+			server.NewServer(*dbPath, *portNumber)
+		}
+		os.Exit(0)
+	}
 
 	if *searchOpt == true {
 
 		if *dbPath == "" {
 			fmt.Println("No db path !")
-		} else if (*filePath == "" && *sequenceString == "") {
+		} else if *filePath == "" && *sequenceString == "" {
 			fmt.Println("Need a sequence of file input !")
 		} else {
-			if (*filePath != "") {
+			if *filePath != "" {
 				search.NewSearch(*dbPath, *filePath, 0)
-			} else if (*sequenceString != "") {
+			} else if *sequenceString != "" {
 				search.NewSearch(*dbPath, *sequenceString, 1)
 			}
 
@@ -113,13 +123,12 @@ func main() {
 		os.Exit(0)
 	}
 
-
 	if *makedbOpt == true {
 
 		if *dbPath == "" {
 			fmt.Println("No db path !")
 		} else {
-			makedb.NewMakedb(*dbPath, *inputPath, *fullDb)
+			makedb.NewMakedb(*dbPath, *inputPath, *fullDb, *makedbOffset, *makedbLenght)
 		}
 
 		os.Exit(0)

@@ -29,7 +29,7 @@ const (
 
 var buildFullDB = false
 
-func NewMakedb(dbPath string, inputPath string, isFullDb bool) {
+func NewMakedb(dbPath string, inputPath string, isFullDb bool, offset uint64, lenght uint64) {
 
 	buildFullDB = isFullDb
 	runtime.GOMAXPROCS(128)
@@ -52,13 +52,13 @@ func NewMakedb(dbPath string, inputPath string, isFullDb bool) {
 
 	kvStores := kvstore.KVStoresNew(dbPath, threadByWorker)
 	kvStores.OpenInsertChannel()
-	run(inputPath, kvStores, threadByWorker)
+	run(inputPath, kvStores, threadByWorker, offset, lenght)
 	kvStores.CloseInsertChannel()
 	kvStores.Close()
 
 }
 
-func run(fileName string, kvStores *kvstore.KVStores, nbThreads int) int {
+func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint64, length uint64) int {
 
 	file, _ := os.Open(fileName)
 	defer file.Close()
@@ -75,6 +75,8 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int) int {
 
 	// Go over a file line by line and queue up a ton of work
 	go func() {
+		proteinNb := uint64(0)
+		lastProtein := offset + length
 		gz, err := gzip.NewReader(file)
 		defer gz.Close()
 		if err != nil {
@@ -88,11 +90,20 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int) int {
 		for scanner.Scan() {
 			line = scanner.Text()
 			if line == "//" {
-				jobs <- proteinEntry
-				proteinEntry = ""
+				proteinNb += 1
+				if proteinNb >= lastProtein {
+					jobs <- proteinEntry
+					break
+				}
+				if proteinNb >= offset {
+					jobs <- proteinEntry
+					proteinEntry = ""
+				}
 			} else {
-				proteinEntry += line
-				proteinEntry += "\n"
+				if proteinNb >= offset {
+					proteinEntry += line
+					proteinEntry += "\n"
+				}
 			}
 		}
 		close(jobs)
@@ -119,7 +130,7 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int) int {
 			wgGC.Wait()
 			wgGC.Add(2)
 			go func() {
-				kvStores.KmerStore.GarbageCollect(1, 0.5)
+				kvStores.KmerStore.GarbageCollect(10, 0.5)
 				wgGC.Done()
 			}()
 			go func() {
