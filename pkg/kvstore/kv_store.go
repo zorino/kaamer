@@ -12,14 +12,6 @@ import (
 	"sync/atomic"
 )
 
-const (
-	G_STORE = 0
-	F_STORE = 1
-	P_STORE = 2
-	O_STORE = 3
-	N_STORE = 4
-)
-
 type KV struct {
 	Key    []byte
 	Val    []byte
@@ -29,7 +21,7 @@ type KV struct {
 type TxBatch struct {
 	NbOfTx       int
 	TxBufferSize int
-	Entries      *sync.Map
+	Entries      map[string]KV
 	Mu           sync.Mutex
 }
 
@@ -37,7 +29,7 @@ type TxBatch struct {
 type KVStore struct {
 	DB *badger.DB
 
-	TxBatchChannel     []*TxBatch
+	TxBatchChannel     []TxBatch
 	TxBatchChannelWG   *sync.WaitGroup
 	TxBatchChannelJobs chan KV
 
@@ -69,14 +61,13 @@ func NewKVStore(kv *KVStore, options badger.Options, flushSize int, nbOfThreads 
 func (kv *KVStore) OpenInsertChannel() {
 
 	// Tx batch channel
-	kv.TxBatchChannel = make([]*TxBatch, kv.NbOfThreads)
+	kv.TxBatchChannel = make([]TxBatch, kv.NbOfThreads)
 	kv.TxBatchChannelWG = new(sync.WaitGroup)
-	kv.TxBatchChannelJobs = make(chan KV, 10)
+	kv.TxBatchChannelJobs = make(chan KV)
 
 	for i := 0; i < kv.NbOfThreads; i++ {
-		kv.TxBatchChannel[i] = &TxBatch{NbOfTx: 0, TxBufferSize: kv.FlushSize, Entries: new(sync.Map)}
 		kv.TxBatchChannelWG.Add(1)
-		go kv.AddValueChanWorker(kv.TxBatchChannel[i])
+		go kv.AddValueChanWorker()
 	}
 
 }
@@ -87,100 +78,38 @@ func (kv *KVStore) CloseInsertChannel() {
 }
 
 func (kv *KVStore) AddValueToChannel(key []byte, newVal []byte, unique bool) {
-	newKV := KV{Key: key, Val: newVal, Unique: unique}
-	kv.TxBatchChannelJobs <- newKV
+	kv.TxBatchChannelJobs <- KV{Key: key, Val: newVal, Unique: unique}
 }
 
-func (kv *KVStore) AddValueChanWorker(batch *TxBatch) {
+func (kv *KVStore) AddValueChanWorker() {
+
+	nbOfTxs := 0
+	keySeen := make(map[string]bool)
+	wb := kv.DB.NewWriteBatch()
 
 	for i := range kv.TxBatchChannelJobs {
 
-		// Check if key is already in batch buffer - insert the new one otherwise
-		oldVal, hasKey := batch.Entries.LoadOrStore(string(i.Key), i)
-		if hasKey {
-			// key is already listed, check the old value
-			oV, okOld := oldVal.(KV)
-			if okOld && !bytes.Equal([]byte(oV.Val), i.Val) {
-				kv.FlushBatchChan(batch)
-				batch.Entries.LoadOrStore(string(i.Key), i)
-				batch.NbOfTx += 1
-			}
-		} else {
-			batch.NbOfTx += 1
+		bufferFull := (nbOfTxs == kv.FlushSize)
+		if _, ok := keySeen[string(i.Key)]; ok || bufferFull {
+			wb.Flush()
+			wb = kv.DB.NewWriteBatch()
+			keySeen = make(map[string]bool)
+			nbOfTxs = 0
 		}
-
-		// Buffer full flush it
-		if (batch.NbOfTx == batch.TxBufferSize) {
-			kv.FlushBatchChan(batch)
+		nbOfTxs++
+		keySeen[string(i.Key)] = true
+		err := wb.Set(i.Key, i.Val, 0) // Will create txns as needed.
+		if err != nil {
+			log.Fatal(err.Error())
 		}
 
 	}
 
+	wb.Flush()
 	kv.TxBatchChannelWG.Done()
 
 }
 
-func (kv *KVStore) FlushBatchChan(batch *TxBatch) {
-
-	if batch.NbOfTx == 0 {
-		// OK, nothing to flush.
-		return
-	}
-
-	txn := kv.DB.NewTransaction(true)
-	batch.Entries.Range(func(k, v interface{}) bool {
-		key, okKey := k.(string)
-		item, okValue := v.(KV)
-		if okKey && okValue {
-
-			if item.Unique {
-				if err := txn.SetWithDiscard([]byte(key), item.Val, 0); err != nil {
-					fmt.Printf("Error with Tx set : %s\n", err.Error())
-					err = txn.Commit()
-					if err != nil {
-						fmt.Printf("Error with Tx commit : %s\n", err.Error())
-					}
-					txn = kv.DB.NewTransaction(true)
-					err = txn.SetWithDiscard([]byte(key), item.Val, 0)
-					if err != nil {
-						fmt.Printf("Error with Tx set : %s\n", err.Error())
-					}
-				}
-			} else {
-				if err := txn.Set([]byte(key), item.Val); err != nil {
-					fmt.Printf("Error with Tx set : %s\n", err.Error())
-					err = txn.Commit()
-					if err != nil {
-						fmt.Printf("Error with Tx commit : %s\n", err.Error())
-					}
-					txn = kv.DB.NewTransaction(true)
-					err = txn.Set([]byte(key), item.Val)
-					if err != nil {
-						fmt.Printf("Error with Tx set : %s\n", err.Error())
-					}
-
-				}
-			}
-
-		}
-		return true
-	})
-	err := txn.Commit()
-	if err != nil {
-		fmt.Printf("Error with Tx commit : %s\n", err.Error())
-	}
-
-	batch.Entries = new(sync.Map)
-	batch.NbOfTx = 0
-
-	// Do Value GC pseudo every 500 flushes
-	atomic.AddUint64(&kv.BatchCounter, 1)
-	if atomic.LoadUint64(&kv.BatchCounter) >= 499 {
-		atomic.StoreUint64(&kv.BatchCounter, 0)
-		kv.GarbageCollect(1, 0.5)
-	}
-
-}
 
 func (kv *KVStore) Close() {
 	kv.Flush()
@@ -188,25 +117,19 @@ func (kv *KVStore) Close() {
 }
 
 func (kv *KVStore) Flush() {
-
-	for _, c := range kv.TxBatchChannel {
-		kv.FlushBatchChan(c)
-	}
-
-	kv.GarbageCollect(10, 0.1)
-
+	// kv.DB.Flatten(kv.NbOfThreads)
+	kv.GarbageCollect(1000000, 0.5)
 }
 
 func (kv *KVStore) GarbageCollect(count int, ratio float64) {
 
 	fmt.Println("# Garbage collect...")
-	for x := 0; x < 10; x++ {
-		for i := 0; i < count; i++ {
-			err := kv.DB.RunValueLogGC(ratio)
-			if err != nil {
-				// stop iteration since we hit a GC error
-				i = count
-			}
+	for i := 0; i < count; i++ {
+		err := kv.DB.RunValueLogGC(ratio)
+		if err != nil {
+			// fmt.Printf("[fail] ValueLog GC %s \n", err.Error())
+			// stop iteration since we hit a GC error
+			i = count
 		}
 	}
 
@@ -260,14 +183,23 @@ func (kv *KVStore) GetValues(key []byte) ([][]byte, error) {
 	iteratorOptions.AllVersions = true
 
 	err := kv.DB.View(func(txn *badger.Txn) error {
-
 		it := txn.NewIterator(iteratorOptions)
 		defer it.Close()
 		for it.Seek(key); it.ValidForPrefix(key); it.Next() {
 			item := it.Item()
-			val, _ := item.ValueCopy(nil)
-			values = append(values, val)
+			var valCopy []byte
+			err2 := item.Value(func(val []byte) error {
+				valCopy = append([]byte{}, val...)
+				return nil
+			})
+			if err2 != nil {
+				log.Fatal(err2.Error())
+				return err2
+			}
+			// val, _ := item.ValueCopy(nil)
+			values = append(values, valCopy)
 		}
+		// fmt.Printf("%x - %d iteration\n", key, iterator)
 		return nil
 	})
 
