@@ -10,14 +10,13 @@ import (
 // kmer_store : kmer (uint32) -> prot_id
 // prot_store : prot_id -> Protein (protobuff)
 
-
 type KVsToMerge struct {
 	Key    []byte
 	Values [][]byte
 }
 
 type KVStores struct {
-	KmerStore  *K_
+	KmerStore    *K_
 	ProteinStore *H_
 }
 
