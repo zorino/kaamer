@@ -145,10 +145,7 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 	// -- End of optional settings.
 
 	// Send is called serially, while Stream.Orchestrate is running.
-	stream.Send = func(list *pb.KVList) error {
-		kvStore1.GarbageCollect(100, 0.5)
-		return nil
-	}
+	stream.Send = nil
 
 	// // Run the stream
 	// Run the stream
