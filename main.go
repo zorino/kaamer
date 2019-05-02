@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/zorino/metaprot/cmd/makedb"
 	// "github.com/zorino/metaprot/cmd/backupdb"
-	// "github.com/zorino/metaprot/cmd/mergedb"
+	"github.com/zorino/metaprot/cmd/mergedb"
 	"github.com/zorino/metaprot/api"
 	"github.com/zorino/metaprot/cmd/search"
 	"os"
@@ -23,7 +23,7 @@ func main() {
   // Analyses
 
 
-	   -serve        start a metaprot server
+	   -server       start a metaprot server
 
 		  (input)
 			   -d    database directory
@@ -63,6 +63,11 @@ func main() {
 		   (flag)
 			   -full      to make a full database (default is the light version)
 
+	   -mergedb      merge 2 databases made with makedb
+
+		  (input)
+			   -dbs  databases directory
+			   -o    output directory of merged database
 
 	   -backupdb     backup database
 
@@ -86,9 +91,9 @@ func main() {
 	var makedbOffset = flag.Uint64("offset", 0, "offset to process raw file")
 	var makedbLenght = flag.Uint64("length", MaxInt, "process x number of files")
 
-	// var mergedbOpt = flag.Bool("mergedb", false, "program")
-	// var dbsPath = flag.String("dbs", "", "db path argument")
-	// var outPath = flag.String("o", "", "db path argument")
+	var mergedbOpt = flag.Bool("mergedb", false, "program")
+	var dbsPath = flag.String("dbs", "", "db path argument")
+	var outPath = flag.String("o", "", "db path argument")
 
 	// var analyseOpt = flag.Bool("analyse", false, "program")
 
@@ -134,14 +139,14 @@ func main() {
 		os.Exit(0)
 	}
 
-	// if *mergedbOpt == true {
-	//	if *dbsPath == "" || *outPath == "" {
-	//		fmt.Println("Need to have a valid databases path !")
-	//	} else {
-	//		mergedb.NewMergedb(*dbsPath, *outPath)
-	//	}
-	//	os.Exit(0)
-	// }
+	if *mergedbOpt == true {
+		if *dbsPath == "" || *outPath == "" {
+			fmt.Println("Need to have a valid databases path !")
+		} else {
+			mergedb.NewMergedb(*dbsPath, *outPath)
+		}
+		os.Exit(0)
+	}
 
 	// if *backupdbOpt == true {
 	//	if *dbPath == "" {

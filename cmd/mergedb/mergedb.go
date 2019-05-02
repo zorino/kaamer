@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/dgraph-io/badger"
-	"github.com/dgraph-io/badger/pb"
-	copy "github.com/zorino/metaprot/internal/helper"
-	"github.com/zorino/metaprot/pkg/kvstore"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
+
+	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/pb"
+	copy "github.com/zorino/metaprot/internal/helper/copy"
+	"github.com/zorino/metaprot/pkg/kvstore"
 )
 
 type DBMerger struct {
@@ -25,7 +26,7 @@ func NewMergedb(dbsPath string, outPath string) {
 
 	// For SSD throughput (as done in badger/graphdb) see :
 	// https://groups.google.com/forum/#!topic/golang-nuts/jPb_h3TvlKE/discussion
-	runtime.GOMAXPROCS(256)
+	runtime.GOMAXPROCS(512)
 
 	pattern := dbsPath + "/*"
 	allDBs, err := filepath.Glob(pattern)
@@ -54,42 +55,19 @@ func NewMergedb(dbsPath string, outPath string) {
 			kvStores2 := kvstore.KVStoresNew(db, nbOfThreads)
 
 			wg := new(sync.WaitGroup)
-			wg.Add(12)
-
-			go MergeStores(kvStores1.K_batch.KVStore, kvStores2.K_batch.KVStore, nbOfThreads, wg)
-			go MergeStores(kvStores1.KK_batch.KVStore, kvStores2.KK_batch.KVStore, 2, wg)
-			go MergeStores(kvStores1.G_batch.KVStore, kvStores2.G_batch.KVStore, 2, wg)
-			go MergeStores(kvStores1.GG_batch.KVStore, kvStores2.GG_batch.KVStore, 2, wg)
-			go MergeStores(kvStores1.F_batch.KVStore, kvStores2.F_batch.KVStore, 2, wg)
-			go MergeStores(kvStores1.FF_batch.KVStore, kvStores2.FF_batch.KVStore, 2, wg)
-			go MergeStores(kvStores1.P_batch.KVStore, kvStores2.P_batch.KVStore, 2, wg)
-			go MergeStores(kvStores1.PP_batch.KVStore, kvStores2.PP_batch.KVStore, 2, wg)
-			go MergeStores(kvStores1.O_batch.KVStore, kvStores2.O_batch.KVStore, 2, wg)
-			go MergeStores(kvStores1.OO_batch.KVStore, kvStores2.OO_batch.KVStore, 2, wg)
-			go MergeStores(kvStores1.N_batch.KVStore, kvStores2.N_batch.KVStore, 2, wg)
-			go MergeStores(kvStores1.NN_batch.KVStore, kvStores2.NN_batch.KVStore, 2, wg)
-
+			wg.Add(2)
+			go MergeStores(kvStores1.KmerStore.KVStore, kvStores2.KmerStore.KVStore, nbOfThreads, wg)
+			go MergeStores(kvStores1.ProteinStore.KVStore, kvStores2.ProteinStore.KVStore, nbOfThreads, wg)
 			wg.Wait()
 
 			wg.Add(2)
 			go func(wg *sync.WaitGroup) {
 				defer wg.Done()
-				kvStores1.K_batch.DB.Flatten(2)
+				kvStores1.KmerStore.GarbageCollect(10000000, 0.5)
 			}(wg)
 			go func(wg *sync.WaitGroup) {
 				defer wg.Done()
-				kvStores1.KK_batch.DB.Flatten(2)
-			}(wg)
-			wg.Wait()
-
-			wg.Add(2)
-			go func(wg *sync.WaitGroup) {
-				defer wg.Done()
-				kvStores1.K_batch.GarbageCollect(10000, 0.1)
-			}(wg)
-			go func(wg *sync.WaitGroup) {
-				defer wg.Done()
-				kvStores1.KK_batch.GarbageCollect(10000, 0.1)
+				kvStores1.ProteinStore.GarbageCollect(10000000, 0.5)
 			}(wg)
 			wg.Wait()
 
@@ -101,11 +79,11 @@ func NewMergedb(dbsPath string, outPath string) {
 
 	// Close and reopen kvStores1 to prevent uncompleted transactions
 	kvStores1.Close()
-	kvStores1 = kvstore.KVStoresNew(outPath, nbOfThreads)
+	// kvStores1 = kvstore.KVStoresNew(outPath, nbOfThreads)
 
-	kvStores1.MergeKmerValues(nbOfThreads)
+	// kvStores1.MergeKmerValues(nbOfThreads)
 
-	kvStores1.Close()
+	// kvStores1.Close()
 
 }
 
@@ -134,9 +112,7 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 	stream.KeyToList = func(key []byte, it *badger.Iterator) (*pb.KVList, error) {
 
 		valCopy := []byte{}
-		oldVal := []byte{}
 		keyCopy := []byte{}
-		oldKey := []byte{}
 
 		for ; it.Valid(); it.Next() {
 
@@ -158,14 +134,7 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 
 			keyCopy = item.KeyCopy(keyCopy)
 
-			// Only add key / value from src if not identical as previous iteration
-			// Multiple identical versions remain in unmerged databases
-			if !bytes.Equal(oldKey, keyCopy) && !bytes.Equal(oldVal, valCopy) {
-				kvStore1.AddValueToChannel(keyCopy, valCopy, false)
-			}
-
-			oldVal = valCopy
-			oldKey = keyCopy
+			kvStore1.AddValueToChannel(keyCopy, valCopy, false)
 
 		}
 
@@ -176,7 +145,10 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 	// -- End of optional settings.
 
 	// Send is called serially, while Stream.Orchestrate is running.
-	stream.Send = nil
+	stream.Send = func(list *pb.KVList) error {
+		kvStore1.GarbageCollect(100, 0.5)
+		return nil
+	}
 
 	// // Run the stream
 	// Run the stream
