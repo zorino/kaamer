@@ -3,24 +3,17 @@ package makedb
 import (
 	"bufio"
 	"compress/gzip"
-
-	// "log"
 	"fmt"
-	"log"
-	"regexp"
-
+	"github.com/golang/protobuf/proto"
 	"github.com/zorino/metaprot/pkg/kvstore"
-
-	// "github.com/zorino/metaprot/cmd/downloaddb"
+	"log"
 	"os"
-	// "path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/golang/protobuf/proto"
 )
 
 const (
