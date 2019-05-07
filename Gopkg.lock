@@ -73,11 +73,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:0b1d1971f31c5aefaf5ef78fa12191797782fe178583f0358826a7e575acb5bd"
+  digest = "1:5e45f3976fe333b9e852a5a1f20a6d39e9633174e7c984e752ad4bdd2966442c"
   name = "github.com/jlaffaye/ftp"
   packages = ["."]
   pruneopts = "UT"
-  revision = "9b5a3addd7c69b8f3767ce9624198265241f350f"
+  revision = "6a014d5e22e6a0b7c1fcb65f59872e4dd1227111"
 
 [[projects]]
   digest = "1:cbf515e2ef22155a1ccaa9e6d8c86f7c84cc7f95f13341d06649492bf8e5d9d5"

@@ -84,7 +84,7 @@ func Download(inputPath string) {
 
 func IODownloadFile(dstFile *os.File, path string) {
 
-	c, err := ftp.DialWithOptions(uniprot_ftp, ftp.DialWithTimeout(5*time.Second))
+	c, err := ftp.Dial(uniprot_ftp, ftp.DialWithTimeout(5*time.Second))
 	if err != nil {
 		fmt.Println("Error c.Dial")
 		log.Fatal(err.Error())
