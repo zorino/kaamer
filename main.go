@@ -6,6 +6,7 @@ import (
 	"github.com/zorino/metaprot/cmd/makedb"
 	// "github.com/zorino/metaprot/cmd/backupdb"
 	"github.com/zorino/metaprot/cmd/mergedb"
+	"github.com/zorino/metaprot/cmd/gcdb"
 	"github.com/zorino/metaprot/api"
 	"github.com/zorino/metaprot/cmd/search"
 	"os"
@@ -69,6 +70,13 @@ func main() {
 			   -dbs  databases directory
 			   -o    output directory of merged database
 
+	   -gcdb         run garbage collection on database
+
+		  (input)
+			   -d        database directory
+			   -it       number of GC iterations
+			   -ratio    number of ratio of the GC (between 0-1)
+
 	   -backupdb     backup database
 
 		  (input)
@@ -95,9 +103,9 @@ func main() {
 	var dbsPath = flag.String("dbs", "", "db path argument")
 	var outPath = flag.String("o", "", "db path argument")
 
-	// var analyseOpt = flag.Bool("analyse", false, "program")
-
-	// var backupdbOpt = flag.Bool("backupdb", false, "program")
+	var gcOpt = flag.Bool("gcdb", false, "program")
+	var gcIteration = flag.Int("it", 100, "number of GC iterations")
+	var gcRatio = flag.Float64("ratio", 0.5, "ratio for GC")
 
 	flag.Parse()
 
@@ -144,6 +152,15 @@ func main() {
 			fmt.Println("Need to have a valid databases path !")
 		} else {
 			mergedb.NewMergedb(*dbsPath, *outPath)
+		}
+		os.Exit(0)
+	}
+
+	if *gcOpt == true {
+		if *dbPath == "" {
+			fmt.Println("No db path !")
+		} else {
+			gcdb.NewGC(*dbPath, *gcIteration, *gcRatio)
 		}
 		os.Exit(0)
 	}
