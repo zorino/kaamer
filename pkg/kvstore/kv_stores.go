@@ -20,15 +20,15 @@ type KVStores struct {
 	ProteinStore *H_
 }
 
-func KVStoresNew(dbPath string, nbOfThreads int) *KVStores {
+func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) *KVStores {
 
 	var kvStores KVStores
 
 	k_opts := badger.DefaultOptions
 	k_opts.Dir = dbPath + "/kmer_store"
 	k_opts.ValueDir = dbPath + "/kmer_store"
-	k_opts.ValueLogLoadingMode = options.MemoryMap
-	k_opts.TableLoadingMode = options.MemoryMap
+	k_opts.TableLoadingMode = tableLoadingMode
+	k_opts.ValueLogLoadingMode = valueLoadingMode
 	k_opts.SyncWrites = false
 	k_opts.NumVersionsToKeep = math.MaxUint32
 	k_opts.MaxTableSize = 768 << 20
@@ -38,8 +38,8 @@ func KVStoresNew(dbPath string, nbOfThreads int) *KVStores {
 	p_opts := badger.DefaultOptions
 	p_opts.Dir = dbPath + "/protein_store"
 	p_opts.ValueDir = dbPath + "/protein_store"
-	p_opts.ValueLogLoadingMode = options.MemoryMap
-	p_opts.TableLoadingMode = options.MemoryMap
+	p_opts.TableLoadingMode = tableLoadingMode
+	p_opts.ValueLogLoadingMode = valueLoadingMode
 	p_opts.SyncWrites = false
 	p_opts.NumVersionsToKeep = 1
 	p_opts.MaxTableSize = 768 << 20

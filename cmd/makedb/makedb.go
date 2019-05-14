@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"compress/gzip"
 	"fmt"
+	"github.com/dgraph-io/badger/options"
 	"github.com/golang/protobuf/proto"
 	"github.com/zorino/metaprot/pkg/kvstore"
 	"log"
@@ -43,10 +44,40 @@ func NewMakedb(dbPath string, inputPath string, isFullDb bool, offset uint64, le
 	fmt.Printf("# Making Database %s from %s\n", dbPath, inputPath)
 	fmt.Printf("# Using %d CPU\n", threadByWorker)
 
-	kvStores := kvstore.KVStoresNew(dbPath, threadByWorker)
+	kvStores := kvstore.KVStoresNew(dbPath, threadByWorker, options.MemoryMap, options.MemoryMap)
 	kvStores.OpenInsertChannel()
 	run(inputPath, kvStores, threadByWorker, offset, lenght)
 	kvStores.CloseInsertChannel()
+	kvStores.Close()
+
+	kvStores = kvstore.KVStoresNew(dbPath, threadByWorker, options.FileIO, options.FileIO)
+
+	fmt.Printf("# Flattening KmerStore...\n")
+	kvStores.KmerStore.DB.Flatten(threadByWorker)
+	fmt.Printf("# Flattening ProteinStore...\n")
+	kvStores.ProteinStore.DB.Flatten(threadByWorker)
+
+	fmt.Printf("# GC KmerStore...\n")
+	kvStores.KmerStore.GarbageCollect(1000000, 0.1)
+	fmt.Printf("# GC ProteinStore...\n")
+	kvStores.ProteinStore.GarbageCollect(1000000, 0.1)
+
+	fmt.Printf("# Backing up KmerStore...\n")
+	kmerStoreBckFile, err := os.Create(dbPath + "/kmer_store.bdg")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	kvStores.KmerStore.DB.Backup(kmerStoreBckFile, 0)
+	kmerStoreBckFile.Close()
+
+	fmt.Printf("# Backing up ProteinStore...\n")
+	proteinStoreBckFile, err := os.Create(dbPath + "/protein_store.bdg")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	kvStores.ProteinStore.DB.Backup(proteinStoreBckFile, 0)
+	proteinStoreBckFile.Close()
+
 	kvStores.Close()
 
 }
@@ -89,8 +120,10 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint
 					break
 				}
 				if proteinNb >= offset {
-					jobs <- proteinEntry
-					proteinEntry = ""
+					if proteinEntry != "" {
+						jobs <- proteinEntry
+						proteinEntry = ""
+					}
 				}
 			} else {
 				if proteinNb >= offset {

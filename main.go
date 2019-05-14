@@ -99,6 +99,9 @@ func main() {
 	var makedbOffset = flag.Uint64("offset", 0, "offset to process raw file")
 	var makedbLenght = flag.Uint64("length", MaxInt, "process x number of files")
 
+	// var downloadOpt = flag.Bool("downloaddb", false, "download uniprotkb or metaprot db")
+	// var rawDbOpt = flag.Bool("r", false, "for uniprotkb raw database")
+
 	var mergedbOpt = flag.Bool("mergedb", false, "program")
 	var dbsPath = flag.String("dbs", "", "db path argument")
 	var outPath = flag.String("o", "", "db path argument")

@@ -1,31 +1,26 @@
 package server
 
 import (
-	"github.com/zorino/metaprot/pkg/kvstore"
-	"github.com/zorino/metaprot/pkg/search"
-
-	// "golang.org/x/net/context"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"github.com/go-chi/chi"
-
-	// "github.com/go-chi/chi/middleware"
+	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
-	// "os"
-	"encoding/json"
-	"path/filepath"
-	"runtime"
+	"github.com/dgraph-io/badger/options"
+	"github.com/go-chi/chi"
+	"github.com/zorino/metaprot/pkg/kvstore"
+	"github.com/zorino/metaprot/pkg/search"
 )
 
 var kvStores *kvstore.KVStores
 
 func NewServer(dbPath string, portNumber int) {
 
-	kvStores = kvstore.KVStoresNew(dbPath, 12)
+	kvStores = kvstore.KVStoresNew(dbPath, 12, options.MemoryMap, options.MemoryMap)
 	defer kvStores.Close()
 
 	r := chi.NewRouter()
@@ -81,7 +76,7 @@ func searchFastq(w http.ResponseWriter, r *http.Request) {
 func searchProtein(w http.ResponseWriter, r *http.Request) {
 
 	// chi.URLParam(r, "key")
-	switch  r.FormValue("type") {
+	switch r.FormValue("type") {
 	case "string":
 		searchRes := search.NewSearchResult(r.FormValue("sequence"), search.PROTEIN_STRING, kvStores, 2)
 		output, _ := json.Marshal(searchRes)

@@ -1,15 +1,16 @@
 package gcdb
 
 import (
+	"github.com/dgraph-io/badger/options"
+	"github.com/zorino/metaprot/pkg/kvstore"
 	"runtime"
 	"sync"
-	"github.com/zorino/metaprot/pkg/kvstore"
 )
 
 func NewGC(dbPath string, iteration int, ratio float64) {
 
 	runtime.GOMAXPROCS(128)
-	kvStores := kvstore.KVStoresNew(dbPath, runtime.NumCPU())
+	kvStores := kvstore.KVStoresNew(dbPath, runtime.NumCPU(), options.MemoryMap, options.MemoryMap)
 
 	wg := new(sync.WaitGroup)
 	wg.Add(2)
