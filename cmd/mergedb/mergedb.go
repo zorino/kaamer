@@ -4,16 +4,17 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/dgraph-io/badger"
-	"github.com/dgraph-io/badger/options"
-	"github.com/dgraph-io/badger/pb"
-	copy "github.com/zorino/metaprot/internal/helper/copy"
-	"github.com/zorino/metaprot/pkg/kvstore"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
+
+	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/options"
+	"github.com/dgraph-io/badger/pb"
+	copy "github.com/zorino/metaprot/internal/helper/copy"
+	"github.com/zorino/metaprot/pkg/kvstore"
 )
 
 type DBMerger struct {
@@ -44,7 +45,7 @@ func NewMergedb(dbsPath string, outPath string) {
 		nbOfThreads = 1
 	}
 
-	kvStores1 := kvstore.KVStoresNew(outPath, nbOfThreads, options.MemoryMap, options.MemoryMap)
+	kvStores1 := kvstore.KVStoresNew(outPath, nbOfThreads, options.FileIO, options.FileIO)
 
 	for _, db := range allDBs {
 
@@ -79,11 +80,6 @@ func NewMergedb(dbsPath string, outPath string) {
 
 	// Close and reopen kvStores1 to prevent uncompleted transactions
 	kvStores1.Close()
-	// kvStores1 = kvstore.KVStoresNew(outPath, nbOfThreads)
-
-	// kvStores1.MergeKmerValues(nbOfThreads)
-
-	// kvStores1.Close()
 
 }
 
