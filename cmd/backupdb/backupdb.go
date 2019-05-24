@@ -1,15 +1,14 @@
 package backupdb
 
 import (
-	"github.com/zorino/metaprot/pkg/kvstore"
-	"github.com/dgraph-io/badger"
-	// "github.com/dgraph-io/badger/options"
-	"runtime"
 	"fmt"
-	"os"
 	"log"
-	// "bufio"
-	// "math"
+	"os"
+	"runtime"
+
+	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/options"
+	"github.com/zorino/metaprot/pkg/kvstore"
 )
 
 func Backupdb(dbPath string, output string) {
@@ -28,25 +27,14 @@ func Backupdb(dbPath string, output string) {
 		os.Mkdir(output, 0700)
 	}
 
-	kvStores1 := kvstore.KVStoresNew(dbPath, nbOfThreads)
+	kvStores1 := kvstore.KVStoresNew(dbPath, nbOfThreads, options.MemoryMap, options.FileIO)
 
-	Backup(kvStores1.K_batch.DB, output+"/k_store.bck")
-	Backup(kvStores1.KK_batch.DB, output+"/kk_store.bck")
-	Backup(kvStores1.G_batch.DB, output+"/g_store.bck")
-	Backup(kvStores1.GG_batch.DB, output+"/gg_store.bck")
-	Backup(kvStores1.F_batch.DB, output+"/f_store.bck")
-	Backup(kvStores1.FF_batch.DB, output+"/ff_store.bck")
-	Backup(kvStores1.P_batch.DB, output+"/p_store.bck")
-	Backup(kvStores1.PP_batch.DB, output+"/pp_store.bck")
-	Backup(kvStores1.O_batch.DB, output+"/o_store.bck")
-	Backup(kvStores1.OO_batch.DB, output+"/oo_store.bck")
-	Backup(kvStores1.N_batch.DB, output+"/nn_store.bck")
-	Backup(kvStores1.NN_batch.DB, output+"/nn_store.bck")
+	Backup(kvStores1.KmerStore.DB, output+"/kmer_store.bdg")
+	Backup(kvStores1.ProteinStore.DB, output+"/protein_store.bdg")
 
 	kvStores1.Close()
 
 }
-
 
 func Backup(db *badger.DB, bckFile string) {
 
@@ -55,7 +43,7 @@ func Backup(db *badger.DB, bckFile string) {
 		log.Fatal(err.Error())
 	}
 
-	fmt.Println("Backup ...")
+	fmt.Printf("# Backup %s\n", bckFile)
 	db.Backup(f, 0)
 
 	f.Close()
