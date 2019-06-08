@@ -3,10 +3,8 @@ package makedb
 import (
 	"bufio"
 	"compress/gzip"
+	"encoding/binary"
 	"fmt"
-	"github.com/dgraph-io/badger/options"
-	"github.com/golang/protobuf/proto"
-	"github.com/zorino/metaprot/pkg/kvstore"
 	"log"
 	"os"
 	"regexp"
@@ -15,6 +13,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/dgraph-io/badger/options"
+	"github.com/golang/protobuf/proto"
+	"github.com/zorino/metaprot/pkg/kvstore"
 )
 
 const (
@@ -23,7 +25,12 @@ const (
 
 var buildFullDB = false
 
-func NewMakedb(dbPath string, inputPath string, isFullDb bool, offset uint64, lenght uint64) {
+type ProteinBuf struct {
+	proteinId    uint
+	proteinEntry string
+}
+
+func NewMakedb(dbPath string, inputPath string, isFullDb bool, offset uint, lenght uint, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
 
 	buildFullDB = isFullDb
 	runtime.GOMAXPROCS(128)
@@ -44,13 +51,13 @@ func NewMakedb(dbPath string, inputPath string, isFullDb bool, offset uint64, le
 	fmt.Printf("# Making Database %s from %s\n", dbPath, inputPath)
 	fmt.Printf("# Using %d CPU\n", threadByWorker)
 
-	kvStores := kvstore.KVStoresNew(dbPath, threadByWorker, options.MemoryMap, options.MemoryMap)
+	kvStores := kvstore.KVStoresNew(dbPath, threadByWorker, tableLoadingMode, valueLoadingMode, maxSize)
 	kvStores.OpenInsertChannel()
 	run(inputPath, kvStores, threadByWorker, offset, lenght)
 	kvStores.CloseInsertChannel()
 	kvStores.Close()
 
-	kvStores = kvstore.KVStoresNew(dbPath, threadByWorker, options.FileIO, options.FileIO)
+	kvStores = kvstore.KVStoresNew(dbPath, threadByWorker, tableLoadingMode, valueLoadingMode, maxSize)
 
 	fmt.Printf("# Flattening KmerStore...\n")
 	kvStores.KmerStore.DB.Flatten(threadByWorker)
@@ -62,32 +69,16 @@ func NewMakedb(dbPath string, inputPath string, isFullDb bool, offset uint64, le
 	fmt.Printf("# GC ProteinStore...\n")
 	kvStores.ProteinStore.GarbageCollect(1000000, 0.1)
 
-	fmt.Printf("# Backing up KmerStore...\n")
-	kmerStoreBckFile, err := os.Create(dbPath + "/kmer_store.bdg")
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	kvStores.KmerStore.DB.Backup(kmerStoreBckFile, 0)
-	kmerStoreBckFile.Close()
-
-	fmt.Printf("# Backing up ProteinStore...\n")
-	proteinStoreBckFile, err := os.Create(dbPath + "/protein_store.bdg")
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	kvStores.ProteinStore.DB.Backup(proteinStoreBckFile, 0)
-	proteinStoreBckFile.Close()
-
 	kvStores.Close()
 
 }
 
-func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint64, length uint64) int {
+func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint, length uint) int {
 
 	file, _ := os.Open(fileName)
 	defer file.Close()
 
-	jobs := make(chan string)
+	jobs := make(chan ProteinBuf)
 	results := make(chan int, 10)
 	wg := new(sync.WaitGroup)
 
@@ -99,7 +90,7 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint
 
 	// Go over a file line by line and queue up a ton of work
 	go func() {
-		proteinNb := uint64(0)
+		proteinNb := uint(0)
 		lastProtein := offset + length
 		gz, err := gzip.NewReader(file)
 		defer gz.Close()
@@ -116,12 +107,12 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint
 			if line == "//" {
 				proteinNb += 1
 				if proteinNb >= lastProtein {
-					jobs <- proteinEntry
+					jobs <- ProteinBuf{proteinId: proteinNb, proteinEntry: proteinEntry}
 					break
 				}
 				if proteinNb >= offset {
 					if proteinEntry != "" {
-						jobs <- proteinEntry
+						jobs <- ProteinBuf{proteinId: proteinNb, proteinEntry: proteinEntry}
 						proteinEntry = ""
 					}
 				}
@@ -152,7 +143,7 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint
 			fmt.Printf("Processed %d proteins in %f minutes\n", counts, time.Since(timeStart).Minutes())
 		}
 		// Valuelog GC every 100K processed proteins
-		if counts%100000 == 0 {
+		if counts%1000000 == 0 {
 			wgGC.Wait()
 			wgGC.Add(2)
 			go func() {
@@ -171,7 +162,7 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint
 
 }
 
-func readBuffer(jobs <-chan string, results chan<- int, wg *sync.WaitGroup, kvStores *kvstore.KVStores) {
+func readBuffer(jobs <-chan ProteinBuf, results chan<- int, wg *sync.WaitGroup, kvStores *kvstore.KVStores) {
 
 	defer wg.Done()
 	// line by line
@@ -182,8 +173,9 @@ func readBuffer(jobs <-chan string, results chan<- int, wg *sync.WaitGroup, kvSt
 
 }
 
-func processProteinInput(textEntry string, kvStores *kvstore.KVStores) {
+func processProteinInput(proteinBuf ProteinBuf, kvStores *kvstore.KVStores) {
 
+	textEntry := proteinBuf.proteinEntry
 	protein := &kvstore.Protein{}
 	reg := regexp.MustCompile(` \{.*\}\.`)
 	var fields []string
@@ -250,18 +242,15 @@ func processProteinInput(textEntry string, kvStores *kvstore.KVStores) {
 		return
 	}
 
+	proteinId := make([]byte, 4)
+	binary.BigEndian.PutUint32(proteinId, uint32(proteinBuf.proteinId))
+
 	data, err := proto.Marshal(protein)
 	if err != nil {
 		log.Fatal(err.Error())
 	} else {
-		kvStores.ProteinStore.AddValueToChannel([]byte(protein.Entry), data, false)
+		kvStores.ProteinStore.AddValueToChannel(proteinId, data, false)
 	}
-
-	// newProt := &kvstore.Protein{}
-	// err = proto.Unmarshal(data, newProt)
-	// if err != nil {
-	//	log.Fatal("unmarshaling error: ", err)
-	// }
 
 	// skip peptide shorter than kmerSize
 	if protein.Length < KMER_SIZE {
@@ -271,7 +260,7 @@ func processProteinInput(textEntry string, kvStores *kvstore.KVStores) {
 	// sliding windows of kmerSize on Sequence
 	for i := 0; i < int(protein.Length)-KMER_SIZE+1; i++ {
 		kmerKey := kvStores.KmerStore.CreateBytesKey(protein.Sequence[i : i+KMER_SIZE])
-		kvStores.KmerStore.AddValueToChannel(kmerKey, []byte(protein.Entry), false)
+		kvStores.KmerStore.AddValueToChannel(kmerKey, proteinId, false)
 	}
 
 }

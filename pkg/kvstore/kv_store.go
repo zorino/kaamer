@@ -5,10 +5,11 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
-	"github.com/dgraph-io/badger"
 	"log"
 	"sort"
 	"sync"
+
+	"github.com/dgraph-io/badger"
 )
 
 type KV struct {
@@ -116,20 +117,24 @@ func (kv *KVStore) Close() {
 
 func (kv *KVStore) Flush() {
 	// kv.DB.Flatten(kv.NbOfThreads)
-	kv.GarbageCollect(1000000, 0.5)
+	kv.GarbageCollect(1000000, 0.1)
 }
 
 func (kv *KVStore) GarbageCollect(count int, ratio float64) {
 
 	fmt.Println("# Garbage collect...")
+	numberOfGC := count
 	for i := 0; i < count; i++ {
+		numberOfGC = i + 1
 		err := kv.DB.RunValueLogGC(ratio)
 		if err != nil {
-			// fmt.Printf("[fail] ValueLog GC %s \n", err.Error())
+			fmt.Printf("DEBUG ValueLog GC failed with : %s \n", err.Error())
 			// stop iteration since we hit a GC error
 			i = count
+			numberOfGC--
 		}
 	}
+	fmt.Printf("# Garbage collected %d times\n", numberOfGC)
 
 }
 
@@ -302,3 +307,17 @@ func SplitHashValue(hashValue []byte) ([][]byte, error) {
 	return values, nil
 
 }
+
+// func CreateProteinHashId(entryId string) []byte {
+//	h := fnv.New64a()
+//	h.Write([]byte(s))
+//	hashInt := h.Sum64()
+//	if hashInt > 9223372036854775807 {
+//		hashInt = (hashInt - 9223372036854775807)
+//	}
+
+//	bs := make([]byte, 8)
+//	binary.BigEndian.PutUint64(bs, hashInt)
+
+//	return bs
+// }

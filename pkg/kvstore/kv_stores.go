@@ -1,9 +1,10 @@
 package kvstore
 
 import (
+	"math"
+
 	"github.com/dgraph-io/badger"
 	"github.com/dgraph-io/badger/options"
-	"math"
 )
 
 // # Stores :
@@ -20,7 +21,13 @@ type KVStores struct {
 	ProteinStore *H_
 }
 
-func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) *KVStores {
+const (
+	MaxTableSize        = 768 << 20
+	MaxValueLogFileSize = 2048 << 20
+	MaxValueLogEntries  = 100000000
+)
+
+func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, maxSize bool) *KVStores {
 
 	var kvStores KVStores
 
@@ -31,8 +38,11 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 	k_opts.ValueLogLoadingMode = valueLoadingMode
 	k_opts.SyncWrites = false
 	k_opts.NumVersionsToKeep = math.MaxUint32
-	k_opts.MaxTableSize = 768 << 20
-	k_opts.ValueLogMaxEntries = 100000000
+	if maxSize {
+		k_opts.MaxTableSize = MaxTableSize
+		k_opts.ValueLogFileSize = MaxValueLogFileSize
+		k_opts.ValueLogMaxEntries = MaxValueLogEntries
+	}
 	k_opts.NumCompactors = 8
 
 	p_opts := badger.DefaultOptions
@@ -42,8 +52,11 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 	p_opts.ValueLogLoadingMode = valueLoadingMode
 	p_opts.SyncWrites = false
 	p_opts.NumVersionsToKeep = 1
-	p_opts.MaxTableSize = 768 << 20
-	p_opts.ValueLogMaxEntries = 100000000
+	if maxSize {
+		p_opts.MaxTableSize = MaxTableSize
+		p_opts.ValueLogFileSize = MaxValueLogFileSize
+		p_opts.ValueLogMaxEntries = MaxValueLogEntries
+	}
 
 	// Open all store
 	kvStores.KmerStore = K_New(k_opts, 1000, nbOfThreads)

@@ -11,7 +11,7 @@ import (
 	"github.com/zorino/metaprot/pkg/kvstore"
 )
 
-func Backupdb(dbPath string, output string) {
+func Backupdb(dbPath string, output string, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
 
 	// For SSD throughput (as done in badger/graphdb) see :
 	// https://groups.google.com/forum/#!topic/golang-nuts/jPb_h3TvlKE/discussion
@@ -27,7 +27,7 @@ func Backupdb(dbPath string, output string) {
 		os.Mkdir(output, 0700)
 	}
 
-	kvStores1 := kvstore.KVStoresNew(dbPath, nbOfThreads, options.MemoryMap, options.FileIO)
+	kvStores1 := kvstore.KVStoresNew(dbPath, nbOfThreads, tableLoadingMode, valueLoadingMode, true)
 
 	Backup(kvStores1.KmerStore.DB, output+"/kmer_store.bdg")
 	Backup(kvStores1.ProteinStore.DB, output+"/protein_store.bdg")

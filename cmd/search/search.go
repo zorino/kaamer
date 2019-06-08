@@ -1,10 +1,11 @@
 package search
 
 import (
+	"runtime"
+
 	"github.com/dgraph-io/badger/options"
 	"github.com/zorino/metaprot/pkg/kvstore"
 	"github.com/zorino/metaprot/pkg/search"
-	"runtime"
 )
 
 const (
@@ -19,7 +20,7 @@ const (
 func NewSearch(dbPath string, input string, inputType int) {
 
 	nbOfThreads := runtime.NumCPU()
-	kvStores := kvstore.KVStoresNew(dbPath, nbOfThreads, options.MemoryMap, options.MemoryMap)
+	kvStores := kvstore.KVStoresNew(dbPath, nbOfThreads, options.MemoryMap, options.MemoryMap, false)
 
 	search.NewSearchResult(input, PROTEIN_STRING, kvStores, nbOfThreads)
 	// searchRes.G_hits

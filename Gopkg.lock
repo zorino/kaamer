@@ -112,6 +112,14 @@
   version = "v0.8.1"
 
 [[projects]]
+  digest = "1:2e76a73cb51f42d63a2a1a85b3dc5731fd4faf6821b434bd0ef2c099186031d6"
+  name = "github.com/rs/xid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "15d26544def341f036c5f8dca987a4cbe575032c"
+  version = "v1.2.1"
+
+[[projects]]
   digest = "1:919bb3aa6d9d0b67648c219fa4925312bc3c2872da19e818fa769e9c97a2b643"
   name = "github.com/spaolacci/murmur3"
   packages = ["."]
@@ -178,6 +186,7 @@
     "github.com/golang/protobuf/proto",
     "github.com/jlaffaye/ftp",
     "github.com/klauspost/pgzip",
+    "github.com/rs/xid",
     "github.com/spaolacci/murmur3",
     "github.com/willf/bitset",
     "github.com/willf/bloom",

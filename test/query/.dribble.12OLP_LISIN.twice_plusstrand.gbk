@@ -1,0 +1,6 @@
+     CDS             25..3288
+                     /note="ID=1_1;partial=10;start_type=Edge;rbs_motif=None;rbs_spacer=None;gc_cont=0.392;conf=99.99;score=417.08;cscore=413.86;sscore=3.22;rscore=0.00;uscore=0.00;tscore=3.22;"
+     CDS             3275..6586
+                     /note="ID=1_2;partial=00;start_type=ATG;rbs_motif=AAAAAA;rbs_spacer=12bp;gc_cont=0.395;conf=99.99;score=422.10;cscore=404.45;sscore=17.65;rscore=8.22;uscore=5.17;tscore=3.47;"
+     CDS             3323..6586
+                     /note="ID=1_2;partial=00;start_type=ATG;rbs_motif=AAAAAA;rbs_spacer=12bp;gc_cont=0.395;conf=99.99;score=422.10;cscore=404.45;sscore=17.65;rscore=8.22;uscore=5.17;tscore=3.47;"

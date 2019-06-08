@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -12,15 +14,19 @@ import (
 
 	"github.com/dgraph-io/badger/options"
 	"github.com/go-chi/chi"
+	"github.com/rs/xid"
 	"github.com/zorino/metaprot/pkg/kvstore"
 	"github.com/zorino/metaprot/pkg/search"
 )
 
 var kvStores *kvstore.KVStores
+var tmpFolder string
 
-func NewServer(dbPath string, portNumber int) {
+func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
 
-	kvStores = kvstore.KVStoresNew(dbPath, 12, options.MemoryMap, options.MemoryMap)
+	tmpFolder = "/tmp/"
+
+	kvStores = kvstore.KVStoresNew(dbPath, 12, tableLoadingMode, valueLoadingMode, false)
 	defer kvStores.Close()
 
 	r := chi.NewRouter()
@@ -50,16 +56,12 @@ func NewServer(dbPath string, portNumber int) {
 
 func APIRoutes(r chi.Router, path string, kvStores *kvstore.KVStores) {
 
-	// RESTy routes for "articles" resource
+	// RESTy routes for "search" function
 	r.Route("/api/search", func(r chi.Router) {
 		r.Post("/protein", searchProtein)
 		r.Post("/fastq", searchFastq)
+		r.Post("/nucleotide", searchNucleotide)
 	})
-
-	// searchRes := search.NewSearchResult(sequenceOrFile, sequenceType, kvStores, nbOfThreads)
-	// r.Get(path, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	//	w.Write([]byte("API route"))
-	// }))
 
 }
 
@@ -67,6 +69,16 @@ func searchFastq(w http.ResponseWriter, r *http.Request) {
 
 	// chi.URLParam(r, "key")
 	searchRes := search.NewSearchResult(r.FormValue("sequence"), search.PROTEIN_STRING, kvStores, 2)
+	output, _ := json.Marshal(searchRes)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(output)
+
+}
+
+func searchNucleotide(w http.ResponseWriter, r *http.Request) {
+
+	// chi.URLParam(r, "key")
+	searchRes := search.NewSearchResult(r.FormValue("sequence"), search.NUCLEOTIDE_STRING, kvStores, 2)
 	output, _ := json.Marshal(searchRes)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(output)
@@ -84,10 +96,20 @@ func searchProtein(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		w.Write(output)
 	case "file":
-		w.Write([]byte("Uploading file"))
+		file, err := uploadHandler(w, r)
+		if err != nil {
+			w.WriteHeader(400)
+			fmt.Fprintln(w, err.Error())
+		} else {
+			w.Write([]byte("Uploaded file to " + file))
+			search.NewSearchResult(file, search.PROTEIN_FILE, kvStores, 2)
+		}
+	case "path":
+		w.Write([]byte("Reading local file"))
+		search.NewSearchResult(r.FormValue("file"), search.PROTEIN_FILE, kvStores, 2)
 	default:
 		w.WriteHeader(400)
-		w.Write([]byte("Need request type ! string or file"))
+		w.Write([]byte("Need request type ! string or file or path"))
 	}
 
 }
@@ -111,4 +133,31 @@ func DocRoutes(r chi.Router, path string, root http.FileSystem) {
 	r.Get(path, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fs.ServeHTTP(w, r)
 	}))
+
+}
+
+func uploadHandler(w http.ResponseWriter, r *http.Request) (string, error) {
+
+	r.ParseMultipartForm(0)
+	defer r.MultipartForm.RemoveAll()
+	fi, info, err := r.FormFile("file")
+	if err != nil {
+		return "", err
+	}
+	defer fi.Close()
+
+	fmt.Printf("Received %v", info.Filename)
+	guid := xid.New()
+	file := tmpFolder + guid.String() + ".fasta"
+
+	out, err := os.Create(file)
+	if err != nil {
+		return "", err
+	}
+	_, err = io.Copy(out, fi)
+	if err != nil {
+		return "", err
+	}
+
+	return file, err
 }

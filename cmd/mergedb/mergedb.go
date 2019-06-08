@@ -23,7 +23,7 @@ type DBMerger struct {
 	KVToMerge sync.Map
 }
 
-func NewMergedb(dbsPath string, outPath string) {
+func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
 
 	// For SSD throughput (as done in badger/graphdb) see :
 	// https://groups.google.com/forum/#!topic/golang-nuts/jPb_h3TvlKE/discussion
@@ -35,6 +35,7 @@ func NewMergedb(dbsPath string, outPath string) {
 		log.Fatal(err.Error())
 	}
 
+	fmt.Printf("# Syncing kv store 1 as the base store for the merge..\n")
 	os.Mkdir(outPath, 0700)
 	copy.Dir(allDBs[0], outPath)
 	allDBs = allDBs[1:]
@@ -45,7 +46,7 @@ func NewMergedb(dbsPath string, outPath string) {
 		nbOfThreads = 1
 	}
 
-	kvStores1 := kvstore.KVStoresNew(outPath, nbOfThreads, options.FileIO, options.FileIO)
+	kvStores1 := kvstore.KVStoresNew(outPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize)
 
 	for _, db := range allDBs {
 
@@ -53,7 +54,7 @@ func NewMergedb(dbsPath string, outPath string) {
 
 			fmt.Printf("# Merging database %s into %s...\n", db, outPath)
 
-			kvStores2 := kvstore.KVStoresNew(db, nbOfThreads, options.MemoryMap, options.MemoryMap)
+			kvStores2 := kvstore.KVStoresNew(db, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize)
 
 			wg := new(sync.WaitGroup)
 			wg.Add(2)
@@ -64,11 +65,11 @@ func NewMergedb(dbsPath string, outPath string) {
 			wg.Add(2)
 			go func(wg *sync.WaitGroup) {
 				defer wg.Done()
-				kvStores1.KmerStore.GarbageCollect(10000000, 0.5)
+				kvStores1.KmerStore.GarbageCollect(10000000, 0.05)
 			}(wg)
 			go func(wg *sync.WaitGroup) {
 				defer wg.Done()
-				kvStores1.ProteinStore.GarbageCollect(10000000, 0.5)
+				kvStores1.ProteinStore.GarbageCollect(10000000, 0.05)
 			}(wg)
 			wg.Wait()
 
@@ -79,6 +80,8 @@ func NewMergedb(dbsPath string, outPath string) {
 	}
 
 	// Close and reopen kvStores1 to prevent uncompleted transactions
+	kvStores1.KmerStore.GarbageCollect(10000000, 0.05)
+	kvStores1.ProteinStore.GarbageCollect(10000000, 0.05)
 	kvStores1.Close()
 
 }

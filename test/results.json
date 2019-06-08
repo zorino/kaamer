@@ -1,0 +1,1764 @@
+{
+    "Counter": {},
+    "SizeInKmer": 189,
+    "StartPos": 0,
+    "EndPos": 0,
+    "Hits": [
+        {
+            "Key": "AAXB_CHLFF",
+            "Value": 189
+        },
+        {
+            "Key": "AAAA_AAAAA",
+            "Value": 189
+        },
+        {
+            "Key": "ZAXB_CHLFF",
+            "Value": 189
+        },
+        {
+            "Key": "ZAAA_AAAAA",
+            "Value": 189
+        },
+        {
+            "Key": "ZAXB_CHLCV",
+            "Value": 151
+        },
+        {
+            "Key": "AAXB_CHLCV",
+            "Value": 151
+        },
+        {
+            "Key": "AAXB_CHLAB",
+            "Value": 143
+        },
+        {
+            "Key": "ZAXB_CHLAB",
+            "Value": 143
+        }
+    ],
+    "PositionHits": [
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLCV": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLCV": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLFF": true
+        },
+        {
+            "AAAA_AAAAA": true,
+            "AAXB_CHLAB": true,
+            "AAXB_CHLFF": true,
+            "ZAAA_AAAAA": true,
+            "ZAXB_CHLAB": true,
+            "ZAXB_CHLFF": true
+        }
+    ]
+}

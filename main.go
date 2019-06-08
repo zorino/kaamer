@@ -3,17 +3,23 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/zorino/metaprot/cmd/makedb"
-	// "github.com/zorino/metaprot/cmd/backupdb"
-	"github.com/zorino/metaprot/cmd/mergedb"
-	"github.com/zorino/metaprot/cmd/gcdb"
-	"github.com/zorino/metaprot/api"
-	"github.com/zorino/metaprot/cmd/search"
 	"os"
+
+	"github.com/dgraph-io/badger/options"
+	"github.com/zorino/metaprot/api"
+	"github.com/zorino/metaprot/cmd/backupdb"
+	"github.com/zorino/metaprot/cmd/gcdb"
+	"github.com/zorino/metaprot/cmd/makedb"
+	"github.com/zorino/metaprot/cmd/mergedb"
+	"github.com/zorino/metaprot/cmd/search"
+)
+
+const (
+	MaxInt uint32 = 1<<32 - 1
 )
 
 var (
-	MaxInt uint64 = 1<<64 - 1
+	LoadingMode = map[string]options.FileLoadingMode{"memorymap": options.MemoryMap, "fileio": options.FileIO}
 )
 
 func main() {
@@ -56,7 +62,7 @@ func main() {
 
 		  (input)
 			   -i    input tsv file (raw tsv file from -downloaddb -r)
-			   -d    badger database directory
+			   -d    badger database directory (output)
 
 			   -offset    start processing raw uniprot file at protein number x
 			   -length    process x number of proteins (-1 == infinity)
@@ -77,11 +83,27 @@ func main() {
 			   -it       number of GC iterations
 			   -ratio    number of ratio of the GC (between 0-1)
 
+
 	   -backupdb     backup database
 
 		  (input)
 			   -d    badger db directory
 			   -o    badger backup output directory
+
+
+
+  | Database general options (applies everywhere)
+
+		  (input)
+			   -tableMode (fileio, memorymap) default memorymap / fileio decreases memory usage
+
+			   -valueMode (fileio, memorymap) default memorymap / fileio decreases memory usage
+
+		  (flag)
+			   -maxsize   will maximize the size of tables (.sst) and vlog (.log) files
+						  (to limit the number of open files)
+
+
 
 `
 
@@ -96,8 +118,11 @@ func main() {
 	var inputPath = flag.String("i", "", "db path argument")
 	var dbPath = flag.String("d", "", "db path argument")
 	var fullDb = flag.Bool("full", false, "to build full database")
-	var makedbOffset = flag.Uint64("offset", 0, "offset to process raw file")
-	var makedbLenght = flag.Uint64("length", MaxInt, "process x number of files")
+	var makedbOffset = flag.Uint("offset", 0, "offset to process raw file")
+	var makedbLenght = flag.Uint("length", uint(MaxInt), "process x number of files")
+	var maxSize = flag.Bool("maxsize", false, "to maximize badger output file size")
+	var tableMode = flag.String("tablemode", "memorymap", "table loading mode (fileio, memorymap)")
+	var valueMode = flag.String("valuemode", "memorymap", "value loading mode (fileio, memorymap)")
 
 	// var downloadOpt = flag.Bool("downloaddb", false, "download uniprotkb or metaprot db")
 	// var rawDbOpt = flag.Bool("r", false, "for uniprotkb raw database")
@@ -110,13 +135,28 @@ func main() {
 	var gcIteration = flag.Int("it", 100, "number of GC iterations")
 	var gcRatio = flag.Float64("ratio", 0.5, "ratio for GC")
 
+	var backupdbOpt = flag.Bool("backupdb", false, "program")
+
 	flag.Parse()
+
+	var tableLoadingMode options.FileLoadingMode
+	var valueLoadingMode options.FileLoadingMode
+	var ok = false
+
+	if tableLoadingMode, ok = LoadingMode[*tableMode]; !ok {
+		fmt.Println("TableMode unrecognized ! use fileio or memorymap!")
+		os.Exit(1)
+	}
+	if valueLoadingMode, ok = LoadingMode[*valueMode]; !ok {
+		fmt.Println("ValueMode unrecognized ! use fileio or memorymap!")
+		os.Exit(1)
+	}
 
 	if *serverOpt == true {
 		if *dbPath == "" {
 			fmt.Println("No db path !")
 		} else {
-			server.NewServer(*dbPath, *portNumber)
+			server.NewServer(*dbPath, *portNumber, tableLoadingMode, valueLoadingMode)
 		}
 		os.Exit(0)
 	}
@@ -144,7 +184,7 @@ func main() {
 		if *dbPath == "" {
 			fmt.Println("No db path !")
 		} else {
-			makedb.NewMakedb(*dbPath, *inputPath, *fullDb, *makedbOffset, *makedbLenght)
+			makedb.NewMakedb(*dbPath, *inputPath, *fullDb, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode)
 		}
 
 		os.Exit(0)
@@ -154,7 +194,7 @@ func main() {
 		if *dbsPath == "" || *outPath == "" {
 			fmt.Println("Need to have a valid databases path !")
 		} else {
-			mergedb.NewMergedb(*dbsPath, *outPath)
+			mergedb.NewMergedb(*dbsPath, *outPath, *maxSize, tableLoadingMode, valueLoadingMode)
 		}
 		os.Exit(0)
 	}
@@ -163,21 +203,21 @@ func main() {
 		if *dbPath == "" {
 			fmt.Println("No db path !")
 		} else {
-			gcdb.NewGC(*dbPath, *gcIteration, *gcRatio)
+			gcdb.NewGC(*dbPath, *gcIteration, *gcRatio, *maxSize, tableLoadingMode, valueLoadingMode)
 		}
 		os.Exit(0)
 	}
 
-	// if *backupdbOpt == true {
-	//	if *dbPath == "" {
-	//		fmt.Println("Need to have a valid databases path !")
-	//	} else if *outPath == "" {
-	//		fmt.Println("Need to have a valid backup directory path !")
-	//	} else {
-	//		backupdb.Backupdb(*dbPath, *outPath)
-	//	}
-	//	os.Exit(0)
-	// }
+	if *backupdbOpt == true {
+		if *dbPath == "" {
+			fmt.Println("Need to have a valid databases path !")
+		} else if *outPath == "" {
+			fmt.Println("Need to have a valid backup directory path !")
+		} else {
+			backupdb.Backupdb(*dbPath, *outPath, tableLoadingMode, valueLoadingMode)
+		}
+		os.Exit(0)
+	}
 
 	// if *analyseOpt == true {
 	//	fmt.Println(*dbPath)
