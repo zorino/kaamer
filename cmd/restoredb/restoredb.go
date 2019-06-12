@@ -28,7 +28,7 @@ func RestoreDB(backupPath string, output string, maxSize bool) {
 	// kvStores1 := kvstore.KVStoresNew(dbPath, nbOfThreads, options.MemoryMap, options.FileIO)
 
 	Restore(backupPath+"/kmer_store.bdg", output+"/kmer_store", maxSize)
-	Restore(backupPath+"/protein_store.bdg", output+"/protein_store_store", maxSize)
+	Restore(backupPath+"/protein_store.bdg", output+"/protein_store", maxSize)
 
 	// kvStores1.Close()
 }
@@ -55,7 +55,7 @@ func Restore(backupFile string, storeDir string, maxSize bool) {
 		log.Fatal(err.Error())
 	}
 
-	err = db.Load(backupFileReader)
+	err = db.Load(backupFileReader, 100)
 	if err != nil {
 		log.Fatal(err.Error())
 	}

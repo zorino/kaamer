@@ -11,6 +11,7 @@ import (
 	"github.com/zorino/metaprot/cmd/gcdb"
 	"github.com/zorino/metaprot/cmd/makedb"
 	"github.com/zorino/metaprot/cmd/mergedb"
+	"github.com/zorino/metaprot/cmd/restoredb"
 	"github.com/zorino/metaprot/cmd/search"
 )
 
@@ -90,6 +91,12 @@ func main() {
 			   -d    badger db directory
 			   -o    badger backup output directory
 
+	   -restoredb    restore a backup database
+
+		  (input)
+			   -d    badger backup db directory
+			   -o    badger db output directory
+
 
 
   | Database general options (applies everywhere)
@@ -136,6 +143,8 @@ func main() {
 	var gcRatio = flag.Float64("ratio", 0.5, "ratio for GC")
 
 	var backupdbOpt = flag.Bool("backupdb", false, "program")
+
+	var restoreOpt = flag.Bool("restoredb", false, "program")
 
 	flag.Parse()
 
@@ -215,6 +224,17 @@ func main() {
 			fmt.Println("Need to have a valid backup directory path !")
 		} else {
 			backupdb.Backupdb(*dbPath, *outPath, tableLoadingMode, valueLoadingMode)
+		}
+		os.Exit(0)
+	}
+
+	if *restoreOpt == true {
+		if *dbPath == "" {
+			fmt.Println("Need to have a valid backup databases path !")
+		} else if *outPath == "" {
+			fmt.Println("Need to have a valid restore directory path !")
+		} else {
+			restoredb.RestoreDB(*dbPath, *outPath, *maxSize)
 		}
 		os.Exit(0)
 	}
