@@ -254,7 +254,7 @@ func SetBestStartCodon(queryResult *QueryResult) {
 		queryResult.Query.SizeInKmer = len(queryResult.Query.Sequence) - KMER_SIZE + 1
 	}
 
-	// queryResult.Query.Location.StartsAlternative = []int{}
+	queryResult.Query.Location.StartsAlternative = []int{}
 
 }
 
