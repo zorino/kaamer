@@ -18,7 +18,8 @@ type KVsToMerge struct {
 
 type KVStores struct {
 	KmerStore    *K_
-	ProteinStore *H_
+	KCombStore   *KC_
+	ProteinStore *P_
 }
 
 const (
@@ -31,6 +32,7 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 
 	var kvStores KVStores
 
+	// kmer_store options
 	k_opts := badger.DefaultOptions
 	k_opts.Dir = dbPath + "/kmer_store"
 	k_opts.ValueDir = dbPath + "/kmer_store"
@@ -45,6 +47,21 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 	}
 	k_opts.NumCompactors = 8
 
+	// kcomb_store options
+	kc_opts := badger.DefaultOptions
+	kc_opts.Dir = dbPath + "/kcomb_store"
+	kc_opts.ValueDir = dbPath + "/kcomb_store"
+	kc_opts.TableLoadingMode = tableLoadingMode
+	kc_opts.ValueLogLoadingMode = valueLoadingMode
+	kc_opts.SyncWrites = false
+	kc_opts.NumVersionsToKeep = math.MaxUint32
+	if maxSize {
+		kc_opts.MaxTableSize = MaxTableSize
+		kc_opts.ValueLogFileSize = MaxValueLogFileSize
+		kc_opts.ValueLogMaxEntries = MaxValueLogEntries
+	}
+
+	// protein_store options
 	p_opts := badger.DefaultOptions
 	p_opts.Dir = dbPath + "/protein_store"
 	p_opts.ValueDir = dbPath + "/protein_store"
@@ -60,7 +77,8 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 
 	// Open all store
 	kvStores.KmerStore = K_New(k_opts, 1000, nbOfThreads)
-	kvStores.ProteinStore = H_New(p_opts, 1000, nbOfThreads)
+	kvStores.KCombStore = KC_New(kc_opts, 1000, nbOfThreads)
+	kvStores.ProteinStore = P_New(p_opts, 1000, nbOfThreads)
 
 	return &kvStores
 
@@ -68,22 +86,26 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 
 func (kvStores *KVStores) OpenInsertChannel() {
 	kvStores.KmerStore.OpenInsertChannel()
+	kvStores.KCombStore.OpenInsertChannel()
 	kvStores.ProteinStore.OpenInsertChannel()
 }
 
 func (kvStores *KVStores) CloseInsertChannel() {
 	kvStores.KmerStore.CloseInsertChannel()
+	kvStores.KCombStore.CloseInsertChannel()
 	kvStores.ProteinStore.CloseInsertChannel()
 }
 
 func (kvStores *KVStores) Flush() {
 	// Last DB flushes
 	kvStores.KmerStore.Flush()
+	kvStores.KCombStore.Flush()
 	kvStores.ProteinStore.Flush()
 }
 
 func (kvStores *KVStores) Close() {
 	// Last DB flushes
 	kvStores.KmerStore.Close()
+	kvStores.KCombStore.Close()
 	kvStores.ProteinStore.Close()
 }

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package kvstore;
+
+message KComb {
+
+    repeated uint32 ProteinKeys = 1;
+
+    uint32 Count = 2;
+
+}

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/dgraph-io/badger"
 	"github.com/dgraph-io/badger/options"
@@ -79,8 +80,22 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 
 	}
 
-	// Close and reopen kvStores1 to prevent uncompleted transactions
+	go func() {
+		ticker := time.NewTicker(20 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+		again:
+			err := kvStores1.KmerStore.DB.RunValueLogGC(0.3)
+			if err == nil {
+				goto again
+			}
+		}
+		CreateCombinationValues(kvStores1.KmerStore.KVStore, kvStores1.KCombStore, nbOfThreads)
+	}()
+
+	// Final garbage collect before closing
 	kvStores1.KmerStore.GarbageCollect(10000000, 0.05)
+	kvStores1.KCombStore.GarbageCollect(10000000, 0.05)
 	kvStores1.ProteinStore.GarbageCollect(10000000, 0.05)
 	kvStores1.Close()
 
@@ -155,5 +170,89 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 	// Done.
 	kvStore1.CloseInsertChannel()
 	kvStore1.Flush()
+
+}
+
+func CreateCombinationValues(kmerStore *kvstore.KVStore, kCombStore *kvstore.KC_, nbOfThreads int) {
+
+	fmt.Println("# Creating key combination store")
+	// Stream keys
+	stream := kmerStore.DB.NewStream()
+
+	kCombStore.KVStore.OpenInsertChannel()
+
+	// db.NewStreamAt(readTs) for managed mode.
+
+	// -- Optional settings
+	stream.NumGo = nbOfThreads            // Set number of goroutines to use for iteration.
+	stream.Prefix = nil                   // Leave nil for iteration over the whole DB.
+	stream.LogPrefix = "Badger.Streaming" // For identifying stream logs. Outputs to Logger.
+
+	// ChooseKey is called concurrently for every key. If left nil, assumes true by default.
+	stream.ChooseKey = nil
+
+	// KeyToList is called concurrently for chosen keys. This can be used to convert
+	// Badger data into custom key-values. If nil, uses stream.ToList, a default
+	// implementation, which picks all valid key-values.
+
+	// stream.KeyToList = nil
+	stream.KeyToList = func(key []byte, it *badger.Iterator) (*pb.KVList, error) {
+
+		keys := [][]byte{}
+		valCopy := []byte{}
+		keyCopy := []byte{}
+		list := &pb.KVList{}
+
+		for ; it.Valid(); it.Next() {
+
+			item := it.Item()
+			if item.IsDeletedOrExpired() {
+				break
+			}
+			if item.DiscardEarlierVersions() {
+				break
+			}
+			if !bytes.Equal(key, item.Key()) {
+				break
+			}
+
+			valCopy, err := item.ValueCopy(valCopy)
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+
+			keys = append(keys, valCopy)
+
+			keyCopy = item.KeyCopy(keyCopy)
+
+		}
+
+		combKey, combVal := kCombStore.CreateKCKeyValue(keys)
+		kCombStore.AddValueToChannel(combKey, combVal, true)
+		list.Kv = append(list.Kv, &pb.KV{Key: keyCopy, Value: combKey})
+
+		return list, nil
+
+	}
+
+	// -- End of optional settings.
+
+	// Send is called serially, while Stream.Orchestrate is running.
+	// stream.Send = nil
+	stream.Send = func(list *pb.KVList) error {
+		for _, kv := range list.Kv {
+			kmerStore.UpdateValue(kv.Key, kv.Value)
+		}
+		return nil
+	}
+
+	// Run the stream
+	if err := stream.Orchestrate(context.Background()); err != nil {
+		log.Fatal(err.Error)
+	}
+
+	// Done.
+	kCombStore.KVStore.CloseInsertChannel()
+	kCombStore.KVStore.Flush()
 
 }

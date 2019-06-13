@@ -31,6 +31,7 @@ func RestoreDB(backupPath string, output string, maxSize bool) {
 	Restore(backupPath+"/protein_store.bdg", output+"/protein_store", maxSize)
 
 	// kvStores1.Close()
+
 }
 
 func Restore(backupFile string, storeDir string, maxSize bool) {
@@ -42,7 +43,8 @@ func Restore(backupFile string, storeDir string, maxSize bool) {
 	opts.ValueLogLoadingMode = options.FileIO
 	if maxSize {
 		opts.MaxTableSize = kvstore.MaxTableSize
-		opts.ValueLogFileSize = kvstore.MaxTableSize
+		opts.ValueLogFileSize = kvstore.MaxValueLogFileSize
+		opts.ValueLogMaxEntries = kvstore.MaxValueLogEntries
 	}
 
 	db, err := badger.Open(opts)
@@ -55,9 +57,20 @@ func Restore(backupFile string, storeDir string, maxSize bool) {
 		log.Fatal(err.Error())
 	}
 
-	err = db.Load(backupFileReader, 100)
+	err = db.Load(backupFileReader, 1000)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
+	db.Flatten(8)
+
+	// Run GC until err != nil
+again:
+	err = db.RunValueLogGC(0.1)
+	if err == nil {
+		goto again
+	}
+
+	db.Close()
 
 }
