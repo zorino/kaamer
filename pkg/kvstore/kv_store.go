@@ -151,22 +151,12 @@ func (kv *KVStore) GetValue(key []byte) ([]byte, bool) {
 
 func (kv *KVStore) UpdateValue(key []byte, val []byte) {
 
-	err := kv.DB.Update(func(txn *badger.Txn) error {
-		errDel := txn.Delete(key)
-		if errDel != nil {
-			return errDel
-		}
-		errSet := txn.Set(key, val)
-		if errSet != nil {
-			return errSet
-		}
-		return nil
-	})
-
-	if err != nil {
-		fmt.Println("Error updating KV")
-		log.Fatal(err.Error())
-	}
+	txn := kv.DB.NewTransaction(true)
+	txn.Delete(key)
+	txn.Commit()
+	txn = kv.DB.NewTransaction(true)
+	txn.Set(key, val)
+	txn.Commit()
 
 }
 
