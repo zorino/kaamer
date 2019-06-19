@@ -36,7 +36,7 @@ func RestoreDB(backupPath string, output string, maxSize bool) {
 
 func Restore(backupFile string, storeDir string, maxSize bool) {
 
-	opts := badger.LSMOnlyOptions
+	opts := badger.DefaultOptions
 	opts.Dir = storeDir
 	opts.ValueDir = storeDir
 	opts.TableLoadingMode = options.MemoryMap
