@@ -24,11 +24,27 @@ type DBMerger struct {
 	KVToMerge sync.Map
 }
 
-func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
+func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, indexOnly bool) {
 
 	// For SSD throughput (as done in badger/graphdb) see :
 	// https://groups.google.com/forum/#!topic/golang-nuts/jPb_h3TvlKE/discussion
 	runtime.GOMAXPROCS(512)
+
+	nbOfThreads := runtime.NumCPU()
+
+	if nbOfThreads < 1 {
+		nbOfThreads = 1
+	}
+
+	if indexOnly {
+		kvStores1 := kvstore.KVStoresNew(outPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize)
+		IndexStore(kvStores1, nbOfThreads)
+		kvStores1.KmerStore.GarbageCollect(10000000, 0.05)
+		kvStores1.KCombStore.GarbageCollect(10000000, 0.05)
+		kvStores1.ProteinStore.GarbageCollect(10000000, 0.05)
+		kvStores1.Close()
+		return
+	}
 
 	pattern := dbsPath + "/*"
 	allDBs, err := filepath.Glob(pattern)
@@ -40,12 +56,6 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 	os.Mkdir(outPath, 0700)
 	copy.Dir(allDBs[0], outPath)
 	allDBs = allDBs[1:]
-
-	nbOfThreads := runtime.NumCPU()
-
-	if nbOfThreads < 1 {
-		nbOfThreads = 1
-	}
 
 	kvStores1 := kvstore.KVStoresNew(outPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize)
 
@@ -80,18 +90,7 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 
 	}
 
-	go func() {
-		ticker := time.NewTicker(20 * time.Minute)
-		defer ticker.Stop()
-		for range ticker.C {
-		again:
-			err := kvStores1.KmerStore.DB.RunValueLogGC(0.3)
-			if err == nil {
-				goto again
-			}
-		}
-		CreateCombinationValues(kvStores1.KmerStore.KVStore, kvStores1.KCombStore, nbOfThreads)
-	}()
+	IndexStore(kvStores1, nbOfThreads)
 
 	// Final garbage collect before closing
 	kvStores1.KmerStore.GarbageCollect(10000000, 0.05)
@@ -99,6 +98,29 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 	kvStores1.ProteinStore.GarbageCollect(10000000, 0.05)
 	kvStores1.Close()
 
+}
+
+func IndexStore(kvStores1 *kvstore.KVStores, nbOfThreads int) {
+	go func() {
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+
+		again:
+			err := kvStores1.KmerStore.DB.RunValueLogGC(0.1)
+			if err == nil {
+				goto again
+			}
+
+		again2:
+			err = kvStores1.KCombStore.DB.RunValueLogGC(0.1)
+			if err == nil {
+				goto again2
+			}
+		}
+
+	}()
+	CreateCombinationValues(kvStores1.KmerStore.KVStore, kvStores1.KCombStore, nbOfThreads)
 }
 
 func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThreads int, wg *sync.WaitGroup) {
@@ -240,9 +262,38 @@ func CreateCombinationValues(kmerStore *kvstore.KVStore, kCombStore *kvstore.KC_
 	// Send is called serially, while Stream.Orchestrate is running.
 	// stream.Send = nil
 	stream.Send = func(list *pb.KVList) error {
+
+		var err error
+
+		// Delete keys
+		wb := kmerStore.DB.NewWriteBatch()
 		for _, kv := range list.Kv {
-			kmerStore.UpdateValue(kv.Key, kv.Value)
+			err = wb.Delete(kv.Key)
+			if err != nil {
+				fmt.Printf("# Write batch in combination key creation (delete) error : %s\n", err.Error())
+				wb.Flush()
+				wb.Cancel()
+				wb = kmerStore.DB.NewWriteBatch()
+			}
+			// kmerStore.UpdateValue(kv.Key, kv.Value)
 		}
+		wb.Flush()
+		wb.Cancel()
+
+		// Insert new key / value
+		wb = kmerStore.DB.NewWriteBatch()
+		for _, kv := range list.Kv {
+			err = wb.Set(kv.Key, kv.Value)
+			if err != nil {
+				fmt.Printf("# Write batch in combination key creation (create) error : %s\n", err.Error())
+				wb.Flush()
+				wb.Cancel()
+				wb = kmerStore.DB.NewWriteBatch()
+			}
+		}
+		wb.Flush()
+		wb.Cancel()
+
 		return nil
 	}
 
