@@ -25,7 +25,7 @@ type KVStores struct {
 const (
 	MaxTableSize        = 768 << 20
 	MaxValueLogFileSize = 2048 << 20
-	MaxValueLogEntries  = 30000000
+	MaxValueLogEntries  = 100000000
 )
 
 func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, maxSize bool) *KVStores {

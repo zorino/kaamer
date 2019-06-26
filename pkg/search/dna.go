@@ -1,7 +1,6 @@
 package search
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 )
@@ -243,7 +242,7 @@ func SetBestStartCodon(queryResult *QueryResult) {
 	}
 
 	if bestStart != firstStart {
-		fmt.Printf("Correcting start codong for Query at %d bestStart(%d)\n", queryResult.Query.Location.StartPosition, bestStart)
+		// fmt.Printf("Correcting start codong for Query at %d bestStart(%d)\n", queryResult.Query.Location.StartPosition, bestStart)
 		if queryResult.Query.Location.PlusStrand {
 			queryResult.Query.Location.StartPosition = queryResult.Query.Location.StartPosition + 3*(bestStart)
 		} else {
@@ -277,7 +276,7 @@ func PruneORFs(queryResult QueryResult, startPositions *[]int, endPositions *[]i
 	}
 
 	if len(*startPositions) == 0 {
-		fmt.Println("Adding because startposition empty")
+		// fmt.Println("Adding because startposition empty")
 		*startPositions = append(*startPositions, queryStart)
 		*endPositions = append(*endPositions, queryEnd)
 		*goodResults = append(*goodResults, queryResult)
@@ -303,7 +302,7 @@ func PruneORFs(queryResult QueryResult, startPositions *[]int, endPositions *[]i
 			overlappedPositions = true
 			overlap := queryEnd - sPos
 			if overlap < 60 {
-				fmt.Println("Adding left overlap")
+				// fmt.Println("Adding left overlap")
 				*startPositions = append(*startPositions, queryStart)
 				*endPositions = append(*endPositions, queryEnd)
 				*goodResults = append(*goodResults, queryResult)
@@ -321,7 +320,7 @@ func PruneORFs(queryResult QueryResult, startPositions *[]int, endPositions *[]i
 			overlappedPositions = true
 			overlap := ePos - queryStart
 			if overlap < 60 {
-				fmt.Println("Adding right overlap")
+				// fmt.Println("Adding right overlap")
 				*startPositions = append(*startPositions, queryStart)
 				*endPositions = append(*endPositions, queryEnd)
 				*goodResults = append(*goodResults, queryResult)
@@ -354,7 +353,7 @@ func PruneORFs(queryResult QueryResult, startPositions *[]int, endPositions *[]i
 	}
 
 	if !overlappedPositions {
-		fmt.Println("Adding because no overlap")
+		// fmt.Println("Adding because no overlap")
 		*startPositions = append(*startPositions, queryStart)
 		*endPositions = append(*endPositions, queryEnd)
 		*goodResults = append(*goodResults, queryResult)

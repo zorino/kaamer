@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -23,6 +22,8 @@ var kvStores *kvstore.KVStores
 var tmpFolder string
 
 func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
+
+	runtime.GOMAXPROCS(128)
 
 	tmpFolder = "/tmp/"
 
@@ -68,20 +69,60 @@ func APIRoutes(r chi.Router, path string, kvStores *kvstore.KVStores) {
 func searchFastq(w http.ResponseWriter, r *http.Request) {
 
 	// chi.URLParam(r, "key")
-	searchRes := search.NewSearchResult(r.FormValue("sequence"), search.PROTEIN_STRING, kvStores, 2)
-	output, _ := json.Marshal(searchRes)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(output)
+	switch r.FormValue("type") {
+	case "string":
+		file, err := stringUploadHandler(r, "fasta")
+		if err != nil {
+			w.WriteHeader(400)
+			fmt.Fprintln(w, err.Error())
+		}
+		search.NewSearchResult(file, search.READS, kvStores, 2, w)
+	case "file":
+		file, err := fileUploadHandler(r, "fasta")
+		if err != nil {
+			w.WriteHeader(400)
+			fmt.Fprintln(w, err.Error())
+		} else {
+			// w.Write([]byte("Uploaded file to " + file))
+			search.NewSearchResult(file, search.READS, kvStores, 2, w)
+		}
+	case "path":
+		w.Write([]byte("Reading local file"))
+		search.NewSearchResult(r.FormValue("path"), search.READS, kvStores, 2, w)
+	default:
+		w.WriteHeader(400)
+		w.Write([]byte("Need request type (string|file|path)"))
+	}
 
 }
 
 func searchNucleotide(w http.ResponseWriter, r *http.Request) {
 
 	// chi.URLParam(r, "key")
-	searchRes := search.NewSearchResult(r.FormValue("sequence"), search.NUCLEOTIDE_STRING, kvStores, 2)
-	output, _ := json.Marshal(searchRes)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(output)
+	switch r.FormValue("type") {
+	case "string":
+		file, err := stringUploadHandler(r, "fasta")
+		if err != nil {
+			w.WriteHeader(400)
+			fmt.Fprintln(w, err.Error())
+		}
+		search.NewSearchResult(file, search.NUCLEOTIDE, kvStores, 2, w)
+	case "file":
+		file, err := fileUploadHandler(r, "fasta")
+		if err != nil {
+			w.WriteHeader(400)
+			fmt.Fprintln(w, err.Error())
+		} else {
+			// w.Write([]byte("Uploaded file to " + file))
+			search.NewSearchResult(file, search.NUCLEOTIDE, kvStores, 2, w)
+		}
+	case "path":
+		w.Write([]byte("Reading local file"))
+		search.NewSearchResult(r.FormValue("path"), search.NUCLEOTIDE, kvStores, 2, w)
+	default:
+		w.WriteHeader(400)
+		w.Write([]byte("Need request type (string|file|path)"))
+	}
 
 }
 
@@ -90,26 +131,28 @@ func searchProtein(w http.ResponseWriter, r *http.Request) {
 	// chi.URLParam(r, "key")
 	switch r.FormValue("type") {
 	case "string":
-		searchRes := search.NewSearchResult(r.FormValue("sequence"), search.PROTEIN_STRING, kvStores, 2)
-		output, _ := json.Marshal(searchRes)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
-		w.Write(output)
+		file, err := stringUploadHandler(r, "fasta")
+		// fmt.Println(file)
+		if err != nil {
+			w.WriteHeader(400)
+			fmt.Fprintln(w, err.Error())
+		}
+		search.NewSearchResult(file, search.PROTEIN, kvStores, 2, w)
 	case "file":
-		file, err := uploadHandler(w, r)
+		file, err := fileUploadHandler(r, "fasta")
 		if err != nil {
 			w.WriteHeader(400)
 			fmt.Fprintln(w, err.Error())
 		} else {
-			w.Write([]byte("Uploaded file to " + file))
-			search.NewSearchResult(file, search.PROTEIN_FILE, kvStores, 2)
+			// w.Write([]byte("Uploaded file to " + file))
+			search.NewSearchResult(file, search.PROTEIN, kvStores, 2, w)
 		}
 	case "path":
 		w.Write([]byte("Reading local file"))
-		search.NewSearchResult(r.FormValue("file"), search.PROTEIN_FILE, kvStores, 2)
+		search.NewSearchResult(r.FormValue("path"), search.PROTEIN, kvStores, 2, w)
 	default:
 		w.WriteHeader(400)
-		w.Write([]byte("Need request type ! string or file or path"))
+		w.Write([]byte("Need request type (string|file|path)"))
 	}
 
 }
@@ -136,25 +179,43 @@ func DocRoutes(r chi.Router, path string, root http.FileSystem) {
 
 }
 
-func uploadHandler(w http.ResponseWriter, r *http.Request) (string, error) {
+func fileUploadHandler(r *http.Request, format string) (string, error) {
 
 	r.ParseMultipartForm(0)
 	defer r.MultipartForm.RemoveAll()
-	fi, info, err := r.FormFile("file")
+	fi, _, err := r.FormFile("file")
 	if err != nil {
 		return "", err
 	}
 	defer fi.Close()
 
-	fmt.Printf("Received %v", info.Filename)
+	// fmt.Printf("Received %v", info.Filename)
 	guid := xid.New()
-	file := tmpFolder + guid.String() + ".fasta"
+	file := tmpFolder + guid.String() + "." + format
 
 	out, err := os.Create(file)
 	if err != nil {
 		return "", err
 	}
 	_, err = io.Copy(out, fi)
+	if err != nil {
+		return "", err
+	}
+
+	return file, err
+}
+
+func stringUploadHandler(r *http.Request, format string) (string, error) {
+
+	guid := xid.New()
+	file := tmpFolder + guid.String() + "." + format
+
+	out, err := os.Create(file)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = io.Copy(out, strings.NewReader(r.FormValue("sequence")))
 	if err != nil {
 		return "", err
 	}
