@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -30,15 +29,27 @@ const (
 	PROTEIN_QUERY = "Protein Query"
 )
 
+var (
+	MaxNumberOfResults = 10
+	ExtractPositions   = false
+)
+
 type SearchResults struct {
 	Counter      *cnt.CounterBox
 	Hits         HitList
-	PositionHits []map[uint32]bool
+	PositionHits map[uint32][]bool
 }
 
 type KeyPos struct {
-	Key []byte
-	Pos int
+	Key   []byte
+	Pos   int
+	QSize int
+}
+
+type MatchPosition struct {
+	HitId uint32
+	QPos  int
+	QSize int
 }
 
 type QueryWriter struct {
@@ -62,14 +73,14 @@ type Query struct {
 }
 
 type Hit struct {
-	Key   uint32
-	Value int64
+	Key    uint32
+	Kmatch int64
 }
 
 type HitList []Hit
 
 func (p HitList) Len() int           { return len(p) }
-func (p HitList) Less(i, j int) bool { return p[i].Value < p[j].Value }
+func (p HitList) Less(i, j int) bool { return p[i].Kmatch < p[j].Kmatch }
 func (p HitList) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
 func syncMapLen(syncMap *sync.Map) int {
@@ -108,54 +119,19 @@ func NewSearchResult(file string, sequenceType int, kvStores *kvstore.KVStores, 
 	// sequence is either file path or the actual sequence (depends on sequenceType)
 	queryResults := []QueryResult{}
 
-	// set http response header
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
-
-	// open results array
-	w.Write([]byte("["))
-
 	switch sequenceType {
 	case READS:
 		fmt.Println("Searching for Reads file")
-		// sequence := ReadFileInMemory(file)
 		NucleotideSearch(file, kvStores, nbOfThreads, w, true)
 	case NUCLEOTIDE:
 		fmt.Println("Searching for Nucleotide file")
-		// sequence := ReadFileInMemory(file)
 		NucleotideSearch(file, kvStores, nbOfThreads, w, false)
-		// os.Remove(file)
 	case PROTEIN:
 		fmt.Println("Searching from Protein file")
-		// sequence := ReadFileInMemory(file)
 		ProteinSearch(file, kvStores, nbOfThreads, w)
-		// os.Remove(file)
 	}
-
-	// close results array
-	w.Write([]byte("]"))
 
 	return queryResults
-
-}
-
-func ReadFileInMemory(filePath string) string {
-	dat, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		fmt.Println(err.Error())
-		return ""
-	}
-	// fmt.Println(string(dat))
-	return string(dat)
-}
-
-func ReadSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, w http.ResponseWriter) {
-
-	// queryResults := []QueryResult{}
-
-	// sequences := GetQueriesFastq(sequence)
-
-	// return queryResults
 
 }
 
@@ -180,11 +156,17 @@ func NucleotideSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, 
 
 		defer wgSearch.Done()
 
-		resultNb := 0
+		queryResults := []QueryResult{}
+
+		// Concurrent query results writer
+		queryResultChan := make(chan QueryResult, 50)
+		wgWriter := new(sync.WaitGroup)
+		wgWriter.Add(1)
+		go QueryResultResponseWriter(queryResultChan, w, wgWriter)
 
 		for s := range queryChan {
 
-			queryResults := []QueryResult{}
+			queryResults = []QueryResult{}
 			orfs := GetORFs(s.Sequence)
 
 			for _, o := range orfs {
@@ -200,23 +182,31 @@ func NucleotideSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, 
 
 				searchRes := new(SearchResults)
 				searchRes.Counter = cnt.NewCounterBox()
-				searchRes.PositionHits = make([]map[uint32]bool, q.SizeInKmer)
+				searchRes.PositionHits = make(map[uint32][]bool)
 				keyChan := make(chan KeyPos, 10)
 
+				matchPositionChan := make(chan MatchPosition, 10)
+				wgMP := new(sync.WaitGroup)
+				wgMP.Add(1)
+				go searchRes.StoreMatchPositions(matchPositionChan, wgMP)
+
 				wg := new(sync.WaitGroup)
-				for i := 0; i < nbOfThreads; i++ {
+				// Add 4 workers for KmerSearch / KCombSearch
+				for i := 0; i < 4; i++ {
 					wg.Add(1)
-					go searchRes.KmerSearch(keyChan, kvStores, wg)
+					go searchRes.KmerSearch(keyChan, kvStores, wg, matchPositionChan)
 				}
 
 				for i := 0; i < q.SizeInKmer; i++ {
-					searchRes.PositionHits[i] = make(map[uint32]bool)
 					key := kvStores.KmerStore.CreateBytesKey(q.Sequence[i : i+KMER_SIZE])
-					keyChan <- KeyPos{Key: key, Pos: i}
+					keyChan <- KeyPos{Key: key, Pos: i, QSize: q.SizeInKmer}
 				}
 
 				close(keyChan)
 				wg.Wait()
+
+				close(matchPositionChan)
+				wgMP.Wait()
 
 				searchRes.Hits = sortMapByValue(searchRes.Counter.GetCountersMap())
 				queryResults = append(queryResults, QueryResult{Query: q, SearchResults: searchRes, HitEntries: map[uint32]kvstore.Protein{}})
@@ -225,20 +215,17 @@ func NucleotideSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, 
 			queryResults = ResolveORFs(queryResults)
 
 			for _, qR := range queryResults {
-				qR.FetchHitsInformation(kvStores)
-				if resultNb > 0 {
-					w.Write([]byte(","))
+				if qR.SearchResults.Hits.Len() > 0 {
+					qR.FilterResults(0.2)
+					qR.FetchHitsInformation(kvStores)
+					queryResultChan <- qR
 				}
-				data, err := json.Marshal(qR)
-				if err != nil {
-					fmt.Println(err.Error())
-				}
-				w.Write(data)
-				resultNb += 1
-
 			}
 
 		}
+
+		close(queryResultChan)
+		wgWriter.Wait()
 
 	}()
 
@@ -263,60 +250,95 @@ func ProteinSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, w h
 
 		defer wgSearch.Done()
 
-		resultNb := 0
+		queryResult := QueryResult{}
+
+		// Concurrent query results writer
+		queryResultChan := make(chan QueryResult, 50)
+		wgWriter := new(sync.WaitGroup)
+		wgWriter.Add(1)
+		go QueryResultResponseWriter(queryResultChan, w, wgWriter)
 
 		for q := range queryChan {
 
 			q.Type = PROTEIN_QUERY
 
-			// fmt.Printf("SEQ: %s\n", q.Sequence)
 			if q.SizeInKmer < 7 {
-				// fmt.Println("Protein Sequence shorter than kmer size: 7")
 				return
 			}
 
 			searchRes := new(SearchResults)
 			searchRes.Counter = cnt.NewCounterBox()
-			searchRes.PositionHits = make([]map[uint32]bool, q.SizeInKmer)
+			searchRes.PositionHits = make(map[uint32][]bool)
 			keyChan := make(chan KeyPos, 10)
 
+			matchPositionChan := make(chan MatchPosition, 10)
+			wgMP := new(sync.WaitGroup)
+			wgMP.Add(1)
+			go searchRes.StoreMatchPositions(matchPositionChan, wgMP)
+
 			wg := new(sync.WaitGroup)
-			for i := 0; i < nbOfThreads; i++ {
+			// Add 4 workers for KmerSearch
+			for i := 0; i < 4; i++ {
 				wg.Add(1)
-				go searchRes.KmerSearch(keyChan, kvStores, wg)
+				go searchRes.KmerSearch(keyChan, kvStores, wg, matchPositionChan)
 			}
 
 			for i := 0; i < q.SizeInKmer; i++ {
-				searchRes.PositionHits[i] = make(map[uint32]bool)
 				key := kvStores.KmerStore.CreateBytesKey(q.Sequence[i : i+KMER_SIZE])
-				keyChan <- KeyPos{Key: key, Pos: i}
+				keyChan <- KeyPos{Key: key, Pos: i, QSize: q.SizeInKmer}
 			}
 
 			close(keyChan)
 			wg.Wait()
 
+			close(matchPositionChan)
+			wgMP.Wait()
+
 			searchRes.Hits = sortMapByValue(searchRes.Counter.GetCountersMap())
-			// queryResults = append(queryResults, QueryResult{Query: q, SearchResults: searchRes})
 
-			if resultNb > 0 {
-				w.Write([]byte(","))
-			}
-
-			queryResult := QueryResult{Query: q, SearchResults: searchRes, HitEntries: map[uint32]kvstore.Protein{}}
+			queryResult = QueryResult{Query: q, SearchResults: searchRes, HitEntries: map[uint32]kvstore.Protein{}}
+			queryResult.FilterResults(0.2)
 			queryResult.FetchHitsInformation(kvStores)
 
-			data, err := json.Marshal(queryResult)
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-			w.Write(data)
-			resultNb += 1
+			queryResultChan <- queryResult
 
 		}
+
+		close(queryResultChan)
+		wgWriter.Wait()
 
 	}()
 
 	wgSearch.Wait()
+
+}
+
+func (queryResult *QueryResult) FilterResults(kmerMatchRatio float64) {
+
+	var hitsToDelete []uint32
+	var lastGoodHitPosition = len(queryResult.SearchResults.Hits) - 1
+
+	for i, hit := range queryResult.SearchResults.Hits {
+		if (float64(hit.Kmatch)/float64(queryResult.Query.SizeInKmer)) < kmerMatchRatio || hit.Kmatch < 10 {
+			if lastGoodHitPosition == (len(queryResult.SearchResults.Hits) - 1) {
+				lastGoodHitPosition = i
+			}
+			hitsToDelete = append(hitsToDelete, hit.Key)
+		}
+	}
+
+	if (lastGoodHitPosition + 1) > MaxNumberOfResults {
+		lastGoodHitPosition = MaxNumberOfResults
+		for _, h := range queryResult.SearchResults.Hits[lastGoodHitPosition+1:] {
+			hitsToDelete = append(hitsToDelete, h.Key)
+		}
+	}
+
+	queryResult.SearchResults.Hits = queryResult.SearchResults.Hits[0 : lastGoodHitPosition+1]
+
+	for _, k := range hitsToDelete {
+		delete(queryResult.SearchResults.PositionHits, k)
+	}
 
 }
 
@@ -345,7 +367,7 @@ func GetQueriesFasta(fileName string, queryChan chan<- Query, isProtein bool) {
 	}
 
 	// check filetype
-	buff := make([]byte, 512)
+	buff := make([]byte, 32)
 	_, err = file.Read(buff)
 	if err != nil {
 		fmt.Println(err)
@@ -491,7 +513,7 @@ func GetQueriesFastq(fileName string, queryChan chan<- Query) {
 
 }
 
-func (searchRes *SearchResults) KmerSearch(keyChan <-chan KeyPos, kvStores *kvstore.KVStores, wg *sync.WaitGroup) {
+func (searchRes *SearchResults) KmerSearch(keyChan <-chan KeyPos, kvStores *kvstore.KVStores, wg *sync.WaitGroup, matchPositionChan chan<- MatchPosition) {
 
 	defer wg.Done()
 	for keyPos := range keyChan {
@@ -508,10 +530,22 @@ func (searchRes *SearchResults) KmerSearch(keyChan <-chan KeyPos, kvStores *kvst
 
 			for _, id := range kC.ProteinKeys {
 				searchRes.Counter.GetCounter(strconv.Itoa(int(id))).Increment()
-				searchRes.PositionHits[keyPos.Pos][id] = true
+				matchPositionChan <- MatchPosition{HitId: id, QPos: keyPos.Pos, QSize: keyPos.QSize}
 			}
 
 		}
+	}
+
+}
+
+func (searchRes *SearchResults) StoreMatchPositions(matchPosition <-chan MatchPosition, wg *sync.WaitGroup) {
+
+	defer wg.Done()
+	for mp := range matchPosition {
+		if _, ok := searchRes.PositionHits[mp.HitId]; !ok {
+			searchRes.PositionHits[mp.HitId] = make([]bool, mp.QSize)
+		}
+		searchRes.PositionHits[mp.HitId][mp.QPos] = true
 	}
 
 }
@@ -530,6 +564,37 @@ func (queryResult *QueryResult) FetchHitsInformation(kvStores *kvstore.KVStores)
 		queryResult.HitEntries[h.Key] = *prot
 	}
 
-	// queryResult.HitEntries
+}
+
+func QueryResultResponseWriter(queryResult <-chan QueryResult, w http.ResponseWriter, wg *sync.WaitGroup) {
+
+	defer wg.Done()
+
+	// set http response header
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+
+	// open results array
+	w.Write([]byte("["))
+
+	firstResult := true
+
+	for qR := range queryResult {
+
+		if !firstResult {
+			w.Write([]byte(","))
+		}
+		data, err := json.Marshal(qR)
+		if err != nil {
+			fmt.Println(err.Error())
+		}
+		w.Write(data)
+
+		firstResult = false
+
+	}
+
+	// open results array
+	w.Write([]byte("]"))
 
 }

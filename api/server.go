@@ -75,8 +75,10 @@ func searchFastq(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			w.WriteHeader(400)
 			fmt.Fprintln(w, err.Error())
+		} else {
+			search.NewSearchResult(file, search.READS, kvStores, 2, w)
+			os.Remove(file)
 		}
-		search.NewSearchResult(file, search.READS, kvStores, 2, w)
 	case "file":
 		file, err := fileUploadHandler(r, "fasta")
 		if err != nil {
@@ -85,10 +87,12 @@ func searchFastq(w http.ResponseWriter, r *http.Request) {
 		} else {
 			// w.Write([]byte("Uploaded file to " + file))
 			search.NewSearchResult(file, search.READS, kvStores, 2, w)
+			os.Remove(file)
 		}
 	case "path":
-		w.Write([]byte("Reading local file"))
-		search.NewSearchResult(r.FormValue("path"), search.READS, kvStores, 2, w)
+		if r.FormValue("file") != "" {
+			search.NewSearchResult(r.FormValue("file"), search.READS, kvStores, 2, w)
+		}
 	default:
 		w.WriteHeader(400)
 		w.Write([]byte("Need request type (string|file|path)"))
@@ -105,8 +109,10 @@ func searchNucleotide(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			w.WriteHeader(400)
 			fmt.Fprintln(w, err.Error())
+		} else {
+			search.NewSearchResult(file, search.NUCLEOTIDE, kvStores, 2, w)
+			os.Remove(file)
 		}
-		search.NewSearchResult(file, search.NUCLEOTIDE, kvStores, 2, w)
 	case "file":
 		file, err := fileUploadHandler(r, "fasta")
 		if err != nil {
@@ -117,8 +123,9 @@ func searchNucleotide(w http.ResponseWriter, r *http.Request) {
 			search.NewSearchResult(file, search.NUCLEOTIDE, kvStores, 2, w)
 		}
 	case "path":
-		w.Write([]byte("Reading local file"))
-		search.NewSearchResult(r.FormValue("path"), search.NUCLEOTIDE, kvStores, 2, w)
+		if r.FormValue("file") != "" {
+			search.NewSearchResult(r.FormValue("file"), search.NUCLEOTIDE, kvStores, 2, w)
+		}
 	default:
 		w.WriteHeader(400)
 		w.Write([]byte("Need request type (string|file|path)"))
@@ -136,8 +143,10 @@ func searchProtein(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			w.WriteHeader(400)
 			fmt.Fprintln(w, err.Error())
+		} else {
+			search.NewSearchResult(file, search.PROTEIN, kvStores, 2, w)
+			os.Remove(file)
 		}
-		search.NewSearchResult(file, search.PROTEIN, kvStores, 2, w)
 	case "file":
 		file, err := fileUploadHandler(r, "fasta")
 		if err != nil {
@@ -146,10 +155,12 @@ func searchProtein(w http.ResponseWriter, r *http.Request) {
 		} else {
 			// w.Write([]byte("Uploaded file to " + file))
 			search.NewSearchResult(file, search.PROTEIN, kvStores, 2, w)
+			os.Remove(file)
 		}
 	case "path":
-		w.Write([]byte("Reading local file"))
-		search.NewSearchResult(r.FormValue("path"), search.PROTEIN, kvStores, 2, w)
+		if r.FormValue("file") != "" {
+			search.NewSearchResult(r.FormValue("file"), search.PROTEIN, kvStores, 2, w)
+		}
 	default:
 		w.WriteHeader(400)
 		w.Write([]byte("Need request type (string|file|path)"))

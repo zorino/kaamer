@@ -5,7 +5,10 @@ import (
 	"strings"
 )
 
-var frameStartPosition = map[int]int{0: 0, 1: 1, 2: 2, 3: 0, 4: 1, 5: 2}
+var (
+	frameStartPosition = map[int]int{0: 0, 1: 1, 2: 2, 3: 0, 4: 1, 5: 2}
+	minLenCDS          = 21
+)
 
 type AminoAcid struct {
 	AA    string
@@ -109,10 +112,10 @@ func GetORFs(dna string) []ORF {
 			}
 
 			if currentAA.Stop {
-				if insideORF && len(cds) > 20 {
+				if insideORF && len(cds) >= minLenCDS {
 					endPos := i + 3 + framePos
 					if !plusStrand {
-						endPos = orf.Location.StartPosition - len(cds)*3 + 1
+						endPos = orf.Location.StartPosition - (len(cds)*3 + 1)
 					}
 					orf.Location.EndPosition = endPos
 					orf.Sequence = cds
@@ -136,7 +139,7 @@ func GetORFs(dna string) []ORF {
 			currentAAPos += 1
 		}
 
-		if insideORF && len(cds) > 20 {
+		if insideORF && len(cds) >= minLenCDS {
 			endPos := currentPos + 3 + framePos
 			if !plusStrand {
 				endPos = len(dna) - endPos
@@ -180,7 +183,7 @@ func ResolveORFs(queryResults []QueryResult) []QueryResult {
 		} else if len(queryResults[i].SearchResults.Hits) == 0 {
 			return false
 		}
-		return queryResults[i].SearchResults.Hits[0].Value < queryResults[j].SearchResults.Hits[0].Value
+		return queryResults[i].SearchResults.Hits[0].Kmatch < queryResults[j].SearchResults.Hits[0].Kmatch
 	})
 
 	for _, r := range queryResults {
@@ -198,10 +201,14 @@ func SetBestStartCodon(queryResult *QueryResult) {
 	bestHitScore := int64(0)
 
 	for _, h := range queryResult.SearchResults.Hits {
-		if h.Value > bestHitScore {
-			bestHitScore = h.Value
+		if h.Kmatch >= bestHitScore {
+			bestHitScore = h.Kmatch
 			bestHits = append(bestHits, h)
 		}
+	}
+
+	if len(queryResult.Query.Location.StartsAlternative) < 1 {
+		return
 	}
 
 	bestStart := queryResult.Query.Location.StartsAlternative[0]
@@ -209,28 +216,29 @@ func SetBestStartCodon(queryResult *QueryResult) {
 	firstStart := queryResult.Query.Location.StartsAlternative[0]
 
 	// Set start codon to the first start preceding first best hit position
-	firstBestHitPos := 0
+	firstBestHitPos := 999999999
+
 	if bestStartScore == 0 {
 		// haven't found best hit at start codon or next position..
 		// choose start codon preceding first best hit position
 		exit := false
-		for p, h := range queryResult.SearchResults.PositionHits {
-			for _, bestHit := range bestHits {
-				if _, hasHit := h[bestHit.Key]; hasHit {
-					firstBestHitPos = p
+		for _, bestHit := range bestHits {
+			for i, isMatch := range queryResult.SearchResults.PositionHits[bestHit.Key] {
+				if isMatch {
+					if i < firstBestHitPos {
+						firstBestHitPos = i
+					}
 					exit = true
 				}
 				if exit {
 					break
 				}
 			}
-			if exit {
-				break
-			}
 		}
+
 		exit = false
 		for _, s := range queryResult.Query.Location.StartsAlternative {
-			if s < firstBestHitPos {
+			if s <= firstBestHitPos {
 				bestStart = s
 			} else {
 				exit = true
@@ -249,7 +257,9 @@ func SetBestStartCodon(queryResult *QueryResult) {
 			queryResult.Query.Location.StartPosition = queryResult.Query.Location.StartPosition - 3*(bestStart)
 		}
 		queryResult.Query.Sequence = queryResult.Query.Sequence[bestStart:]
-		queryResult.SearchResults.PositionHits = queryResult.SearchResults.PositionHits[bestStart:]
+		for _k, _positions := range queryResult.SearchResults.PositionHits {
+			queryResult.SearchResults.PositionHits[_k] = _positions[bestStart:]
+		}
 		queryResult.Query.SizeInKmer = len(queryResult.Query.Sequence) - KMER_SIZE + 1
 	}
 

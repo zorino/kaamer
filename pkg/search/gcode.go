@@ -68,8 +68,8 @@ var gcodeBacteria = map[string]AminoAcid{
 }
 
 var startCodonWeight = map[string]int{
-	"atg": 100,
-	"gtg": 30,
+	"atg": 85,
+	"gtg": 15,
 	"ttg": 10,
 	"att": 1,
 	"ata": 1,
