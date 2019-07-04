@@ -20,7 +20,7 @@ const (
 func NewSearch(dbPath string, input string, inputType int) {
 
 	nbOfThreads := runtime.NumCPU()
-	kvStores := kvstore.KVStoresNew(dbPath, nbOfThreads, options.MemoryMap, options.MemoryMap, false)
+	kvStores := kvstore.KVStoresNew(dbPath, nbOfThreads, options.MemoryMap, options.MemoryMap, false, false)
 
 	search.NewSearchResult(input, PROTEIN_STRING, kvStores, nbOfThreads, nil)
 	// searchRes.G_hits

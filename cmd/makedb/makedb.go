@@ -51,13 +51,13 @@ func NewMakedb(dbPath string, inputPath string, isFullDb bool, offset uint, leng
 	fmt.Printf("# Making Database %s from %s\n", dbPath, inputPath)
 	fmt.Printf("# Using %d CPU\n", threadByWorker)
 
-	kvStores := kvstore.KVStoresNew(dbPath, threadByWorker, tableLoadingMode, valueLoadingMode, maxSize)
+	kvStores := kvstore.KVStoresNew(dbPath, threadByWorker, tableLoadingMode, valueLoadingMode, maxSize, false)
 	kvStores.OpenInsertChannel()
 	run(inputPath, kvStores, threadByWorker, offset, lenght)
 	kvStores.CloseInsertChannel()
 	kvStores.Close()
 
-	kvStores = kvstore.KVStoresNew(dbPath, threadByWorker, tableLoadingMode, valueLoadingMode, maxSize)
+	kvStores = kvstore.KVStoresNew(dbPath, threadByWorker, tableLoadingMode, valueLoadingMode, maxSize, false)
 
 	fmt.Printf("# Flattening KmerStore...\n")
 	kvStores.KmerStore.DB.Flatten(threadByWorker)

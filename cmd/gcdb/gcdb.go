@@ -11,7 +11,7 @@ import (
 func NewGC(dbPath string, iteration int, ratio float64, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
 
 	runtime.GOMAXPROCS(128)
-	kvStores := kvstore.KVStoresNew(dbPath, runtime.NumCPU(), tableLoadingMode, valueLoadingMode, maxSize)
+	kvStores := kvstore.KVStoresNew(dbPath, runtime.NumCPU(), tableLoadingMode, valueLoadingMode, maxSize, true)
 
 	wg := new(sync.WaitGroup)
 	wg.Add(2)

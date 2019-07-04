@@ -28,7 +28,7 @@ const (
 	MaxValueLogEntries  = 100000000
 )
 
-func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, maxSize bool) *KVStores {
+func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, maxSize bool, syncWrite bool) *KVStores {
 
 	var kvStores KVStores
 
@@ -38,7 +38,7 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 	k_opts.ValueDir = dbPath + "/kmer_store"
 	k_opts.TableLoadingMode = tableLoadingMode
 	k_opts.ValueLogLoadingMode = valueLoadingMode
-	k_opts.SyncWrites = false
+	k_opts.SyncWrites = syncWrite
 	k_opts.NumVersionsToKeep = math.MaxUint32
 	if maxSize {
 		k_opts.MaxTableSize = MaxTableSize
@@ -53,7 +53,7 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 	kc_opts.ValueDir = dbPath + "/kcomb_store"
 	kc_opts.TableLoadingMode = tableLoadingMode
 	kc_opts.ValueLogLoadingMode = valueLoadingMode
-	kc_opts.SyncWrites = false
+	kc_opts.SyncWrites = syncWrite
 	kc_opts.NumVersionsToKeep = math.MaxUint32
 	if maxSize {
 		kc_opts.MaxTableSize = MaxTableSize
@@ -67,7 +67,7 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 	p_opts.ValueDir = dbPath + "/protein_store"
 	p_opts.TableLoadingMode = tableLoadingMode
 	p_opts.ValueLogLoadingMode = valueLoadingMode
-	p_opts.SyncWrites = false
+	p_opts.SyncWrites = syncWrite
 	p_opts.NumVersionsToKeep = 1
 	if maxSize {
 		p_opts.MaxTableSize = MaxTableSize

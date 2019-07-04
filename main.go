@@ -77,6 +77,9 @@ func main() {
 			   -dbs  databases directory
 			   -o    output directory of merged database
 
+		  (flag)
+               -indexOnly   will only create the kCombination Store
+
 	   -gcdb         run garbage collection on database
 
 		  (input)
@@ -137,6 +140,7 @@ func main() {
 	var mergedbOpt = flag.Bool("mergedb", false, "program")
 	var dbsPath = flag.String("dbs", "", "db path argument")
 	var outPath = flag.String("o", "", "db path argument")
+	var indexOnly = flag.Bool("indexOnly", false, "indexing mode")
 
 	var gcOpt = flag.Bool("gcdb", false, "program")
 	var gcIteration = flag.Int("it", 100, "number of GC iterations")
@@ -165,7 +169,7 @@ func main() {
 		if *dbPath == "" {
 			fmt.Println("No db path !")
 		} else {
-			server.NewServer(*dbPath, *portNumber, tableLoadingMode, valueLoadingMode)
+			server.NewServer(*dbPath, *portNumber, tableLoadingMode, valueLoadingMode, *maxSize)
 		}
 		os.Exit(0)
 	}
@@ -203,7 +207,7 @@ func main() {
 		if *dbsPath == "" || *outPath == "" {
 			fmt.Println("Need to have a valid databases path !")
 		} else {
-			mergedb.NewMergedb(*dbsPath, *outPath, *maxSize, tableLoadingMode, valueLoadingMode)
+			mergedb.NewMergedb(*dbsPath, *outPath, *maxSize, tableLoadingMode, valueLoadingMode, *indexOnly)
 		}
 		os.Exit(0)
 	}

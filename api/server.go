@@ -21,13 +21,13 @@ import (
 var kvStores *kvstore.KVStores
 var tmpFolder string
 
-func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
+func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, maxSize bool) {
 
-	runtime.GOMAXPROCS(128)
+	runtime.GOMAXPROCS(512)
 
 	tmpFolder = "/tmp/"
 
-	kvStores = kvstore.KVStoresNew(dbPath, 12, tableLoadingMode, valueLoadingMode, false)
+	kvStores = kvstore.KVStoresNew(dbPath, 12, tableLoadingMode, valueLoadingMode, maxSize, false)
 	defer kvStores.Close()
 
 	r := chi.NewRouter()
