@@ -93,17 +93,19 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 
 	}
 
-	IndexStore(kvStores1, nbOfThreads)
+	// IndexStore(kvStores1, nbOfThreads)
+
+	kvStores1.KmerStore.DB.Flatten(12)
+	kvStores1.ProteinStore.DB.Flatten(12)
 
 	// Final garbage collect before closing
 	kvStores1.KmerStore.GarbageCollect(10000000, 0.05)
-	kvStores1.KCombStore.GarbageCollect(10000000, 0.05)
 	kvStores1.ProteinStore.GarbageCollect(10000000, 0.05)
 	kvStores1.Close()
 
 }
 
-func IndexStore(kvStores1 *kvstore.KVStores, nbOfThreads int) {
+func IndexStore(kvStores1 *kvstore.KVStores, newKmerStore *kvstore.KVStore, nbOfThreads int) {
 	go func() {
 		ticker := time.NewTicker(10 * time.Minute)
 		defer ticker.Stop()
@@ -123,7 +125,7 @@ func IndexStore(kvStores1 *kvstore.KVStores, nbOfThreads int) {
 		}
 
 	}()
-	CreateCombinationValues(kvStores1.KmerStore.KVStore, kvStores1.KCombStore, nbOfThreads)
+	CreateCombinationValues(kvStores1.KmerStore.KVStore, kvStores1.KCombStore, newKmerStore, nbOfThreads)
 }
 
 func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThreads int, wg *sync.WaitGroup) {
@@ -198,14 +200,14 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 
 }
 
-func CreateCombinationValues(kmerStore *kvstore.KVStore, kCombStore *kvstore.KC_, nbOfThreads int) {
+func CreateCombinationValues(kmerStore *kvstore.KVStore, kCombStore *kvstore.KC_, newKmerStore *kvstore.KVStore, nbOfThreads int) {
 
 	fmt.Println("# Creating key combination store")
 	// Stream keys
 	stream := kmerStore.DB.NewStream()
 
 	kCombStore.KVStore.OpenInsertChannel()
-
+	newKmerStore.OpenInsertChannel()
 	// db.NewStreamAt(readTs) for managed mode.
 
 	// -- Optional settings
@@ -226,7 +228,7 @@ func CreateCombinationValues(kmerStore *kvstore.KVStore, kCombStore *kvstore.KC_
 		keys := [][]byte{}
 		valCopy := []byte{}
 		keyCopy := []byte{}
-		list := &pb.KVList{}
+		// list := &pb.KVList{}
 
 		for ; it.Valid(); it.Next() {
 
@@ -254,51 +256,55 @@ func CreateCombinationValues(kmerStore *kvstore.KVStore, kCombStore *kvstore.KC_
 
 		combKey, combVal := kCombStore.CreateKCKeyValue(keys)
 		kCombStore.AddValueToChannel(combKey, combVal, true)
-		list.Kv = append(list.Kv, &pb.KV{Key: keyCopy, Value: combKey})
+		newKmerStore.AddValueToChannel(keyCopy, combKey, true)
 
-		return list, nil
+		return nil, nil
+
+		// list.Kv = append(list.Kv, &pb.KV{Key: keyCopy, Value: combKey})
+		// return list, nil
 
 	}
 
 	// -- End of optional settings.
 
 	// Send is called serially, while Stream.Orchestrate is running.
-	// stream.Send = nil
-	stream.Send = func(list *pb.KVList) error {
+	stream.Send = nil
 
-		var err error
+	// stream.Send = func(list *pb.KVList) error {
 
-		// Delete keys
-		wb := kmerStore.DB.NewWriteBatch()
-		for _, kv := range list.Kv {
-			err = wb.Delete(kv.Key)
-			if err != nil {
-				fmt.Printf("# Write batch in combination key creation (delete) error : %s\n", err.Error())
-				wb.Flush()
-				wb.Cancel()
-				wb = kmerStore.DB.NewWriteBatch()
-			}
-			// kmerStore.UpdateValue(kv.Key, kv.Value)
-		}
-		wb.Flush()
-		wb.Cancel()
+	// 	var err error
 
-		// Insert new key / value
-		wb = kmerStore.DB.NewWriteBatch()
-		for _, kv := range list.Kv {
-			err = wb.Set(kv.Key, kv.Value)
-			if err != nil {
-				fmt.Printf("# Write batch in combination key creation (create) error : %s\n", err.Error())
-				wb.Flush()
-				wb.Cancel()
-				wb = kmerStore.DB.NewWriteBatch()
-			}
-		}
-		wb.Flush()
-		wb.Cancel()
+	// 	// Delete keys
+	// 	wb := kmerStore.DB.NewWriteBatch()
+	// 	for _, kv := range list.Kv {
+	// 		err = wb.Delete(kv.Key)
+	// 		if err != nil {
+	// 			fmt.Printf("# Write batch in combination key creation (delete) error : %s\n", err.Error())
+	// 			wb.Flush()
+	// 			wb.Cancel()
+	// 			wb = kmerStore.DB.NewWriteBatch()
+	// 		}
+	// 		// kmerStore.UpdateValue(kv.Key, kv.Value)
+	// 	}
+	// 	wb.Flush()
+	// 	wb.Cancel()
 
-		return nil
-	}
+	// 	// Insert new key / value
+	// 	wb = kmerStore.DB.NewWriteBatch()
+	// 	for _, kv := range list.Kv {
+	// 		err = wb.Set(kv.Key, kv.Value)
+	// 		if err != nil {
+	// 			fmt.Printf("# Write batch in combination key creation (create) error : %s\n", err.Error())
+	// 			wb.Flush()
+	// 			wb.Cancel()
+	// 			wb = kmerStore.DB.NewWriteBatch()
+	// 		}
+	// 	}
+	// 	wb.Flush()
+	// 	wb.Cancel()
+
+	// 	return nil
+	// }
 
 	// Run the stream
 	if err := stream.Orchestrate(context.Background()); err != nil {
@@ -308,5 +314,28 @@ func CreateCombinationValues(kmerStore *kvstore.KVStore, kCombStore *kvstore.KC_
 	// Done.
 	kCombStore.KVStore.CloseInsertChannel()
 	kCombStore.KVStore.Flush()
+	newKmerStore.CloseInsertChannel()
+	newKmerStore.Flush()
+
+}
+
+func CreateNewKmerStore(dbPath string, nbOfThreads int) *kvstore.KVStore {
+
+	// kmer_store options
+	k_opts := badger.DefaultOptions
+	k_opts.Dir = dbPath + "/kmer_store.new"
+	k_opts.ValueDir = dbPath + "/kmer_store.new"
+	k_opts.TableLoadingMode = options.MemoryMap
+	k_opts.ValueLogLoadingMode = options.MemoryMap
+	k_opts.SyncWrites = true
+	k_opts.NumVersionsToKeep = 1
+	k_opts.MaxTableSize = kvstore.MaxTableSize
+	k_opts.ValueLogFileSize = kvstore.MaxValueLogFileSize
+	k_opts.ValueLogMaxEntries = kvstore.MaxValueLogEntries
+	k_opts.NumCompactors = 8
+
+	newKmerStore := kvstore.K_New(k_opts, 1000, nbOfThreads)
+
+	return newKmerStore.KVStore
 
 }
