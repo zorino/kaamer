@@ -27,7 +27,7 @@ func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadi
 
 	tmpFolder = "/tmp/"
 
-	kvStores = kvstore.KVStoresNew(dbPath, 12, tableLoadingMode, valueLoadingMode, maxSize, false)
+	kvStores = kvstore.KVStoresNew(dbPath, 12, tableLoadingMode, valueLoadingMode, maxSize, false, true)
 	defer kvStores.Close()
 
 	r := chi.NewRouter()

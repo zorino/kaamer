@@ -28,7 +28,7 @@ const (
 	MaxValueLogEntries  = 100000000
 )
 
-func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, maxSize bool, syncWrite bool) *KVStores {
+func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, maxSize bool, syncWrite bool, readOnly bool) *KVStores {
 
 	var kvStores KVStores
 
@@ -45,6 +45,9 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 		k_opts.ValueLogFileSize = MaxValueLogFileSize
 		k_opts.ValueLogMaxEntries = MaxValueLogEntries
 	}
+	if readOnly {
+		k_opts.ReadOnly = true
+	}
 	k_opts.NumCompactors = 8
 
 	// kcomb_store options
@@ -60,6 +63,9 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 		kc_opts.ValueLogFileSize = MaxValueLogFileSize
 		kc_opts.ValueLogMaxEntries = MaxValueLogEntries
 	}
+	if readOnly {
+		kc_opts.ReadOnly = true
+	}
 
 	// protein_store options
 	p_opts := badger.DefaultOptions
@@ -73,6 +79,9 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 		p_opts.MaxTableSize = MaxTableSize
 		p_opts.ValueLogFileSize = MaxValueLogFileSize
 		p_opts.ValueLogMaxEntries = MaxValueLogEntries
+	}
+	if readOnly {
+		p_opts.ReadOnly = true
 	}
 
 	// Open all store

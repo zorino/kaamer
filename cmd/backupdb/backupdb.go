@@ -27,7 +27,7 @@ func Backupdb(dbPath string, output string, tableLoadingMode options.FileLoading
 		os.Mkdir(output, 0700)
 	}
 
-	kvStores1 := kvstore.KVStoresNew(dbPath, nbOfThreads, tableLoadingMode, valueLoadingMode, true, false)
+	kvStores1 := kvstore.KVStoresNew(dbPath, nbOfThreads, tableLoadingMode, valueLoadingMode, true, false, true)
 
 	Backup(kvStores1.KmerStore.DB, output+"/kmer_store.bdg")
 	Backup(kvStores1.ProteinStore.DB, output+"/protein_store.bdg")

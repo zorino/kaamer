@@ -38,7 +38,7 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 
 	if indexOnly {
 		newKmerStore := CreateNewKmerStore(outPath, nbOfThreads)
-		kvStores1 := kvstore.KVStoresNew(outPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, true)
+		kvStores1 := kvstore.KVStoresNew(outPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, true, false)
 		IndexStore(kvStores1, newKmerStore, nbOfThreads)
 		newKmerStore.GarbageCollect(10000000, 0.05)
 		kvStores1.KmerStore.GarbageCollect(10000000, 0.05)
@@ -60,7 +60,7 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 	copy.Dir(allDBs[0], outPath)
 	allDBs = allDBs[1:]
 
-	kvStores1 := kvstore.KVStoresNew(outPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, true)
+	kvStores1 := kvstore.KVStoresNew(outPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, true, false)
 
 	for _, db := range allDBs {
 
@@ -68,7 +68,7 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 
 			fmt.Printf("# Merging database %s into %s...\n", db, outPath)
 
-			kvStores2 := kvstore.KVStoresNew(db, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, true)
+			kvStores2 := kvstore.KVStoresNew(db, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, true, false)
 
 			wg := new(sync.WaitGroup)
 			wg.Add(2)
