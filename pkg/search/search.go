@@ -17,7 +17,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	cnt "github.com/zorino/counters"
-	"github.com/zorino/metaprot/pkg/kvstore"
+	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
 const (

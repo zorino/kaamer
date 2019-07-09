@@ -1,9 +1,9 @@
-# Metaprot
+# Kaamer
 
 
-Metaprot is a kmerized bacterial protein database along a GO package to produce, manage and use it.
+Kaamer is a kmerized bacterial protein database along a GO package to produce, manage and use it.
 
-There are two functionality for Metaprot :
+There are two functionality for Kaamer :
 
 1. Single protein identification
 2. Functionnal annotation of shotgun metagenomes
@@ -24,16 +24,16 @@ features associated with the kmer.
 ## Installation
 
 ``` shell
-go get -u github.com/zorino/metaprot
+go get -u github.com/zorino/kaamer
 ```
 
 
 ## Usage
 
 ``` shell
-$ metaprot
+$ kaamer
 
-metaprot
+kaamer
 
     // Analyses
 
@@ -45,10 +45,10 @@ metaprot
 
           -makedb       make the protein database
 
-                           -i    input tsv file or dir // if doesn't exist metaprot will download from Uniprot (>60 GB)
+                           -i    input tsv file or dir // if doesn't exist kaamer will download from Uniprot (>60 GB)
                            -d    badger database dir path
 
-          -mergedb      merge two metaprot badger databases
+          -mergedb      merge two kaamer badger databases
 
                            -d1   badger db 1
                            -d2   badger db 2

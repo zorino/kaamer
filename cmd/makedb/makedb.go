@@ -16,7 +16,7 @@ import (
 
 	"github.com/dgraph-io/badger/options"
 	"github.com/golang/protobuf/proto"
-	"github.com/zorino/metaprot/pkg/kvstore"
+	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
 const (

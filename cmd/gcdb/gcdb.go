@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/dgraph-io/badger/options"
-	"github.com/zorino/metaprot/pkg/kvstore"
+	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
 func NewGC(dbPath string, iteration int, ratio float64, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {

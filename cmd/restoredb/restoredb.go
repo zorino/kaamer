@@ -7,7 +7,7 @@ import (
 
 	"github.com/dgraph-io/badger"
 	"github.com/dgraph-io/badger/options"
-	"github.com/zorino/metaprot/pkg/kvstore"
+	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
 func RestoreDB(backupPath string, output string, maxSize bool) {

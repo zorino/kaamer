@@ -1,4 +1,4 @@
-module github.com/zorino/metaprot
+module github.com/zorino/kaamer
 
 go 1.12
 

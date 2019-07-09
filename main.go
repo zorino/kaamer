@@ -6,13 +6,12 @@ import (
 	"os"
 
 	"github.com/dgraph-io/badger/options"
-	"github.com/zorino/metaprot/api"
-	"github.com/zorino/metaprot/cmd/backupdb"
-	"github.com/zorino/metaprot/cmd/gcdb"
-	"github.com/zorino/metaprot/cmd/makedb"
-	"github.com/zorino/metaprot/cmd/mergedb"
-	"github.com/zorino/metaprot/cmd/restoredb"
-	"github.com/zorino/metaprot/cmd/search"
+	"github.com/zorino/kaamer/api"
+	"github.com/zorino/kaamer/cmd/backupdb"
+	"github.com/zorino/kaamer/cmd/gcdb"
+	"github.com/zorino/kaamer/cmd/makedb"
+	"github.com/zorino/kaamer/cmd/mergedb"
+	"github.com/zorino/kaamer/cmd/restoredb"
 )
 
 const (
@@ -26,19 +25,19 @@ var (
 func main() {
 
 	usage := `
- metaprot
+ kaamer
 
   // Analyses
 
 
-	   -server       start a metaprot server
+	   -server       start a kaamer server
 
 		  (input)
 			   -d    database directory
 
 			   -p    port (default: 8321)
 
-	   -search       search for a protein in metaprot db
+	   -search       search for a protein in kaamer db
 
 		  (input)
 			   -d    database directory
@@ -50,10 +49,10 @@ func main() {
 
   // Database Management
 
-	   -downloadb    download metaprot database
+	   -downloadb    download kaamer database
 
 		   (flag)
-			   -m    metaprot release database
+			   -m    kaamer release database
 			   -r    raw UniprotKB database (to use with -makedb)
 
 		  (input)
@@ -134,7 +133,7 @@ func main() {
 	var tableMode = flag.String("tablemode", "memorymap", "table loading mode (fileio, memorymap)")
 	var valueMode = flag.String("valuemode", "memorymap", "value loading mode (fileio, memorymap)")
 
-	// var downloadOpt = flag.Bool("downloaddb", false, "download uniprotkb or metaprot db")
+	// var downloadOpt = flag.Bool("downloaddb", false, "download uniprotkb or kaamer db")
 	// var rawDbOpt = flag.Bool("r", false, "for uniprotkb raw database")
 
 	var mergedbOpt = flag.Bool("mergedb", false, "program")

@@ -14,8 +14,8 @@ import (
 	"github.com/dgraph-io/badger"
 	"github.com/dgraph-io/badger/options"
 	"github.com/dgraph-io/badger/pb"
-	copy "github.com/zorino/metaprot/internal/helper/copy"
-	"github.com/zorino/metaprot/pkg/kvstore"
+	copy "github.com/zorino/kaamer/internal/helper/copy"
+	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
 type DBMerger struct {

@@ -14,8 +14,8 @@ import (
 	"github.com/dgraph-io/badger/options"
 	"github.com/go-chi/chi"
 	"github.com/rs/xid"
-	"github.com/zorino/metaprot/pkg/kvstore"
-	"github.com/zorino/metaprot/pkg/search"
+	"github.com/zorino/kaamer/pkg/kvstore"
+	"github.com/zorino/kaamer/pkg/search"
 )
 
 var kvStores *kvstore.KVStores
@@ -50,7 +50,7 @@ func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadi
 	port.WriteString(":")
 	port.WriteString(strconv.Itoa(portNumber))
 
-	fmt.Printf("Metaprot server listening on port %d\n", portNumber)
+	fmt.Printf("Kaamer server listening on port %d\n", portNumber)
 	http.ListenAndServe(port.String(), r)
 
 }

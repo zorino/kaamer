@@ -8,7 +8,7 @@ import (
 
 	"github.com/dgraph-io/badger"
 	"github.com/dgraph-io/badger/options"
-	"github.com/zorino/metaprot/pkg/kvstore"
+	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
 func Backupdb(dbPath string, output string, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
