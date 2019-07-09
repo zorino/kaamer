@@ -179,14 +179,13 @@ func main() {
 		if *dbPath == "" {
 			fmt.Println("No db path !")
 		} else if *filePath == "" && *sequenceString == "" {
-			fmt.Println("Need a sequence of file input !")
+			fmt.Println("Need a sequence or file input !")
 		} else {
 			if *filePath != "" {
 				search.NewSearch(*dbPath, *filePath, 0)
 			} else if *sequenceString != "" {
 				search.NewSearch(*dbPath, *sequenceString, 1)
 			}
-
 		}
 
 		os.Exit(0)
@@ -242,12 +241,6 @@ func main() {
 		}
 		os.Exit(0)
 	}
-
-	// if *analyseOpt == true {
-	//	fmt.Println(*dbPath)
-	//	fmt.Println("analyse..")
-	//	os.Exit(0)
-	// }
 
 	fmt.Println(usage)
 	os.Exit(0)
