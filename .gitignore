@@ -1,5 +1,4 @@
 vendor/
 metaprot
 README.html
-test/scripts/bloom/
-test/badger*
+test/
