@@ -119,9 +119,9 @@ func main() {
 	var serverOpt = flag.Bool("server", false, "program")
 	var portNumber = flag.Int("p", 8321, "port argument")
 
-	var searchOpt = flag.Bool("search", false, "program")
-	var filePath = flag.String("f", "", "file path argument")
-	var sequenceString = flag.String("s", "", "db path argument")
+	// var searchOpt = flag.Bool("search", false, "program")
+	// var filePath = flag.String("f", "", "file path argument")
+	// var sequenceString = flag.String("s", "", "db path argument")
 
 	var makedbOpt = flag.Bool("makedb", false, "program")
 	var inputPath = flag.String("i", "", "db path argument")
@@ -170,23 +170,6 @@ func main() {
 		} else {
 			server.NewServer(*dbPath, *portNumber, tableLoadingMode, valueLoadingMode, *maxSize)
 		}
-		os.Exit(0)
-	}
-
-	if *searchOpt == true {
-
-		if *dbPath == "" {
-			fmt.Println("No db path !")
-		} else if *filePath == "" && *sequenceString == "" {
-			fmt.Println("Need a sequence or file input !")
-		} else {
-			if *filePath != "" {
-				search.NewSearch(*dbPath, *filePath, 0)
-			} else if *sequenceString != "" {
-				search.NewSearch(*dbPath, *sequenceString, 1)
-			}
-		}
-
 		os.Exit(0)
 	}
 
