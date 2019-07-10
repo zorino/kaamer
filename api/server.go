@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -68,103 +69,122 @@ func APIRoutes(r chi.Router, path string, kvStores *kvstore.KVStores) {
 
 func searchFastq(w http.ResponseWriter, r *http.Request) {
 
-	// chi.URLParam(r, "key")
-	switch r.FormValue("type") {
-	case "string":
-		file, err := stringUploadHandler(r, "fasta")
-		if err != nil {
-			w.WriteHeader(400)
-			fmt.Fprintln(w, err.Error())
-		} else {
-			search.NewSearchResult(file, search.READS, kvStores, 2, w)
-			os.Remove(file)
-		}
-	case "file":
-		file, err := fileUploadHandler(r, "fasta")
-		if err != nil {
-			w.WriteHeader(400)
-			fmt.Fprintln(w, err.Error())
-		} else {
-			// w.Write([]byte("Uploaded file to " + file))
-			search.NewSearchResult(file, search.READS, kvStores, 2, w)
-			os.Remove(file)
-		}
-	case "path":
-		if r.FormValue("file") != "" {
-			search.NewSearchResult(r.FormValue("file"), search.READS, kvStores, 2, w)
-		}
-	default:
+	searchOptions := search.SearchOptions{
+		File:             "",
+		InputType:        r.FormValue("type"),
+		SequenceType:     search.READS,
+		OutFormat:        "tsv",
+		MaxResults:       10,
+		ExtractPositions: true,
+	}
+
+	err := parseSearchOptions(&searchOptions, w, r)
+	if err != nil {
 		w.WriteHeader(400)
-		w.Write([]byte("Need request type (string|file|path)"))
+		fmt.Fprintln(w, err.Error())
+	} else {
+		search.NewSearchResult(searchOptions, kvStores, 2, w)
 	}
 
 }
 
 func searchNucleotide(w http.ResponseWriter, r *http.Request) {
 
-	// chi.URLParam(r, "key")
-	switch r.FormValue("type") {
-	case "string":
-		file, err := stringUploadHandler(r, "fasta")
-		if err != nil {
-			w.WriteHeader(400)
-			fmt.Fprintln(w, err.Error())
-		} else {
-			search.NewSearchResult(file, search.NUCLEOTIDE, kvStores, 2, w)
-			os.Remove(file)
-		}
-	case "file":
-		file, err := fileUploadHandler(r, "fasta")
-		if err != nil {
-			w.WriteHeader(400)
-			fmt.Fprintln(w, err.Error())
-		} else {
-			// w.Write([]byte("Uploaded file to " + file))
-			search.NewSearchResult(file, search.NUCLEOTIDE, kvStores, 2, w)
-		}
-	case "path":
-		if r.FormValue("file") != "" {
-			search.NewSearchResult(r.FormValue("file"), search.NUCLEOTIDE, kvStores, 2, w)
-		}
-	default:
+	searchOptions := search.SearchOptions{
+		File:             "",
+		InputType:        r.FormValue("type"),
+		SequenceType:     search.NUCLEOTIDE,
+		OutFormat:        "tsv",
+		MaxResults:       10,
+		ExtractPositions: true,
+	}
+
+	err := parseSearchOptions(&searchOptions, w, r)
+
+	if err != nil {
 		w.WriteHeader(400)
-		w.Write([]byte("Need request type (string|file|path)"))
+		fmt.Fprintln(w, err.Error())
+	} else {
+		search.NewSearchResult(searchOptions, kvStores, 2, w)
 	}
 
 }
 
 func searchProtein(w http.ResponseWriter, r *http.Request) {
 
-	// chi.URLParam(r, "key")
+	searchOptions := search.SearchOptions{
+		File:             "",
+		InputType:        r.FormValue("type"),
+		SequenceType:     search.PROTEIN,
+		OutFormat:        "tsv",
+		MaxResults:       10,
+		ExtractPositions: false,
+	}
+
+	err := parseSearchOptions(&searchOptions, w, r)
+
+	if err != nil {
+		w.WriteHeader(400)
+		fmt.Fprintln(w, err.Error())
+	} else {
+		search.NewSearchResult(searchOptions, kvStores, 2, w)
+	}
+
+}
+
+func parseSearchOptions(searchOpts *search.SearchOptions, w http.ResponseWriter, r *http.Request) error {
+
+	// Input sequence format (string, file, path)
 	switch r.FormValue("type") {
 	case "string":
 		file, err := stringUploadHandler(r, "fasta")
-		// fmt.Println(file)
 		if err != nil {
-			w.WriteHeader(400)
-			fmt.Fprintln(w, err.Error())
+			// w.WriteHeader(400)
+			// fmt.Fprintln(w, err.Error())
+			return err
 		} else {
-			search.NewSearchResult(file, search.PROTEIN, kvStores, 2, w)
-			os.Remove(file)
+			searchOpts.File = file
 		}
 	case "file":
 		file, err := fileUploadHandler(r, "fasta")
 		if err != nil {
-			w.WriteHeader(400)
-			fmt.Fprintln(w, err.Error())
+			// w.WriteHeader(400)
+			// fmt.Fprintln(w, err.Error())
+			return err
 		} else {
-			// w.Write([]byte("Uploaded file to " + file))
-			search.NewSearchResult(file, search.PROTEIN, kvStores, 2, w)
-			os.Remove(file)
+			searchOpts.File = file
 		}
 	case "path":
 		if r.FormValue("file") != "" {
-			search.NewSearchResult(r.FormValue("file"), search.PROTEIN, kvStores, 2, w)
+			if _, err := os.Stat(r.FormValue("file")); os.IsNotExist(err) {
+				// w.WriteHeader(400)
+				// w.Write([]byte("File does not exist!"))
+				return err
+			} else {
+				searchOpts.File = r.FormValue("file")
+			}
 		}
 	default:
-		w.WriteHeader(400)
-		w.Write([]byte("Need request type (string|file|path)"))
+		// w.WriteHeader(400)
+		// w.Write([]byte("Need request type (string|file|path)"))
+		return errors.New("Need request type (string|file|path)")
 	}
+
+	if r.FormValue("max-results") != "" {
+		if maxRes, err := strconv.Atoi(r.FormValue("max-results")); err == nil {
+			searchOpts.MaxResults = maxRes
+		}
+	}
+
+	if strings.ToLower(r.FormValue("output-format")) == "tsv" {
+		searchOpts.OutFormat = "tsv"
+	}
+
+	if strings.ToLower(r.FormValue("extract-positions")) == "true" {
+		searchOpts.ExtractPositions = true
+	}
+
+	return nil
 
 }
 

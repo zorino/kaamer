@@ -30,9 +30,17 @@ const (
 )
 
 var (
-	MaxNumberOfResults = 10
-	ExtractPositions   = false
+	searchOptions = SearchOptions{}
 )
+
+type SearchOptions struct {
+	File             string
+	InputType        string
+	SequenceType     int
+	OutFormat        string
+	MaxResults       int
+	ExtractPositions bool
+}
 
 type SearchResults struct {
 	Counter      *cnt.CounterBox
@@ -114,21 +122,27 @@ func sortMapByValue(hitFrequencies *sync.Map) HitList {
 	return pl
 }
 
-func NewSearchResult(file string, sequenceType int, kvStores *kvstore.KVStores, nbOfThreads int, w http.ResponseWriter) []QueryResult {
+func NewSearchResult(newSearchOptions SearchOptions, kvStores *kvstore.KVStores, nbOfThreads int, w http.ResponseWriter) []QueryResult {
 
 	// sequence is either file path or the actual sequence (depends on sequenceType)
 	queryResults := []QueryResult{}
 
-	switch sequenceType {
+	searchOptions = newSearchOptions
+
+	switch searchOptions.SequenceType {
 	case READS:
 		fmt.Println("Searching for Reads file")
-		NucleotideSearch(file, kvStores, nbOfThreads, w, true)
+		NucleotideSearch(searchOptions.File, kvStores, nbOfThreads, w, true)
 	case NUCLEOTIDE:
 		fmt.Println("Searching for Nucleotide file")
-		NucleotideSearch(file, kvStores, nbOfThreads, w, false)
+		NucleotideSearch(searchOptions.File, kvStores, nbOfThreads, w, false)
 	case PROTEIN:
 		fmt.Println("Searching from Protein file")
-		ProteinSearch(file, kvStores, nbOfThreads, w)
+		ProteinSearch(searchOptions.File, kvStores, nbOfThreads, w)
+	}
+
+	if searchOptions.InputType != "path" {
+		os.Remove(searchOptions.File)
 	}
 
 	return queryResults
@@ -159,7 +173,7 @@ func NucleotideSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, 
 		queryResults := []QueryResult{}
 
 		// Concurrent query results writer
-		queryResultChan := make(chan QueryResult, 50)
+		queryResultChan := make(chan QueryResult, 10)
 		wgWriter := new(sync.WaitGroup)
 		wgWriter.Add(1)
 		go QueryResultResponseWriter(queryResultChan, w, wgWriter)
@@ -327,8 +341,8 @@ func (queryResult *QueryResult) FilterResults(kmerMatchRatio float64) {
 		}
 	}
 
-	if (lastGoodHitPosition + 1) > MaxNumberOfResults {
-		lastGoodHitPosition = MaxNumberOfResults
+	if (lastGoodHitPosition + 1) > searchOptions.MaxResults {
+		lastGoodHitPosition = searchOptions.MaxResults
 		for _, h := range queryResult.SearchResults.Hits[lastGoodHitPosition+1:] {
 			hitsToDelete = append(hitsToDelete, h.Key)
 		}
@@ -570,31 +584,67 @@ func QueryResultResponseWriter(queryResult <-chan QueryResult, w http.ResponseWr
 
 	defer wg.Done()
 
-	// set http response header
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(200)
+	if searchOptions.OutFormat == "tsv" {
 
-	// open results array
-	w.Write([]byte("["))
+		// set http response header
+		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
+		w.WriteHeader(200)
 
-	firstResult := true
+		w.Write([]byte("QueryName\tQueryKSize\tQStart\tQEnd\tKMatch\tHitId\n"))
+		output := ""
 
-	for qR := range queryResult {
+		for qR := range queryResult {
 
-		if !firstResult {
-			w.Write([]byte(","))
+			for _, h := range qR.SearchResults.Hits {
+				output = ""
+				output += qR.Query.Name
+				output += "\t"
+				output += strconv.Itoa(qR.Query.SizeInKmer)
+				output += "\t"
+				output += strconv.Itoa(qR.Query.Location.StartPosition)
+				output += "\t"
+				output += strconv.Itoa(qR.Query.Location.EndPosition)
+				output += "\t"
+				output += strconv.Itoa(int(h.Kmatch))
+				output += "\t"
+				output += qR.HitEntries[h.Key].Entry
+				output += "\n"
+				w.Write([]byte(output))
+			}
+
 		}
-		data, err := json.Marshal(qR)
-		if err != nil {
-			fmt.Println(err.Error())
-		}
-		w.Write(data)
-
-		firstResult = false
 
 	}
 
-	// open results array
-	w.Write([]byte("]"))
+	if searchOptions.OutFormat == "json" {
+
+		// set http response header
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(200)
+
+		// open results array
+		w.Write([]byte("["))
+
+		firstResult := true
+
+		for qR := range queryResult {
+
+			if !firstResult {
+				w.Write([]byte(","))
+			}
+			data, err := json.Marshal(qR)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			w.Write(data)
+
+			firstResult = false
+
+		}
+
+		// open results array
+		w.Write([]byte("]"))
+
+	}
 
 }
