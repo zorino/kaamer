@@ -115,7 +115,7 @@ func GetORFs(dna string) []ORF {
 				if insideORF && len(cds) >= minLenCDS {
 					endPos := i + 3 + framePos
 					if !plusStrand {
-						endPos = orf.Location.StartPosition - (len(cds)*3 + 1)
+						endPos = orf.Location.StartPosition - (len(cds) * 3) + 1
 					}
 					orf.Location.EndPosition = endPos
 					orf.Sequence = cds
@@ -142,7 +142,7 @@ func GetORFs(dna string) []ORF {
 		if insideORF && len(cds) >= minLenCDS {
 			endPos := currentPos + 3 + framePos
 			if !plusStrand {
-				endPos = len(dna) - endPos
+				endPos = orf.Location.StartPosition - (len(cds) * 3) + 1
 			}
 			orf.Location.EndPosition = endPos
 			orf.Sequence = cds
