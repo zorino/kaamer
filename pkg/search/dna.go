@@ -183,7 +183,7 @@ func ResolveORFs(queryResults []QueryResult) []QueryResult {
 		} else if len(queryResults[i].SearchResults.Hits) == 0 {
 			return false
 		}
-		return queryResults[i].SearchResults.Hits[0].Kmatch < queryResults[j].SearchResults.Hits[0].Kmatch
+		return queryResults[i].SearchResults.Hits[0].Kmatch > queryResults[j].SearchResults.Hits[0].Kmatch
 	})
 
 	for _, r := range queryResults {
