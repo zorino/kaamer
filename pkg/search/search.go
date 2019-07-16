@@ -229,8 +229,8 @@ func NucleotideSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, 
 			queryResults = ResolveORFs(queryResults)
 
 			for _, qR := range queryResults {
+				qR.FilterResults(0.2)
 				if qR.SearchResults.Hits.Len() > 0 {
-					qR.FilterResults(0.2)
 					qR.FetchHitsInformation(kvStores)
 					queryResultChan <- qR
 				}
