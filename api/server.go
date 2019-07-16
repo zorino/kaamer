@@ -188,8 +188,8 @@ func parseSearchOptions(searchOpts *search.SearchOptions, w http.ResponseWriter,
 		}
 	}
 
-	if strings.ToLower(r.FormValue("output-format")) == "tsv" {
-		searchOpts.OutFormat = "tsv"
+	if strings.ToLower(r.FormValue("output-format")) == "json" {
+		searchOpts.OutFormat = "json"
 	}
 
 	if strings.ToLower(r.FormValue("extract-positions")) == "true" {
