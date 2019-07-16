@@ -11,10 +11,12 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/dgraph-io/badger/options"
 	"github.com/go-chi/chi"
 	"github.com/rs/xid"
+	"github.com/zorino/kaamer/internal/helper/duration"
 	"github.com/zorino/kaamer/pkg/kvstore"
 	"github.com/zorino/kaamer/pkg/search"
 )
@@ -28,8 +30,17 @@ func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadi
 
 	tmpFolder = "/tmp/"
 
+	/* Open database */
+	fmt.Printf(" + Opening kAAmer Database.. ")
+	startTime := time.Now()
+
 	kvStores = kvstore.KVStoresNew(dbPath, 12, tableLoadingMode, valueLoadingMode, maxSize, false, true)
 	defer kvStores.Close()
+
+	elapsed := time.Since(startTime)
+	elapsed = elapsed.Round(time.Second)
+	out := fmt.Sprintf("done [%s]\n", duration.FmtDuration(elapsed))
+	fmt.Printf(out)
 
 	r := chi.NewRouter()
 
@@ -46,12 +57,13 @@ func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadi
 	/* API */
 	APIRoutes(r, "/api", kvStores)
 
-	/* Start server */
+	/* Set port */
 	var port bytes.Buffer
 	port.WriteString(":")
 	port.WriteString(strconv.Itoa(portNumber))
 
-	fmt.Printf("Kaamer server listening on port %d\n", portNumber)
+	/* Start server */
+	fmt.Printf(" + kAAmer server listening on port %d\n", portNumber)
 	http.ListenAndServe(port.String(), r)
 
 }
