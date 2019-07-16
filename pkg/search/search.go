@@ -335,20 +335,24 @@ func (queryResult *QueryResult) FilterResults(kmerMatchRatio float64) {
 	for i, hit := range queryResult.SearchResults.Hits {
 		if (float64(hit.Kmatch)/float64(queryResult.Query.SizeInKmer)) < kmerMatchRatio || hit.Kmatch < 10 {
 			if lastGoodHitPosition == (len(queryResult.SearchResults.Hits) - 1) {
-				lastGoodHitPosition = i
+				lastGoodHitPosition = i - 1
 			}
 			hitsToDelete = append(hitsToDelete, hit.Key)
 		}
 	}
 
-	if (lastGoodHitPosition + 1) > searchOptions.MaxResults {
-		lastGoodHitPosition = searchOptions.MaxResults
+	if lastGoodHitPosition >= searchOptions.MaxResults {
+		lastGoodHitPosition = searchOptions.MaxResults - 1
 		for _, h := range queryResult.SearchResults.Hits[lastGoodHitPosition+1:] {
 			hitsToDelete = append(hitsToDelete, h.Key)
 		}
 	}
 
-	queryResult.SearchResults.Hits = queryResult.SearchResults.Hits[0 : lastGoodHitPosition+1]
+	if lastGoodHitPosition < 0 {
+		queryResult.SearchResults.Hits = []Hit{}
+	} else {
+		queryResult.SearchResults.Hits = queryResult.SearchResults.Hits[0 : lastGoodHitPosition+1]
+	}
 
 	for _, k := range hitsToDelete {
 		delete(queryResult.SearchResults.PositionHits, k)
