@@ -414,6 +414,7 @@ func GetQueriesFasta(fileName string, queryChan chan<- Query, isProtein bool) {
 	buf := make([]byte, 0, 64*1024)
 	scanner.Buffer(buf, 1024*1024)
 	l := ""
+	queryName := ""
 
 	for scanner.Scan() {
 		l = scanner.Text()
@@ -427,12 +428,13 @@ func GetQueriesFasta(fileName string, queryChan chan<- Query, isProtein bool) {
 				queryChan <- query
 				query = Query{Sequence: "", Name: "", SizeInKmer: 0, Contig: ""}
 			}
+			queryName = strings.TrimSuffix(l[1:], "\n")
 			if isProtein {
-				query.Name = strings.TrimSuffix(l[1:], "\n")
+				query.Name = queryName
 				query.Contig = ""
 			} else {
-				query.Name = ""
-				query.Contig = strings.TrimSuffix(l[1:], "\n")
+				query.Name = queryName
+				query.Contig = queryName
 			}
 		} else {
 			query.Sequence += strings.TrimSpace(l)
