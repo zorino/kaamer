@@ -34,6 +34,7 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 
 	// kmer_store options
 	k_opts := badger.DefaultOptions
+	k_opts.Logger = nil
 	k_opts.Dir = dbPath + "/kmer_store"
 	k_opts.ValueDir = dbPath + "/kmer_store"
 	k_opts.TableLoadingMode = tableLoadingMode
@@ -52,6 +53,7 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 
 	// kcomb_store options
 	kc_opts := badger.DefaultOptions
+	kc_opts.Logger = nil
 	kc_opts.Dir = dbPath + "/kcomb_store"
 	kc_opts.ValueDir = dbPath + "/kcomb_store"
 	kc_opts.TableLoadingMode = tableLoadingMode
@@ -69,6 +71,7 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 
 	// protein_store options
 	p_opts := badger.DefaultOptions
+	p_opts.Logger = nil
 	p_opts.Dir = dbPath + "/protein_store"
 	p_opts.ValueDir = dbPath + "/protein_store"
 	p_opts.TableLoadingMode = tableLoadingMode
