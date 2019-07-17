@@ -25,103 +25,81 @@ var (
 func main() {
 
 	usage := `
- kaamer
+ kaamer-db
 
-  // Analyses
+  // Server
 
+  -server           start a kaamer server
+    (input)
+      -d            database directory
+      -p            port (default: 8321)
 
-	   -server       start a kaamer server
+  // Database
 
-		  (input)
-			   -d    database directory
+  -downloadb        download kaamer database
+    (input)
+      -o            output directory of database
+    (flag)
+      -m            kaamer release database
+      -r            raw UniprotKB database (to use with -makedb)
 
-			   -p    port (default: 8321)
+  -makedb           make the protein database
+    (input)
+      -i            input tsv file (raw tsv file from -downloaddb -r)
+      -d            badger database directory (output)
+      -offset       start processing raw uniprot file at protein number x
+      -length       process x number of proteins (-1 == infinity)
+      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+    (flag)
+      -full         to make a full database (default is the light version)
+      -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
+                    (to limit the number of open files)
 
-	   -search       search for a protein in kaamer db
+  -mergedb          merge 2 databases made with makedb
+    (input)
+      -dbs          databases directory
+      -o            output directory of merged database
+      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+    (flag)
+      -indexOnly    only create the kCombination store
+      -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
+                    (to limit the number of open files)
 
-		  (input)
-			   -d    database directory
+  -gcdb             run garbage collection on database
+    (input)
+      -d            database directory
+      -it           number of GC iterations
+      -ratio        number of ratio of the GC (between 0-1)
+      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+    (flag)
+      -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
+                    (to limit the number of open files)
 
-			   -s    sequence string
-		  or
-			   -f    sequences fasta file / read file (.fasta(.gz) or .fastq(.gz))
+  -backupdb         backup database
+    (input)
+      -d            badger db directory
+      -o            badger backup output directory
+      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
 
-
-  // Database Management
-
-	   -downloadb    download kaamer database
-
-		   (flag)
-			   -m    kaamer release database
-			   -r    raw UniprotKB database (to use with -makedb)
-
-		  (input)
-			   -o    output directory of database
-
-	   -makedb       make the protein database
-
-		  (input)
-			   -i    input tsv file (raw tsv file from -downloaddb -r)
-			   -d    badger database directory (output)
-
-			   -offset    start processing raw uniprot file at protein number x
-			   -length    process x number of proteins (-1 == infinity)
-
-		   (flag)
-			   -full      to make a full database (default is the light version)
-
-	   -mergedb      merge 2 databases made with makedb
-
-		  (input)
-			   -dbs  databases directory
-			   -o    output directory of merged database
-
-		  (flag)
-               -indexOnly   will only create the kCombination Store
-
-	   -gcdb         run garbage collection on database
-
-		  (input)
-			   -d        database directory
-			   -it       number of GC iterations
-			   -ratio    number of ratio of the GC (between 0-1)
-
-
-	   -backupdb     backup database
-
-		  (input)
-			   -d    badger db directory
-			   -o    badger backup output directory
-
-	   -restoredb    restore a backup database
-
-		  (input)
-			   -d    badger backup db directory
-			   -o    badger db output directory
-
-
-
-  | Database general options (applies everywhere)
-
-		  (input)
-			   -tableMode (fileio, memorymap) default memorymap / fileio decreases memory usage
-
-			   -valueMode (fileio, memorymap) default memorymap / fileio decreases memory usage
-
-		  (flag)
-			   -maxsize   will maximize the size of tables (.sst) and vlog (.log) files
-						  (to limit the number of open files)
-
+  -restoredb        restore a backup database
+    (input)
+      -d            badger backup db directory
+      -o            badger db output directory
+      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+    (flag)
+      -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
+                    (to limit the number of open files)
 
 
 `
 
 	var serverOpt = flag.Bool("server", false, "program")
 	var portNumber = flag.Int("p", 8321, "port argument")
-
-	// var searchOpt = flag.Bool("search", false, "program")
-	// var filePath = flag.String("f", "", "file path argument")
-	// var sequenceString = flag.String("s", "", "db path argument")
 
 	var makedbOpt = flag.Bool("makedb", false, "program")
 	var inputPath = flag.String("i", "", "db path argument")
