@@ -7,11 +7,11 @@ import (
 
 	"github.com/dgraph-io/badger/options"
 	"github.com/zorino/kaamer/api"
-	"github.com/zorino/kaamer/cmd/backupdb"
-	"github.com/zorino/kaamer/cmd/gcdb"
-	"github.com/zorino/kaamer/cmd/makedb"
-	"github.com/zorino/kaamer/cmd/mergedb"
-	"github.com/zorino/kaamer/cmd/restoredb"
+	"github.com/zorino/kaamer/pkg/backupdb"
+	"github.com/zorino/kaamer/pkg/gcdb"
+	"github.com/zorino/kaamer/pkg/makedb"
+	"github.com/zorino/kaamer/pkg/mergedb"
+	"github.com/zorino/kaamer/pkg/restoredb"
 )
 
 const (
