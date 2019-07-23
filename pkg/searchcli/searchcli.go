@@ -1,0 +1,97 @@
+package searchcli
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+	"mime/multipart"
+	"net/http"
+	"os"
+	"strconv"
+
+	"github.com/zorino/kaamer/pkg/search"
+)
+
+type SearchRequestOptions struct {
+	ServerHost string
+	Sequence   string
+	OutputFile string
+	search.SearchOptions
+}
+
+func NewSearchRequest(options SearchRequestOptions) {
+
+	bodyBuf := &bytes.Buffer{}
+	bodyWriter := multipart.NewWriter(bodyBuf)
+
+	bodyWriter.WriteField("type", options.InputType)
+	bodyWriter.WriteField("output-format", options.OutFormat)
+	bodyWriter.WriteField("max-results", strconv.Itoa(options.MaxResults))
+
+	fileWriter, err := bodyWriter.CreateFormFile("file", options.File)
+
+	dat, err := ioutil.ReadFile(options.File)
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	fileWriter.Write(dat)
+
+	contentType := bodyWriter.FormDataContentType()
+	bodyWriter.Close()
+
+	host := options.ServerHost + "/api/search/"
+	switch options.SequenceType {
+	case search.PROTEIN:
+		host += "protein"
+	case search.NUCLEOTIDE:
+		host += "nucleotide"
+	case search.READS:
+		host += "fastq"
+	}
+
+	resp, err := http.Post(host, contentType, bodyBuf)
+
+	if resp.StatusCode == 502 {
+		fmt.Printf("No kaamer-db server running at %s\n", options.ServerHost)
+	}
+
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	defer resp.Body.Close()
+
+	readerBuf := make([]byte, 128)
+	bytesRead := 0
+
+	out := os.Stdout
+	if options.OutputFile != "stdout" {
+		out, err = os.Create(options.OutputFile)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}
+
+	for {
+
+		n, err := resp.Body.Read(readerBuf)
+		bytesRead += n
+
+		if err == io.EOF {
+			fmt.Fprint(out, string(readerBuf[0:n]))
+			break
+		} else {
+			fmt.Fprint(out, string(readerBuf))
+		}
+
+		if err != nil {
+			log.Fatal("Error reading HTTP response: ", err.Error())
+		}
+
+	}
+
+}
