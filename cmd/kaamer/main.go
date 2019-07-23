@@ -30,7 +30,7 @@ func main() {
 
       -t            (prot, nt, fastq) query type
 
-      -i            file input (fasta or fastq)
+      -i            input file (fasta or fastq)
 
       -m            max number of results (default 10)
 
