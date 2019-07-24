@@ -30,19 +30,6 @@ func NewSearchRequest(options SearchRequestOptions) {
 	bodyWriter.WriteField("output-format", options.OutFormat)
 	bodyWriter.WriteField("max-results", strconv.Itoa(options.MaxResults))
 
-	fileWriter, err := bodyWriter.CreateFormFile("file", options.File)
-
-	dat, err := ioutil.ReadFile(options.File)
-
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	fileWriter.Write(dat)
-
-	contentType := bodyWriter.FormDataContentType()
-	bodyWriter.Close()
-
 	host := options.ServerHost + "/api/search/"
 	switch options.SequenceType {
 	case search.PROTEIN:
@@ -52,6 +39,26 @@ func NewSearchRequest(options SearchRequestOptions) {
 	case search.READS:
 		host += "fastq"
 	}
+
+	if options.InputType == "file" {
+
+		fmt.Println("Getting file")
+		fileWriter, err := bodyWriter.CreateFormFile("file", options.File)
+
+		dat, err := ioutil.ReadFile(options.File)
+
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+
+		fileWriter.Write(dat)
+
+	} else if options.InputType == "path" {
+		bodyWriter.WriteField("file", options.File)
+	}
+
+	contentType := bodyWriter.FormDataContentType()
+	bodyWriter.Close()
 
 	resp, err := http.Post(host, contentType, bodyBuf)
 

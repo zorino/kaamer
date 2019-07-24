@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/zorino/kaamer/pkg/search"
@@ -86,6 +87,8 @@ func main() {
 		if strings.Contains(hostDomaine, "localhost") || strings.Contains(hostDomaine, "127.0.0.1") {
 			// sequence is on the same host as the server
 			options.InputType = "path"
+			dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+			*inputFile = dir + "/" + *inputFile
 		} else {
 			// remote server
 			options.InputType = "file"
