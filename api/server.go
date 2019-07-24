@@ -51,7 +51,7 @@ func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadi
 	/* Documentation */
 	_, workDir, _, _ := runtime.Caller(1)
 	workDir = filepath.Dir(workDir)
-	workDir += "/docs"
+	workDir += "/../../docs"
 	DocRoutes(r, "/docs", http.Dir(workDir))
 
 	/* API */
