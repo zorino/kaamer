@@ -261,6 +261,10 @@ func SetBestStartCodon(queryResult *QueryResult) {
 			queryResult.SearchResults.PositionHits[_k] = _positions[bestStart:]
 		}
 		queryResult.Query.SizeInKmer = len(queryResult.Query.Sequence) - KMER_SIZE + 1
+		if queryResult.Query.Sequence[len(queryResult.Query.Sequence)-1:] == "*" {
+			queryResult.Query.SizeInKmer = queryResult.Query.SizeInKmer - 1
+		}
+
 	}
 
 	queryResult.Query.Location.StartsAlternative = []int{}

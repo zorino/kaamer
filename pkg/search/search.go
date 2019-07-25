@@ -194,6 +194,10 @@ func NucleotideSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, 
 					Type:       DNA_QUERY,
 				}
 
+				if q.Sequence[len(q.Sequence)-1:] == "*" {
+					q.SizeInKmer = q.SizeInKmer - 1
+				}
+
 				searchRes := new(SearchResults)
 				searchRes.Counter = cnt.NewCounterBox()
 				searchRes.PositionHits = make(map[uint32][]bool)
