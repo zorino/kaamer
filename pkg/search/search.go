@@ -424,6 +424,9 @@ func GetQueriesFasta(fileName string, queryChan chan<- Query, isProtein bool) {
 		if l[0] == '>' {
 			if query.Sequence != "" {
 				query.SizeInKmer = len(query.Sequence) - KMER_SIZE + 1
+				if query.Sequence[len(query.Sequence)-1:] == "*" {
+					query.SizeInKmer--
+				}
 				query.Location.EndPosition = len(query.Sequence)
 				queryChan <- query
 				query = Query{Sequence: "", Name: "", SizeInKmer: 0, Contig: ""}
@@ -443,6 +446,9 @@ func GetQueriesFasta(fileName string, queryChan chan<- Query, isProtein bool) {
 
 	if query.Sequence != "" {
 		query.SizeInKmer = len(query.Sequence) - KMER_SIZE + 1
+		if query.Sequence[len(query.Sequence)-1:] == "*" {
+			query.SizeInKmer--
+		}
 		query.Location.EndPosition = len(query.Sequence)
 		queryChan <- query
 	}
