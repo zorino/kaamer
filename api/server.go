@@ -21,20 +21,30 @@ import (
 	"github.com/zorino/kaamer/pkg/search"
 )
 
+/* global variables */
 var kvStores *kvstore.KVStores
-var tmpFolder string
+var tmpFolder = "/tmp/"
+var nbOfThreads = 0
 
-func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, maxSize bool) {
+func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, newNbThreads int, newTmpFolder string) {
 
 	runtime.GOMAXPROCS(512)
 
-	tmpFolder = "/tmp/"
+	if _, err := os.Stat(newTmpFolder); !os.IsNotExist(err) {
+		tmpFolder = newTmpFolder
+	}
+
+	if newNbThreads == 0 {
+		nbOfThreads = runtime.NumCPU()
+	} else {
+		nbOfThreads = newNbThreads
+	}
 
 	/* Open database */
 	fmt.Printf(" + Opening kAAmer Database.. ")
 	startTime := time.Now()
 
-	kvStores = kvstore.KVStoresNew(dbPath, 12, tableLoadingMode, valueLoadingMode, maxSize, false, true)
+	kvStores = kvstore.KVStoresNew(dbPath, 12, tableLoadingMode, valueLoadingMode, true, false, true)
 	defer kvStores.Close()
 
 	elapsed := time.Since(startTime)
@@ -63,7 +73,7 @@ func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadi
 	port.WriteString(strconv.Itoa(portNumber))
 
 	/* Start server */
-	fmt.Printf(" + kAAmer server listening on port %d\n", portNumber)
+	fmt.Printf(" + kAAmer server listening on port %d with %d CPU workers\n", portNumber, nbOfThreads)
 	http.ListenAndServe(port.String(), r)
 
 }
@@ -95,7 +105,7 @@ func searchFastq(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		fmt.Fprintln(w, err.Error())
 	} else {
-		search.NewSearchResult(searchOptions, kvStores, 2, w)
+		search.NewSearchResult(searchOptions, kvStores, nbOfThreads, w)
 	}
 
 }
@@ -117,7 +127,7 @@ func searchNucleotide(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		fmt.Fprintln(w, err.Error())
 	} else {
-		search.NewSearchResult(searchOptions, kvStores, 2, w)
+		search.NewSearchResult(searchOptions, kvStores, nbOfThreads, w)
 	}
 
 }
@@ -139,7 +149,7 @@ func searchProtein(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		fmt.Fprintln(w, err.Error())
 	} else {
-		search.NewSearchResult(searchOptions, kvStores, 2, w)
+		search.NewSearchResult(searchOptions, kvStores, nbOfThreads, w)
 	}
 
 }

@@ -33,6 +33,8 @@ func main() {
     (input)
       -d            database directory
       -p            port (default: 8321)
+      -t            number of threads to use (default all)
+      -tmp          tmp folder for query inport (default /tmp)
 
   // Database
 
@@ -100,6 +102,8 @@ func main() {
 
 	var serverOpt = flag.Bool("server", false, "program")
 	var portNumber = flag.Int("p", 8321, "port argument")
+	var nbThreads = flag.Int("t", 0, "number of threads")
+	var tmpFolder = flag.String("tmp", "/tmp/", "tmp folder for query import")
 
 	var makedbOpt = flag.Bool("makedb", false, "program")
 	var inputPath = flag.String("i", "", "db path argument")
@@ -129,6 +133,7 @@ func main() {
 
 	flag.Parse()
 
+	/* Setting values from CLI */
 	var tableLoadingMode options.FileLoadingMode
 	var valueLoadingMode options.FileLoadingMode
 	var ok = false
@@ -142,11 +147,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	if _, err := os.Stat(*tmpFolder); os.IsNotExist(err) {
+		fmt.Printf("Directory %s does not exist !\n", tmpFolder)
+		os.Exit(1)
+	}
+
+	/* Main Option Groups*/
 	if *serverOpt == true {
 		if *dbPath == "" {
 			fmt.Println("No db path !")
 		} else {
-			server.NewServer(*dbPath, *portNumber, tableLoadingMode, valueLoadingMode, *maxSize)
+			server.NewServer(*dbPath, *portNumber, tableLoadingMode, valueLoadingMode, *nbThreads, *tmpFolder)
 		}
 		os.Exit(0)
 	}

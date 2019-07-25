@@ -209,8 +209,8 @@ func NucleotideSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, 
 				go searchRes.StoreMatchPositions(matchPositionChan, wgMP)
 
 				wg := new(sync.WaitGroup)
-				// Add 4 workers for KmerSearch / KCombSearch
-				for i := 0; i < 4; i++ {
+				// Add nbOfThread workers for KmerSearch / KCombSearch
+				for i := 0; i < nbOfThreads; i++ {
 					wg.Add(1)
 					go searchRes.KmerSearch(keyChan, kvStores, wg, matchPositionChan)
 				}
@@ -295,8 +295,8 @@ func ProteinSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, w h
 			go searchRes.StoreMatchPositions(matchPositionChan, wgMP)
 
 			wg := new(sync.WaitGroup)
-			// Add 4 workers for KmerSearch
-			for i := 0; i < 4; i++ {
+			// Add nbOfThread workers for KmerSearch / KCombSearch
+			for i := 0; i < nbOfThreads; i++ {
 				wg.Add(1)
 				go searchRes.KmerSearch(keyChan, kvStores, wg, matchPositionChan)
 			}
