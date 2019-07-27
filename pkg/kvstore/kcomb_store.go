@@ -1,17 +1,12 @@
 package kvstore
 
 import (
-	// "fmt"
-	// "bytes"
-	// "regexp"
-
 	"encoding/binary"
 	"log"
 
 	"github.com/OneOfOne/xxhash"
 	"github.com/dgraph-io/badger"
 	proto "github.com/golang/protobuf/proto"
-	// "encoding/hex"
 )
 
 // Hash store for values combination used in other stores
@@ -30,7 +25,10 @@ func (kc *KC_) CreateKCKeyValue(keys [][]byte) ([]byte, []byte) {
 
 	h := xxhash.New64()
 	kComb := &KComb{}
-	for _, k := range keys {
+
+	sortedKeys := RemoveDuplicatesFromSlice(keys)
+
+	for _, k := range sortedKeys {
 		intId := binary.BigEndian.Uint32(k)
 		kComb.ProteinKeys = append(kComb.ProteinKeys, intId)
 		h.Write(k)
