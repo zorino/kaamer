@@ -23,16 +23,13 @@ const (
 	KMER_SIZE = 7
 )
 
-var buildFullDB = false
-
 type ProteinBuf struct {
 	proteinId    uint
 	proteinEntry string
 }
 
-func NewMakedb(dbPath string, inputPath string, isFullDb bool, offset uint, lenght uint, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
+func NewMakedb(dbPath string, inputPath string, offset uint, lenght uint, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
 
-	buildFullDB = isFullDb
 	runtime.GOMAXPROCS(128)
 
 	os.Mkdir(dbPath, 0700)
@@ -228,17 +225,6 @@ func processProteinInput(proteinBuf ProteinBuf, kvStores *kvstore.KVStores) {
 		case "  ":
 			protein.Sequence += strings.ReplaceAll(l[5:], " ", "")
 		}
-	}
-
-	missingFeature := !buildFullDB
-	missingFeature = missingFeature && (protein.GetEC() == "")
-	missingFeature = missingFeature && len(protein.GetGO()) < 1
-	missingFeature = missingFeature && len(protein.GetBioCyc()) < 1
-	missingFeature = missingFeature && len(protein.GetKEGG()) < 1
-	missingFeature = missingFeature && len(protein.GetHAMAP()) < 1
-
-	if missingFeature {
-		return
 	}
 
 	proteinId := make([]byte, 4)

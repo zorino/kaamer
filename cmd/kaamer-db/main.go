@@ -48,7 +48,6 @@ func main() {
       -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
       -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
     (flag)
-      -full         to make a full database (default is the light version)
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
 
@@ -109,7 +108,6 @@ func main() {
 	var makedbOpt = flag.Bool("make", false, "program")
 	var inputPath = flag.String("i", "", "input file argument")
 	var dbPath = flag.String("d", "", "db path argument")
-	var fullDb = flag.Bool("full", false, "to build full database")
 	var makedbOffset = flag.Uint("offset", 0, "offset to process raw file")
 	var makedbLenght = flag.Uint("length", uint(MaxInt), "process x number of files")
 	var maxSize = flag.Bool("maxsize", false, "to maximize badger output file size")
@@ -183,7 +181,7 @@ func main() {
 			fmt.Println("No input file !")
 			os.Exit(1)
 		} else {
-			makedb.NewMakedb(*dbPath, *inputPath, *fullDb, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode)
+			makedb.NewMakedb(*dbPath, *inputPath, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode)
 		}
 
 		os.Exit(0)
