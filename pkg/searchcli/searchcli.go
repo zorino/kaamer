@@ -62,12 +62,9 @@ func NewSearchRequest(options SearchRequestOptions) {
 
 	resp, err := http.Post(host, contentType, bodyBuf)
 
-	if resp.StatusCode == 502 {
+	if err != nil || resp.StatusCode == 502 {
 		fmt.Printf("No kaamer-db server running at %s\n", options.ServerHost)
-	}
-
-	if err != nil {
-		log.Fatal(err.Error())
+		os.Exit(1)
 	}
 
 	defer resp.Body.Close()
