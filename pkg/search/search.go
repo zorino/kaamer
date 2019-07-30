@@ -747,7 +747,6 @@ func FormatPositionsToString(positions []bool) string {
 		positionsString += (strconv.Itoa(currentStart) + "-" + (strconv.Itoa(len(positions))))
 	}
 
-	fmt.Println(positionsString)
 	return positionsString
 
 }
