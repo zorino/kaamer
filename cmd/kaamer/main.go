@@ -43,6 +43,8 @@ func main() {
 
       -ann          add hit annotations in tsv fmt (always true in json fmt)
 
+      -pos          add query positions that hit
+
 `
 
 	var searchOpt = flag.Bool("search", false, "program")
@@ -54,6 +56,7 @@ func main() {
 	var outputFile = flag.String("o", "stdout", "output file")
 	var outputFormat = flag.String("fmt", "tsv", "output format")
 	var addAnnotation = flag.Bool("ann", false, "add annotation flag")
+	var addPositions = flag.Bool("pos", false, "add position flag")
 
 	flag.Parse()
 
@@ -103,7 +106,7 @@ func main() {
 		options.SequenceType = queryType
 		options.OutFormat = *outputFormat
 		options.MaxResults = *maxResults
-		options.ExtractPositions = false
+		options.ExtractPositions = *addPositions
 		options.Annotations = *addAnnotation
 
 		searchcli.NewSearchRequest(options)

@@ -30,6 +30,7 @@ func NewSearchRequest(options SearchRequestOptions) {
 	bodyWriter.WriteField("output-format", options.OutFormat)
 	bodyWriter.WriteField("max-results", strconv.Itoa(options.MaxResults))
 	bodyWriter.WriteField("annotations", strconv.FormatBool(options.Annotations))
+	bodyWriter.WriteField("positions", strconv.FormatBool(options.ExtractPositions))
 
 	host := options.ServerHost + "/api/search/"
 	switch options.SequenceType {

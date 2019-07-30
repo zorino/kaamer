@@ -204,10 +204,14 @@ func NucleotideSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, 
 				searchRes.PositionHits = make(map[uint32][]bool)
 				keyChan := make(chan KeyPos, 10)
 
-				matchPositionChan := make(chan MatchPosition, 10)
-				wgMP := new(sync.WaitGroup)
-				wgMP.Add(1)
-				go searchRes.StoreMatchPositions(matchPositionChan, wgMP)
+				var matchPositionChan chan MatchPosition
+				var wgMP sync.WaitGroup
+				if searchOptions.ExtractPositions {
+					matchPositionChan = make(chan MatchPosition, 10)
+					wgMP := new(sync.WaitGroup)
+					wgMP.Add(1)
+					go searchRes.StoreMatchPositions(matchPositionChan, wgMP)
+				}
 
 				wg := new(sync.WaitGroup)
 				// Add nbOfThread workers for KmerSearch / KCombSearch
@@ -224,8 +228,10 @@ func NucleotideSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, 
 				close(keyChan)
 				wg.Wait()
 
-				close(matchPositionChan)
-				wgMP.Wait()
+				if searchOptions.ExtractPositions {
+					close(matchPositionChan)
+					wgMP.Wait()
+				}
 
 				searchRes.Hits = sortMapByValue(searchRes.Counter.GetCountersMap())
 				queryResults = append(queryResults, QueryResult{Query: q, SearchResults: searchRes, HitEntries: map[uint32]kvstore.Protein{}})
@@ -290,10 +296,14 @@ func ProteinSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, w h
 			searchRes.PositionHits = make(map[uint32][]bool)
 			keyChan := make(chan KeyPos, 10)
 
-			matchPositionChan := make(chan MatchPosition, 10)
-			wgMP := new(sync.WaitGroup)
-			wgMP.Add(1)
-			go searchRes.StoreMatchPositions(matchPositionChan, wgMP)
+			var matchPositionChan chan MatchPosition
+			var wgMP sync.WaitGroup
+			if searchOptions.ExtractPositions {
+				matchPositionChan = make(chan MatchPosition, 10)
+				wgMP := new(sync.WaitGroup)
+				wgMP.Add(1)
+				go searchRes.StoreMatchPositions(matchPositionChan, wgMP)
+			}
 
 			wg := new(sync.WaitGroup)
 			// Add nbOfThread workers for KmerSearch / KCombSearch
@@ -310,8 +320,10 @@ func ProteinSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, w h
 			close(keyChan)
 			wg.Wait()
 
-			close(matchPositionChan)
-			wgMP.Wait()
+			if searchOptions.ExtractPositions {
+				close(matchPositionChan)
+				wgMP.Wait()
+			}
 
 			searchRes.Hits = sortMapByValue(searchRes.Counter.GetCountersMap())
 
@@ -561,7 +573,9 @@ func (searchRes *SearchResults) KmerSearch(keyChan <-chan KeyPos, kvStores *kvst
 
 			for _, id := range kC.ProteinKeys {
 				searchRes.Counter.GetCounter(strconv.Itoa(int(id))).Increment()
-				matchPositionChan <- MatchPosition{HitId: id, QPos: keyPos.Pos, QSize: keyPos.QSize}
+				if searchOptions.ExtractPositions {
+					matchPositionChan <- MatchPosition{HitId: id, QPos: keyPos.Pos, QSize: keyPos.QSize}
+				}
 			}
 
 		}
@@ -611,6 +625,9 @@ func QueryResultResponseWriter(queryResult <-chan QueryResult, w http.ResponseWr
 		if searchOptions.Annotations {
 			w.Write([]byte("\tHit.ProteinName\tHit.Organism\tHit.EC\tHit.GO\tHit.HAMAP\tHit.KEGG\tHit.Biocyc\tHit.Taxonomy"))
 		}
+		if searchOptions.ExtractPositions {
+			w.Write([]byte("\tQueryHit.Positions"))
+		}
 		w.Write([]byte("\n"))
 		output := ""
 
@@ -646,6 +663,10 @@ func QueryResultResponseWriter(queryResult <-chan QueryResult, w http.ResponseWr
 					output += strings.Join(qR.HitEntries[h.Key].BioCyc, ",")
 					output += "\t"
 					output += qR.HitEntries[h.Key].Taxonomy
+				}
+				if searchOptions.ExtractPositions {
+					output += "\t"
+					output += FormatPositionsToString(qR.SearchResults.PositionHits[h.Key])
 				}
 				output += "\n"
 				w.Write([]byte(output))
@@ -685,5 +706,48 @@ func QueryResultResponseWriter(queryResult <-chan QueryResult, w http.ResponseWr
 		w.Write([]byte("]"))
 
 	}
+
+}
+
+func FormatPositionsToString(positions []bool) string {
+
+	currentStart := 0
+	inSequence := false
+
+	positionsString := ""
+
+	for pos, match := range positions {
+		if match {
+			if !inSequence {
+				currentStart = pos + 1
+				inSequence = true
+			}
+		} else {
+			if inSequence {
+				if pos+1 > currentStart {
+					if positionsString != "" {
+						positionsString += ","
+					}
+					positionsString += (strconv.Itoa(currentStart) + "-" + (strconv.Itoa(pos + 1)))
+					inSequence = false
+				} else {
+					if positionsString != "" {
+						positionsString += ","
+					}
+					positionsString += strconv.Itoa(currentStart)
+					inSequence = false
+				}
+			}
+		}
+	}
+	if inSequence {
+		if positionsString != "" {
+			positionsString += ","
+		}
+		positionsString += (strconv.Itoa(currentStart) + "-" + (strconv.Itoa(len(positions))))
+	}
+
+	fmt.Println(positionsString)
+	return positionsString
 
 }

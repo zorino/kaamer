@@ -202,7 +202,7 @@ func parseSearchOptions(searchOpts *search.SearchOptions, w http.ResponseWriter,
 		searchOpts.OutFormat = "json"
 	}
 
-	if strings.ToLower(r.FormValue("extract-positions")) == "true" {
+	if strings.ToLower(r.FormValue("positions")) == "true" {
 		searchOpts.ExtractPositions = true
 	}
 
