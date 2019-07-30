@@ -206,6 +206,10 @@ func parseSearchOptions(searchOpts *search.SearchOptions, w http.ResponseWriter,
 		searchOpts.ExtractPositions = true
 	}
 
+	if strings.ToLower(r.FormValue("annotations")) == "true" {
+		searchOpts.Annotations = true
+	}
+
 	return nil
 
 }

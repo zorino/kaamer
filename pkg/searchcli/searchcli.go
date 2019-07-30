@@ -29,6 +29,7 @@ func NewSearchRequest(options SearchRequestOptions) {
 	bodyWriter.WriteField("type", options.InputType)
 	bodyWriter.WriteField("output-format", options.OutFormat)
 	bodyWriter.WriteField("max-results", strconv.Itoa(options.MaxResults))
+	bodyWriter.WriteField("annotations", strconv.FormatBool(options.Annotations))
 
 	host := options.ServerHost + "/api/search/"
 	switch options.SequenceType {
@@ -42,7 +43,6 @@ func NewSearchRequest(options SearchRequestOptions) {
 
 	if options.InputType == "file" {
 
-		fmt.Println("Getting file")
 		fileWriter, err := bodyWriter.CreateFormFile("file", options.File)
 
 		dat, err := ioutil.ReadFile(options.File)

@@ -39,6 +39,10 @@ func main() {
 
       -fmt          (tsv, json) output format (default tsv)
 
+    (flag)
+
+      -ann          add hit annotations in tsv fmt (always true in json fmt)
+
 `
 
 	var searchOpt = flag.Bool("search", false, "program")
@@ -49,6 +53,7 @@ func main() {
 	var maxResults = flag.Int("m", 10, "max number of results")
 	var outputFile = flag.String("o", "stdout", "output file")
 	var outputFormat = flag.String("fmt", "tsv", "output format")
+	var addAnnotation = flag.Bool("ann", false, "add annotation flag")
 
 	flag.Parse()
 
@@ -99,6 +104,7 @@ func main() {
 		options.OutFormat = *outputFormat
 		options.MaxResults = *maxResults
 		options.ExtractPositions = false
+		options.Annotations = *addAnnotation
 
 		searchcli.NewSearchRequest(options)
 

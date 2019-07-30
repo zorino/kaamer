@@ -40,6 +40,7 @@ type SearchOptions struct {
 	OutFormat        string
 	MaxResults       int
 	ExtractPositions bool
+	Annotations      bool
 }
 
 type SearchResults struct {
@@ -606,7 +607,11 @@ func QueryResultResponseWriter(queryResult <-chan QueryResult, w http.ResponseWr
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 		w.WriteHeader(200)
 
-		w.Write([]byte("QueryName\tQueryKSize\tQStart\tQEnd\tKMatch\tHitId\n"))
+		w.Write([]byte("QueryName\tQueryKSize\tQStart\tQEnd\tKMatch\tHit.Id"))
+		if searchOptions.Annotations {
+			w.Write([]byte("\tHit.ProteinName\tHit.Organism\tHit.EC\tHit.GO\tHit.HAMAP\tHit.KEGG\tHit.Biocyc\tHit.Taxonomy"))
+		}
+		w.Write([]byte("\n"))
 		output := ""
 
 		for qR := range queryResult {
@@ -624,6 +629,24 @@ func QueryResultResponseWriter(queryResult <-chan QueryResult, w http.ResponseWr
 				output += strconv.Itoa(int(h.Kmatch))
 				output += "\t"
 				output += qR.HitEntries[h.Key].Entry
+				if searchOptions.Annotations {
+					output += "\t"
+					output += qR.HitEntries[h.Key].ProteinName
+					output += "\t"
+					output += qR.HitEntries[h.Key].Organism
+					output += "\t"
+					output += qR.HitEntries[h.Key].EC
+					output += "\t"
+					output += strings.Join(qR.HitEntries[h.Key].GO, ",")
+					output += "\t"
+					output += strings.Join(qR.HitEntries[h.Key].HAMAP, ",")
+					output += "\t"
+					output += strings.Join(qR.HitEntries[h.Key].KEGG, ",")
+					output += "\t"
+					output += strings.Join(qR.HitEntries[h.Key].BioCyc, ",")
+					output += "\t"
+					output += qR.HitEntries[h.Key].Taxonomy
+				}
 				output += "\n"
 				w.Write([]byte(output))
 			}
