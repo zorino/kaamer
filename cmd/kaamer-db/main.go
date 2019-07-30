@@ -35,21 +35,13 @@ func main() {
       -d            database directory
       -p            port (default: 8321)
       -t            number of threads to use (default all)
-      -tmp          tmp folder for query inport (default /tmp)
+      -tmp          tmp folder for query import (default /tmp)
 
   // Database
 
-  -download_uprot   download uniprot in embl format for a specific taxon
+  -make             make the protein database
     (input)
-      -o            output file (default: uniprotkb.txt.gz)
-    (flag)
-      -tax          taxon one of the following :
-                    archaea,bacteria,fungi,human,invertebrates,mammals,
-                    plants,rodents,vertebrates,viruses
-
-  -makedb           make the protein database
-    (input)
-      -i            input tsv file (raw tsv file from -downloaddb -r)
+      -i            input raw EMBL file
       -d            badger database directory (output)
       -offset       start processing raw uniprot file at protein number x
       -length       process x number of proteins (-1 == infinity)
@@ -60,7 +52,15 @@ func main() {
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
 
-  -mergedb          merge 2 databases made with makedb
+  -dl_uniprot       download uniprot in EMBL format for a specific taxon
+    (input)
+      -o            output file (default: uniprotkb.txt.gz)
+    (flag)
+      -tax          taxon one of the following :
+                    archaea,bacteria,fungi,human,invertebrates,mammals,
+                    plants,rodents,vertebrates,viruses
+
+  -merge            merge 2 databases made with makedb
     (input)
       -dbs          databases directory
       -o            output directory of merged database
@@ -71,7 +71,24 @@ func main() {
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
 
-  -gcdb             run garbage collection on database
+  -backup           backup database
+    (input)
+      -d            badger db directory
+      -o            badger backup output directory
+      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+
+  -restore          restore a backup database
+    (input)
+      -d            badger backup db directory
+      -o            badger db output directory
+      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+    (flag)
+      -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
+                    (to limit the number of open files)
+
+  -gc               run garbage collection on database
     (input)
       -d            database directory
       -it           number of GC iterations
@@ -82,24 +99,6 @@ func main() {
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
 
-  -backupdb         backup database
-    (input)
-      -d            badger db directory
-      -o            badger backup output directory
-      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
-      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
-
-  -restoredb        restore a backup database
-    (input)
-      -d            badger backup db directory
-      -o            badger db output directory
-      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
-      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
-    (flag)
-      -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
-                    (to limit the number of open files)
-
-
 `
 
 	var serverOpt = flag.Bool("server", false, "program")
@@ -107,8 +106,8 @@ func main() {
 	var nbThreads = flag.Int("t", 0, "number of threads")
 	var tmpFolder = flag.String("tmp", "/tmp/", "tmp folder for query import")
 
-	var makedbOpt = flag.Bool("makedb", false, "program")
-	var inputPath = flag.String("i", "", "db path argument")
+	var makedbOpt = flag.Bool("make", false, "program")
+	var inputPath = flag.String("i", "", "input file argument")
 	var dbPath = flag.String("d", "", "db path argument")
 	var fullDb = flag.Bool("full", false, "to build full database")
 	var makedbOffset = flag.Uint("offset", 0, "offset to process raw file")
@@ -117,21 +116,21 @@ func main() {
 	var tableMode = flag.String("tablemode", "memorymap", "table loading mode (fileio, memorymap)")
 	var valueMode = flag.String("valuemode", "memorymap", "value loading mode (fileio, memorymap)")
 
-	var downloadOpt = flag.Bool("downloaddb", false, "download uniprotkb or kaamer db")
+	var downloadOpt = flag.Bool("dl_uniprot", false, "download uniprotkb or kaamer db")
 	var taxonOpt = flag.String("tax", "", "uniprot taxon")
 
-	var mergedbOpt = flag.Bool("mergedb", false, "program")
+	var mergedbOpt = flag.Bool("merge", false, "program")
 	var dbsPath = flag.String("dbs", "", "db path argument")
 	var outPath = flag.String("o", "", "db path argument")
 	var indexOnly = flag.Bool("indexOnly", false, "indexing mode")
 
-	var gcOpt = flag.Bool("gcdb", false, "program")
+	var gcOpt = flag.Bool("gc", false, "program")
 	var gcIteration = flag.Int("it", 100, "number of GC iterations")
 	var gcRatio = flag.Float64("ratio", 0.5, "ratio for GC")
 
-	var backupdbOpt = flag.Bool("backupdb", false, "program")
+	var backupdbOpt = flag.Bool("backup", false, "program")
 
-	var restoreOpt = flag.Bool("restoredb", false, "program")
+	var restoreOpt = flag.Bool("restore", false, "program")
 
 	flag.Parse()
 
@@ -178,7 +177,11 @@ func main() {
 	if *makedbOpt == true {
 
 		if *dbPath == "" {
-			fmt.Println("No db path !")
+			fmt.Println("No output db path !")
+			os.Exit(1)
+		} else if *inputPath == "" {
+			fmt.Println("No input file !")
+			os.Exit(1)
 		} else {
 			makedb.NewMakedb(*dbPath, *inputPath, *fullDb, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode)
 		}
