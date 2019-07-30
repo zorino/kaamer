@@ -35,11 +35,6 @@ func NewMakedb(dbPath string, inputPath string, isFullDb bool, offset uint, leng
 	buildFullDB = isFullDb
 	runtime.GOMAXPROCS(128)
 
-	if inputPath == "" {
-		Download(".")
-		inputPath = "./uniprotkb.txt.gz"
-	}
-
 	os.Mkdir(dbPath, 0700)
 
 	threadByWorker := runtime.NumCPU()
@@ -75,7 +70,11 @@ func NewMakedb(dbPath string, inputPath string, isFullDb bool, offset uint, leng
 
 func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint, length uint) int {
 
-	file, _ := os.Open(fileName)
+	file, err := os.Open(fileName)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
 	defer file.Close()
 
 	jobs := make(chan ProteinBuf)
