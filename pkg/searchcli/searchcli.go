@@ -69,7 +69,7 @@ func NewSearchRequest(options SearchRequestOptions) {
 
 	defer resp.Body.Close()
 
-	readerBuf := make([]byte, 128)
+	readerBuf := make([]byte, 4096)
 	bytesRead := 0
 
 	out := os.Stdout
