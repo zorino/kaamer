@@ -1,25 +1,44 @@
 package downloaddb
 
 import (
-	"fmt"
-	"os"
-	"net/http"
-	"log"
-	"io"
-	"github.com/dustin/go-humanize"
-	"strings"
-	gzip "github.com/klauspost/pgzip"
 	"bufio"
-	"runtime"
-	"strconv"
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
+
+	"github.com/dustin/go-humanize"
+	"github.com/jlaffaye/ftp"
+)
+
+const (
+	Uniprot_ftp_host           = "ftp.uniprot.org:21"
+	Uniprot_ftp_taxonomic_path = "/pub/databases/uniprot/current_release/knowledgebase/taxonomic_divisions/"
+)
+
+var (
+	Uniprot_ftp_taxonomic_valid = map[string]bool{
+		"archaea":       true,
+		"bacteria":      true,
+		"fungi":         true,
+		"human":         true,
+		"invertebrates": true,
+		"mammals":       true,
+		"plants":        true,
+		"rodents":       true,
+		"vertebrates":   true,
+		"viruses":       true,
+	}
 )
 
 type TSVOutputWriter struct {
-	File          *os.File
-	Buffer        *bufio.Writer
-	Iterator      int
+	File     *os.File
+	Buffer   *bufio.Writer
+	Iterator int
 }
-
 
 // WriteCounter counts the number of bytes written to it. It implements to the io.Writer
 // interface and we can pass this into io.TeeReader() which will report progress on each
@@ -45,138 +64,73 @@ func (wc WriteCounter) PrintProgress() {
 	fmt.Printf("\r  Downloading... %s complete", humanize.Bytes(wc.Total))
 }
 
+func DownloadDB(outputFile string, taxon string) {
 
-func Download(inputPath string) {
-
-	filePath := inputPath+"/uniprotkb.tsv.gz"
-
-	if _, err := os.Stat(filePath); ! os.IsNotExist(err) {
-		// path/to/whatever does not exist
-		os.MkdirAll(inputPath, 0700)
-		PrepareFiles(filePath, 10)
-		return
+	if outputFile == "" {
+		outputFile = "uniprotkb-" + taxon + ".dat.gz"
 	}
 
-	fmt.Println("# Raw Database Files Not Found in inputPath")
+	outputPath := filepath.Dir(outputFile)
 
-	var url = "https://www.uniprot.org/uniprot/?query=taxonomy:2&format=tab&force=true&columns=id,reviewed,protein%20names,lineage(all),go,comment(FUNCTION),comment(PATHWAY),ec,sequence&sort=score&compress=yes"
-
-	if _, err := os.Stat(inputPath); os.IsNotExist(err) {
-		// path/to/whatever does not exist
-		os.MkdirAll(inputPath, 0700)
-	}
-
-	fmt.Println("# Downloading Database :")
-
-	res, err := http.Head(url)
+	dstFileLicense, err := os.Create(outputPath + "/LICENSE")
 	if err != nil {
-		panic(err)
+		log.Fatal(err.Error())
 	}
 
-	nbResults := res.Header.Get("X-Total-Results")
-	uniprotVersion := res.Header.Get("X-Uniprot-Release")
-
-	fmt.Println("  UniprotKB (2:Bacteria) release " + uniprotVersion)
-	fmt.Println("  Number of Proteins : " + nbResults)
-	fmt.Println("  Be patient size of DB > 25GB ! ")
-
-	// Create the file
-	out, err := os.Create(filePath)
+	dstFile, err := os.Create(outputFile)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err.Error())
 	}
-	defer out.Close()
 
-	// Get the data
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer resp.Body.Close()
+	license_path := Uniprot_ftp_taxonomic_path + "LICENSE"
+	sprot_path := Uniprot_ftp_taxonomic_path + "uniprot_sprot_" + taxon + ".dat.gz"
+	trembl_path := Uniprot_ftp_taxonomic_path + "uniprot_trembl_" + taxon + ".dat.gz"
 
-	// Create our progress reporter and pass it to be used alongside our writer
-	counter := &WriteCounter{}
-	_, err = io.Copy(out, io.TeeReader(resp.Body, counter))
+	fmt.Println("# Downloading uniprotkb - LICENSE..")
+	IODownloadFile(dstFileLicense, license_path)
+	fmt.Printf("# Downloading uniprotkb - swissprot (%s)..\n", taxon)
+	IODownloadFile(dstFile, sprot_path)
+	fmt.Printf("# Downloading uniprotkb - trembl (%s)..\n", taxon)
+	IODownloadFile(dstFile, trembl_path)
+
+	err = dstFile.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	numFiles, _ := strconv.Atoi(nbResults)
-	numFiles = numFiles / 10000000
+	err = dstFileLicense.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	PrepareFiles(filePath, numFiles)
-
-	fmt.Println("\nPlease rerun makedb with -i " + inputPath)
-	fmt.Println()
+	fmt.Printf("See LICENSE : %s\n", outputPath+"/LICENSE")
 
 }
 
-func PrepareFiles(filePath string, nbOfFiles int) {
+func IODownloadFile(dstFile *os.File, path string) {
 
-	fmt.Println("# Preparing Files..")
-
-	bufferArray := []*TSVOutputWriter{}
-	baseFile := strings.Replace(filePath, ".tsv.gz", "-", -1)
-	for i := 0; i < nbOfFiles; i++ {
-		tsvWrite := new(TSVOutputWriter)
-		outFile := baseFile + fmt.Sprintf("%03d", i) + ".tsv"
-		f, _ := os.Create(outFile)
-		tsvWrite.File = f
-		tsvWrite.Buffer = bufio.NewWriter(f)
-		tsvWrite.Iterator = 0
-		bufferArray = append(bufferArray, tsvWrite)
-	}
-
-	runtime.GOMAXPROCS(runtime.NumCPU())
-
-	file, err := os.Open(filePath)
+	c, err := ftp.Dial(Uniprot_ftp_host, ftp.DialWithTimeout(5*time.Second))
 	if err != nil {
-		panic(err)
+		fmt.Println("Error c.Dial")
+		log.Fatal(err.Error())
 	}
 
-	r, err := gzip.NewReader(file)
+	err = c.Login("anonymous", "anonymous")
 	if err != nil {
-		panic(err)
+		fmt.Println("Error c.Login")
+		log.Fatal(err.Error())
 	}
 
-	scan := bufio.NewScanner(r)
-	buf := make([]byte, 0, 64*1024)
-	scan.Buffer(buf, 1024*1024)
-
-	n := 0
-
-	// skip first line header
-	if scan.Scan() {
-		scan.Text()
+	reader, err := c.Retr(path)
+	if err != nil {
+		fmt.Println("Error c.Retr")
+		log.Fatal(err.Error())
 	}
 
-	for scan.Scan() {
+	_, err = io.Copy(dstFile, reader)
 
-		line := scan.Text()
-
-		bufferIndex := n%nbOfFiles
-
-		bufferArray[bufferIndex].Iterator += 1
-		_, err := bufferArray[bufferIndex].Buffer.WriteString(line+"\n")
-
-		if err != nil {
-			log.Panic(err)
-		}
-
-		if (bufferArray[bufferIndex].Iterator%10000 == 0) {
-			bufferArray[bufferIndex].Buffer.Flush()
-		}
-
-		n++
+	if err := c.Quit(); err != nil {
+		log.Fatal(err)
 	}
-
-	for i:=0; i< len(bufferArray); i++ {
-		bufferArray[i].Buffer.Flush()
-		bufferArray[i].File.Close()
-	}
-
-	fmt.Println("line read : %i", n)
-
-	// os.Remove(filePath)
 
 }

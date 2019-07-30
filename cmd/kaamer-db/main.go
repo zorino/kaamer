@@ -8,6 +8,7 @@ import (
 	"github.com/dgraph-io/badger/options"
 	"github.com/zorino/kaamer/api"
 	"github.com/zorino/kaamer/pkg/backupdb"
+	"github.com/zorino/kaamer/pkg/downloaddb"
 	"github.com/zorino/kaamer/pkg/gcdb"
 	"github.com/zorino/kaamer/pkg/makedb"
 	"github.com/zorino/kaamer/pkg/mergedb"
@@ -38,12 +39,13 @@ func main() {
 
   // Database
 
-  -downloadb        download kaamer database
+  -download_uprot   download uniprot in embl format for a specific taxon
     (input)
-      -o            output directory of database
+      -o            output file (default: uniprotkb.txt.gz)
     (flag)
-      -m            kaamer release database
-      -r            raw UniprotKB database (to use with -makedb)
+      -tax          taxon one of the following :
+                    archaea,bacteria,fungi,human,invertebrates,mammals,
+                    plants,rodents,vertebrates,viruses
 
   -makedb           make the protein database
     (input)
@@ -115,8 +117,8 @@ func main() {
 	var tableMode = flag.String("tablemode", "memorymap", "table loading mode (fileio, memorymap)")
 	var valueMode = flag.String("valuemode", "memorymap", "value loading mode (fileio, memorymap)")
 
-	// var downloadOpt = flag.Bool("downloaddb", false, "download uniprotkb or kaamer db")
-	// var rawDbOpt = flag.Bool("r", false, "for uniprotkb raw database")
+	var downloadOpt = flag.Bool("downloaddb", false, "download uniprotkb or kaamer db")
+	var taxonOpt = flag.String("tax", "", "uniprot taxon")
 
 	var mergedbOpt = flag.Bool("mergedb", false, "program")
 	var dbsPath = flag.String("dbs", "", "db path argument")
@@ -159,6 +161,17 @@ func main() {
 		} else {
 			server.NewServer(*dbPath, *portNumber, tableLoadingMode, valueLoadingMode, *nbThreads, *tmpFolder)
 		}
+		os.Exit(0)
+	}
+
+	if *downloadOpt == true {
+		if !downloaddb.Uniprot_ftp_taxonomic_valid[*taxonOpt] {
+			fmt.Println("Invalid taxon !")
+			os.Exit(1)
+		} else {
+			downloaddb.DownloadDB(*outPath, *taxonOpt)
+		}
+
 		os.Exit(0)
 	}
 
