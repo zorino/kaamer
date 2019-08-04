@@ -117,7 +117,7 @@ func (kv *KVStore) Close() {
 
 func (kv *KVStore) Flush() {
 	// kv.DB.Flatten(kv.NbOfThreads)
-	kv.GarbageCollect(1000000, 0.1)
+	kv.GarbageCollect(10000, 0.5)
 }
 
 func (kv *KVStore) GarbageCollect(count int, ratio float64) {
