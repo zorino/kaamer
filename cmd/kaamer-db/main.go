@@ -10,6 +10,7 @@ import (
 	"github.com/zorino/kaamer/pkg/backupdb"
 	"github.com/zorino/kaamer/pkg/downloaddb"
 	"github.com/zorino/kaamer/pkg/gcdb"
+	"github.com/zorino/kaamer/pkg/indexdb"
 	"github.com/zorino/kaamer/pkg/makedb"
 	"github.com/zorino/kaamer/pkg/mergedb"
 	"github.com/zorino/kaamer/pkg/restoredb"
@@ -45,6 +46,15 @@ func main() {
       -d            badger database directory (output)
       -offset       start processing raw uniprot file at protein number x
       -length       process x number of proteins (-1 == infinity)
+      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+    (flag)
+      -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
+                    (to limit the number of open files)
+
+  -index            index the database for kmer samples association (kcomb_store)
+    (input)
+      -d            database directory
       -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
       -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
     (flag)
@@ -114,6 +124,8 @@ func main() {
 	var tableMode = flag.String("tablemode", "memorymap", "table loading mode (fileio, memorymap)")
 	var valueMode = flag.String("valuemode", "memorymap", "value loading mode (fileio, memorymap)")
 
+	var indexOpt = flag.Bool("index", false, "program")
+
 	var downloadOpt = flag.Bool("dl_uniprot", false, "download uniprotkb or kaamer db")
 	var taxonOpt = flag.String("tax", "", "uniprot taxon")
 
@@ -182,6 +194,18 @@ func main() {
 			os.Exit(1)
 		} else {
 			makedb.NewMakedb(*dbPath, *inputPath, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode)
+		}
+
+		os.Exit(0)
+	}
+
+	if *indexOpt == true {
+
+		if *dbPath == "" {
+			fmt.Println("No db path !")
+			os.Exit(1)
+		} else {
+			indexdb.NewIndexDB(*dbPath, *maxSize, tableLoadingMode, valueLoadingMode)
 		}
 
 		os.Exit(0)
