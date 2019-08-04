@@ -69,14 +69,13 @@ func main() {
                     archaea,bacteria,fungi,human,invertebrates,mammals,
                     plants,rodents,vertebrates,viruses
 
-  -merge            merge 2 databases made with makedb
+  -merge            merge 2 unindexed databases made with makedb
     (input)
       -dbs          databases directory
       -o            output directory of merged database
       -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
       -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
     (flag)
-      -indexOnly    only create the kCombination store
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
 
@@ -132,7 +131,6 @@ func main() {
 	var mergedbOpt = flag.Bool("merge", false, "program")
 	var dbsPath = flag.String("dbs", "", "db path argument")
 	var outPath = flag.String("o", "", "db path argument")
-	var indexOnly = flag.Bool("indexOnly", false, "indexing mode")
 
 	var gcOpt = flag.Bool("gc", false, "program")
 	var gcIteration = flag.Int("it", 100, "number of GC iterations")
@@ -215,7 +213,7 @@ func main() {
 		if *dbsPath == "" || *outPath == "" {
 			fmt.Println("Need to have a valid databases path !")
 		} else {
-			mergedb.NewMergedb(*dbsPath, *outPath, *maxSize, tableLoadingMode, valueLoadingMode, *indexOnly)
+			mergedb.NewMergedb(*dbsPath, *outPath, *maxSize, tableLoadingMode, valueLoadingMode)
 		}
 		os.Exit(0)
 	}
