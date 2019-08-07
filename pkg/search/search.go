@@ -258,6 +258,7 @@ func GetQueriesFasta(fileName string, queryChan chan<- Query, isProtein bool) {
 			if isProtein {
 				query.Name = queryName
 				query.Contig = ""
+				query.Location.StartPosition = 1
 			} else {
 				query.Name = queryName
 				query.Contig = queryName
