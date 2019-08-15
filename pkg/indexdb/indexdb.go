@@ -38,7 +38,7 @@ func NewIndexDB(dbPath string, maxSize bool, tableLoadingMode options.FileLoadin
 	kvStores1.Close()
 
 	fmt.Println("Replacing kmer_store directory with the new indexed one")
-	os.Remove(dbPath + "/kmer_store")
+	os.RemoveAll(dbPath + "/kmer_store")
 	os.Rename(dbPath+"/kmer_store.new", dbPath+"/kmer_store")
 
 }
