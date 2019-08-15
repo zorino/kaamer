@@ -51,6 +51,7 @@ func main() {
     (flag)
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
+      -noindex      will NOT index the database - need to be done afterward with -index
 
   -index            index the database for kmer samples association (kcomb_store)
     (input)
@@ -122,6 +123,7 @@ func main() {
 	var maxSize = flag.Bool("maxsize", false, "to maximize badger output file size")
 	var tableMode = flag.String("tablemode", "memorymap", "table loading mode (fileio, memorymap)")
 	var valueMode = flag.String("valuemode", "memorymap", "value loading mode (fileio, memorymap)")
+	var noIndex = flag.Bool("noindex", false, "prevent the indexing of database")
 
 	var indexOpt = flag.Bool("index", false, "program")
 
@@ -191,7 +193,7 @@ func main() {
 			fmt.Println("No input file !")
 			os.Exit(1)
 		} else {
-			makedb.NewMakedb(*dbPath, *inputPath, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode)
+			makedb.NewMakedb(*dbPath, *inputPath, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode, *noIndex)
 		}
 
 		os.Exit(0)

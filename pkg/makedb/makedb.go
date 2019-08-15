@@ -16,6 +16,7 @@ import (
 
 	"github.com/dgraph-io/badger/options"
 	"github.com/golang/protobuf/proto"
+	"github.com/zorino/kaamer/pkg/indexdb"
 	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
@@ -28,7 +29,7 @@ type ProteinBuf struct {
 	proteinEntry string
 }
 
-func NewMakedb(dbPath string, inputPath string, offset uint, lenght uint, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
+func NewMakedb(dbPath string, inputPath string, offset uint, lenght uint, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, noIndex bool) {
 
 	runtime.GOMAXPROCS(128)
 
@@ -62,6 +63,10 @@ func NewMakedb(dbPath string, inputPath string, offset uint, lenght uint, maxSiz
 	kvStores.ProteinStore.GarbageCollect(100000, 0.5)
 
 	kvStores.Close()
+
+	if !noIndex {
+		indexdb.NewIndexDB(dbPath, maxSize, tableLoadingMode, valueLoadingMode)
+	}
 
 }
 
