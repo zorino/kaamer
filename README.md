@@ -9,5 +9,5 @@ provides very efficient write and lookup workloads with modern hardware, especia
 
 ## Documentation
 
-https://zorino.github.com/kaamer/docs/
+https://zorino.github.io/kaamer/
 
