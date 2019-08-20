@@ -90,7 +90,12 @@ func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadi
 
 	/* Start server */
 	fmt.Printf(" + kAAmer server listening on port %d with %d CPU workers\n", portNumber, nbOfThreads)
-	http.ListenAndServe(port.String(), r)
+
+	err := http.ListenAndServe(port.String(), r)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
 
 }
 
