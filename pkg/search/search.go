@@ -477,13 +477,13 @@ func QueryResultResponseWriter(queryResult <-chan QueryResult, w http.ResponseWr
 					output += "\t"
 					output += qR.HitEntries[h.Key].EC
 					output += "\t"
-					output += strings.Join(qR.HitEntries[h.Key].GO, ",")
+					output += strings.Join(qR.HitEntries[h.Key].GO, ";")
 					output += "\t"
-					output += strings.Join(qR.HitEntries[h.Key].HAMAP, ",")
+					output += strings.Join(qR.HitEntries[h.Key].HAMAP, ";")
 					output += "\t"
-					output += strings.Join(qR.HitEntries[h.Key].KEGG, ",")
+					output += strings.Join(qR.HitEntries[h.Key].KEGG, ";")
 					output += "\t"
-					output += strings.Join(qR.HitEntries[h.Key].BioCyc, ",")
+					output += strings.Join(qR.HitEntries[h.Key].BioCyc, ";")
 					output += "\t"
 					output += qR.HitEntries[h.Key].Taxonomy
 				}
