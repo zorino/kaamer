@@ -80,7 +80,7 @@ func (wc WriteCounter) PrintProgress() {
 	fmt.Printf("\r  Downloading... %s complete", humanize.Bytes(wc.Total))
 }
 
-func DownloadDB(outputFile string, taxon string) {
+func DownloadUniprot(outputFile string, taxon string) {
 
 	if outputFile == "" {
 		outputFile = "uniprotkb-" + taxon + ".dat.gz"
