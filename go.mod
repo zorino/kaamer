@@ -18,7 +18,7 @@ require (
 	github.com/rs/xid v1.2.1
 	github.com/stretchr/testify v1.4.0 // indirect
 	github.com/zorino/counters v0.0.0-20190409141417-6ea0e007435b
-	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7 // indirect
+	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7
 	golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 )
