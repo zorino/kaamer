@@ -15,4 +15,6 @@ message Protein {
 	repeated string HAMAP = 9;
 	repeated string KEGG = 10;
 	repeated string BioCyc = 11;
+    repeated string KEGG_Pathways = 12;
+    repeated string Biocyc_Pathways = 13;
 }

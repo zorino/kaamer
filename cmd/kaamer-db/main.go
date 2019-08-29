@@ -78,13 +78,17 @@ func main() {
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
 
-  -dl_uniprot       download uniprot in EMBL format for a specific taxon
+  -download         download databases (Uniprot, KeggPathways, BiocycPathways)
     (input)
       -o            output file (default: uniprotkb.txt.gz)
-    (flag)
-      -tax          taxon one of the following :
+      -d            database directory (only with kegg and biocyc options)
+
+      -uniprot      download raw embl files for one of the following taxon :
                     archaea,bacteria,fungi,human,invertebrates,mammals,
                     plants,rodents,vertebrates,viruses
+    (flag)
+      -kegg         download kegg pathways protein association and merge into database
+      -biocyc       download biocyc pathways protein association and merge into database
 
   -merge            merge 2 unindexed databases made with makedb
     (input)
@@ -143,8 +147,10 @@ func main() {
 
 	var indexOpt = flag.Bool("index", false, "program")
 
-	var downloadOpt = flag.Bool("dl_uniprot", false, "download uniprotkb or kaamer db")
-	var taxonOpt = flag.String("tax", "", "uniprot taxon")
+	var downloadOpt = flag.Bool("download", false, "download uniprotkb or kaamer db")
+	var uniprotOpt = flag.String("uniprot", "", "uniprot taxon")
+	var keggOpt = flag.Bool("kegg", false, "download kegg pathways")
+	var biocycOpt = flag.Bool("biocyc", false, "download biocyc pathways")
 
 	var mergedbOpt = flag.Bool("merge", false, "program")
 	var dbsPath = flag.String("dbs", "", "db path argument")
@@ -190,11 +196,31 @@ func main() {
 	}
 
 	if *downloadOpt == true {
-		if !downloaddb.Uniprot_ftp_taxonomic_valid[*taxonOpt] {
-			fmt.Println("Invalid taxon !")
-			os.Exit(1)
+		// Uniprot Taxon
+		if *uniprotOpt != "" {
+			if !downloaddb.Uniprot_ftp_taxonomic_valid[*uniprotOpt] {
+				fmt.Println("Invalid taxon !")
+				os.Exit(1)
+			} else {
+				downloaddb.DownloadUniprot(*outPath, *uniprotOpt)
+			}
+		} else if *keggOpt != false {
+			if *dbPath == "" {
+				fmt.Println("No input db path !")
+				os.Exit(1)
+			} else {
+				downloaddb.DownloadKEGG(*dbPath)
+			}
+		} else if *biocycOpt != false {
+			if *dbPath == "" {
+				fmt.Println("No input db path !")
+				os.Exit(1)
+			} else {
+				downloaddb.DownloadBiocyc(*dbPath)
+			}
 		} else {
-			downloaddb.DownloadDB(*outPath, *taxonOpt)
+			fmt.Println("Need uniprot, kegg or biocyc option !")
+			os.Exit(1)
 		}
 
 		os.Exit(0)
