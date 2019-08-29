@@ -13,7 +13,8 @@ cd $GOPATH/src/github.com/zorino/kaamer
 GO111MODULE=on; go install ./...
 ```
 
-> When issue https://github.com/golang/go/issues/31518 is resolved (~GO 1.13) `go get -u github.com/zorino/kaamer/...` will suffice.
+> When issue https://github.com/golang/go/issues/31518 is resolved (~GO 1.13) 
+> `go get -u github.com/zorino/kaamer/...` will suffice.
 
 Or you can download precompiled binaries : https://github.com/zorino/kaamer/releases
 
