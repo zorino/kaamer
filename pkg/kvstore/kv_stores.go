@@ -75,7 +75,7 @@ func KVStoresNew(dbPath string, nbOfThreads int, tableLoadingMode options.FileLo
 	kc_opts.TableLoadingMode = tableLoadingMode
 	kc_opts.ValueLogLoadingMode = valueLoadingMode
 	kc_opts.SyncWrites = syncWrite
-	kc_opts.NumVersionsToKeep = math.MaxUint32
+	kc_opts.NumVersionsToKeep = 1
 	if maxSize {
 		kc_opts.MaxTableSize = MaxTableSize
 		kc_opts.ValueLogFileSize = MaxValueLogFileSize
