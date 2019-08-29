@@ -164,6 +164,10 @@ func main() {
 
 	var restoreOpt = flag.Bool("restore", false, "program")
 
+	/* CLI usage */
+	flag.Usage = func() {
+		fmt.Println(usage)
+	}
 	flag.Parse()
 
 	/* Setting values from CLI */

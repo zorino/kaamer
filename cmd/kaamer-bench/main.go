@@ -90,6 +90,10 @@ func main() {
 
 `
 
+	/* CLI usage */
+	flag.Usage = func() {
+		fmt.Println(usage)
+	}
 	flag.Parse()
 
 	// errHelp := errors.New(usage)

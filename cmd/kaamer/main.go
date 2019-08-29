@@ -74,6 +74,10 @@ func main() {
 	var addAnnotation = flag.Bool("ann", false, "add annotation flag")
 	var addPositions = flag.Bool("pos", false, "add position flag")
 
+	/* CLI usage */
+	flag.Usage = func() {
+		fmt.Println(usage)
+	}
 	flag.Parse()
 
 	if *searchOpt == true {
