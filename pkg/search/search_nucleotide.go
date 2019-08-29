@@ -117,7 +117,9 @@ func NucleotideSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, 
 					}
 
 					searchRes.Hits = sortMapByValue(searchRes.Counter.GetCountersMap())
-					queryResultStoreChan <- QueryResult{Query: q, SearchResults: searchRes, HitEntries: map[uint32]kvstore.Protein{}}
+					if searchRes.Hits[0].Kmatch >= 10 {
+						queryResultStoreChan <- QueryResult{Query: q, SearchResults: searchRes, HitEntries: map[uint32]kvstore.Protein{}}
+					}
 
 				}
 
