@@ -8,9 +8,9 @@ To build kaamer from source you will need at least GO >= 1.12 (https://golang.or
 This command will download and install kaamer executables (kaamer and kaamer-db) into your `GOPATH`
 
 ``` shell
-GO111MODULE=off; go get -u github.com/zorino/kaamer
+export GO111MODULE=off; go get -u github.com/zorino/kaamer
 cd $GOPATH/src/github.com/zorino/kaamer
-GO111MODULE=on; go install ./...
+export GO111MODULE=on; go install ./...
 ```
 
 > When issue https://github.com/golang/go/issues/31518 is resolved (~GO 1.13) 
