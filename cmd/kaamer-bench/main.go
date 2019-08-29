@@ -61,9 +61,11 @@ func main() {
 	usage := `
  kaamer-bench <function> [OPTIONS]
 
+  -prof             profiling mode [cpu,mem] (cpu default)
+
   // Functions to profile
 
-  -opendb (db opened in read-only mode)
+  -f opendb (db opened in read-only mode)
     (input)
       -d            database directory
       -p            port (default: 8321)
@@ -75,7 +77,7 @@ func main() {
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
 
-  -makedb
+  -f makedb (profile a database build)
     (input)
       -i            input raw EMBL file
       -d            badger database directory (output)
