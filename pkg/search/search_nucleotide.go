@@ -145,19 +145,45 @@ func QueryResultStore(queryResultStoreChan <-chan QueryResult, queryResultChan c
 
 	defer wg.Done()
 	queryResults := []QueryResult{}
+	lastQueryResult := &QueryResult{}
+	lastPos := 0
+	currentPos := 0
 
 	for qR := range queryResultStoreChan {
-		queryResults = append(queryResults, qR)
-	}
 
-	queryResults = ResolveORFs(queryResults)
-
-	for _, qR := range queryResults {
-		qR.FilterResults(0.2)
-		if qR.SearchResults.Hits.Len() > 0 {
-			qR.FetchHitsInformation(kvStores)
-			queryResultChan <- qR
+		if lastQueryResult == nil {
+			queryResults = append(queryResults, qR)
+			lastQueryResult = &queryResults[len(queryResults)-1]
+			return
 		}
+
+		if qR.Query.Location.PlusStrand {
+			currentPos = qR.Query.Location.EndPosition
+		} else {
+			currentPos = qR.Query.Location.StartPosition
+		}
+
+		if lastQueryResult.Query.Location.PlusStrand {
+			lastPos = lastQueryResult.Query.Location.EndPosition
+		} else {
+			lastPos = lastQueryResult.Query.Location.StartPosition
+		}
+
+		if currentPos > lastPos {
+			queryResults = ResolveORFs(queryResults)
+			for _, _qR := range queryResults {
+				_qR.FilterResults(0.2)
+				if _qR.SearchResults.Hits.Len() > 0 {
+					_qR.FetchHitsInformation(kvStores)
+					queryResultChan <- _qR
+				}
+			}
+			queryResults = []QueryResult{}
+		}
+
+		queryResults = append(queryResults, qR)
+		lastQueryResult = &queryResults[len(queryResults)-1]
+
 	}
 
 }
