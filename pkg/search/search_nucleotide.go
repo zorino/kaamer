@@ -186,4 +186,13 @@ func QueryResultStore(queryResultStoreChan <-chan QueryResult, queryResultChan c
 
 	}
 
+	queryResults = ResolveORFs(queryResults)
+	for _, _qR := range queryResults {
+		_qR.FilterResults(0.2)
+		if _qR.SearchResults.Hits.Len() > 0 {
+			_qR.FetchHitsInformation(kvStores)
+			queryResultChan <- _qR
+		}
+	}
+
 }
