@@ -174,7 +174,7 @@ func GetORFs(dna string) []ORF {
 		}
 		jPos := orfs[j].Location.EndPosition
 		if !orfs[j].Location.PlusStrand {
-			iPos = orfs[j].Location.StartPosition
+			jPos = orfs[j].Location.StartPosition
 		}
 		return iPos < jPos
 	})
