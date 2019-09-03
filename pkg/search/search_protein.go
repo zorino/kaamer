@@ -78,7 +78,7 @@ func ProteinSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, w h
 					go searchRes.StoreMatchPositions(matchPositionChan, wgMP)
 				}
 
-				keyChan = make(chan KeyPos, 20)
+				keyChan = make(chan KeyPos, 10)
 				_wg := new(sync.WaitGroup)
 				_wg.Add(1)
 				go searchRes.KmerSearch(keyChan, kvStores, _wg, matchPositionChan)
