@@ -99,11 +99,8 @@ func NucleotideSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, 
 					}
 
 					wg := new(sync.WaitGroup)
-					// Add nbOfThread workers for KmerSearch / KCombSearch
-					for i := 0; i < nbOfThreads; i++ {
-						wg.Add(1)
-						go searchRes.KmerSearch(keyChan, kvStores, wg, matchPositionChan)
-					}
+					wg.Add(1)
+					go searchRes.KmerSearch(keyChan, kvStores, wg, matchPositionChan)
 
 					for i := 0; i < q.SizeInKmer; i++ {
 						key := kvStores.KmerStore.CreateBytesKey(q.Sequence[i : i+KMER_SIZE])
