@@ -62,6 +62,8 @@ func NucleotideSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, 
 		go func() {
 
 			defer wgSearch.Done()
+			searchRes := new(SearchResults)
+			keyChan := make(chan KeyPos, 10)
 
 			for s := range queryChan {
 
@@ -82,10 +84,10 @@ func NucleotideSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, 
 						q.SizeInKmer = q.SizeInKmer - 1
 					}
 
-					searchRes := new(SearchResults)
+					searchRes = new(SearchResults)
 					searchRes.Counter = cnt.NewCounterBox()
 					searchRes.PositionHits = make(map[uint32][]bool)
-					keyChan := make(chan KeyPos, 10)
+					keyChan = make(chan KeyPos, 10)
 
 					var matchPositionChan chan MatchPosition
 					var wgMP sync.WaitGroup

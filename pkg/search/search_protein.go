@@ -54,6 +54,8 @@ func ProteinSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, w h
 			defer wgSearch.Done()
 
 			queryResult := QueryResult{}
+			searchRes := new(SearchResults)
+			keyChan := make(chan KeyPos, 20)
 
 			for q := range queryChan {
 
@@ -63,7 +65,7 @@ func ProteinSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, w h
 					return
 				}
 
-				searchRes := new(SearchResults)
+				searchRes = new(SearchResults)
 				searchRes.Counter = cnt.NewCounterBox()
 				searchRes.PositionHits = make(map[uint32][]bool)
 
@@ -76,7 +78,7 @@ func ProteinSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, w h
 					go searchRes.StoreMatchPositions(matchPositionChan, wgMP)
 				}
 
-				keyChan := make(chan KeyPos, 20)
+				keyChan = make(chan KeyPos, 20)
 				_wg := new(sync.WaitGroup)
 				_wg.Add(1)
 				go searchRes.KmerSearch(keyChan, kvStores, _wg, matchPositionChan)
