@@ -23,7 +23,6 @@ import (
 	"log"
 	"os"
 	"runtime"
-	"time"
 
 	"github.com/dgraph-io/badger"
 	"github.com/dgraph-io/badger/options"
@@ -46,10 +45,8 @@ func NewIndexDB(dbPath string, maxSize bool, tableLoadingMode options.FileLoadin
 	newKmerStore := CreateNewKmerStore(dbPath, nbOfThreads)
 	kvStores1 := kvstore.KVStoresNew(dbPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, true, false)
 	IndexStore(kvStores1, newKmerStore, nbOfThreads)
-	newKmerStore.GarbageCollect(10000, 0.5)
-	kvStores1.KmerStore.GarbageCollect(10000, 0.5)
-	kvStores1.KCombStore.GarbageCollect(10000, 0.5)
-	kvStores1.ProteinStore.GarbageCollect(10000, 0.5)
+	newKmerStore.GarbageCollect(1000, 0.5)
+	kvStores1.KCombStore.GarbageCollect(1000, 0.5)
 	newKmerStore.Close()
 	kvStores1.Close()
 
@@ -60,35 +57,13 @@ func NewIndexDB(dbPath string, maxSize bool, tableLoadingMode options.FileLoadin
 }
 
 func IndexStore(kvStores1 *kvstore.KVStores, newKmerStore *kvstore.KVStore, nbOfThreads int) {
-	go func() {
-		ticker := time.NewTicker(10 * time.Minute)
-		defer ticker.Stop()
-		for range ticker.C {
-
-		again:
-			err := kvStores1.KmerStore.DB.RunValueLogGC(0.1)
-			if err == nil {
-				goto again
-			}
-
-		again2:
-			err = kvStores1.KCombStore.DB.RunValueLogGC(0.1)
-			if err == nil {
-				goto again2
-			}
-		}
-
-	}()
-	CreateCombinationValues(kvStores1.KmerStore.KVStore, kvStores1.KCombStore, newKmerStore, nbOfThreads)
-}
-
-func CreateCombinationValues(kmerStore *kvstore.KVStore, kCombStore *kvstore.KC_, newKmerStore *kvstore.KVStore, nbOfThreads int) {
 
 	fmt.Println("# Creating key combination store")
-	// Stream keys
-	stream := kmerStore.DB.NewStream()
 
-	kCombStore.KVStore.OpenInsertChannel()
+	// Stream keys
+	stream := kvStores1.KmerStore.KVStore.DB.NewStream()
+
+	kvStores1.KCombStore.KVStore.OpenInsertChannel()
 	newKmerStore.OpenInsertChannel()
 	// db.NewStreamAt(readTs) for managed mode.
 
@@ -136,8 +111,8 @@ func CreateCombinationValues(kmerStore *kvstore.KVStore, kCombStore *kvstore.KC_
 
 		}
 
-		combKey, combVal := kCombStore.CreateKCKeyValue(keys)
-		kCombStore.AddValueToChannel(combKey, combVal, true)
+		combKey, combVal := kvStores1.KCombStore.CreateKCKeyValue(keys)
+		kvStores1.KCombStore.AddValueToChannel(combKey, combVal, true)
 		newKmerStore.AddValueToChannel(keyCopy, combKey, true)
 
 		return nil, nil
@@ -155,8 +130,8 @@ func CreateCombinationValues(kmerStore *kvstore.KVStore, kCombStore *kvstore.KC_
 	}
 
 	// Done.
-	kCombStore.KVStore.CloseInsertChannel()
-	kCombStore.KVStore.Flush()
+	kvStores1.KCombStore.KVStore.CloseInsertChannel()
+	kvStores1.KCombStore.KVStore.Flush()
 	newKmerStore.CloseInsertChannel()
 	newKmerStore.Flush()
 
