@@ -446,7 +446,7 @@ func QueryResultResponseWriter(queryResult <-chan QueryResult, w http.ResponseWr
 
 		w.Write([]byte("QueryName\tQueryKSize\tQStart\tQEnd\tKMatch\tHit.Id"))
 		if searchOptions.Annotations {
-			w.Write([]byte("\tHit.ProteinName\tHit.Organism\tHit.EC\tHit.GO\tHit.HAMAP\tHit.KEGG\tHit.Biocyc\tHit.Taxonomy"))
+			w.Write([]byte("\tHit.ProteinName\tHit.Organism\tHit.EC\tHit.GO\tHit.HAMAP\tHit.KEGG_id\tHit.KEGG_pathway\tHit.Biocyc_id\tHit.Biocyc_pathway\tHit.Taxonomy"))
 		}
 		if searchOptions.ExtractPositions {
 			w.Write([]byte("\tQueryHit.Positions"))
@@ -483,7 +483,11 @@ func QueryResultResponseWriter(queryResult <-chan QueryResult, w http.ResponseWr
 					output += "\t"
 					output += strings.Join(qR.HitEntries[h.Key].KEGG, ";")
 					output += "\t"
+					output += strings.Join(qR.HitEntries[h.Key].KEGG_Pathways, ";")
+					output += "\t"
 					output += strings.Join(qR.HitEntries[h.Key].BioCyc, ";")
+					output += "\t"
+					output += strings.Join(qR.HitEntries[h.Key].Biocyc_Pathways, ";")
 					output += "\t"
 					output += qR.HitEntries[h.Key].Taxonomy
 				}
