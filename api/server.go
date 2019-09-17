@@ -118,7 +118,7 @@ func searchFastq(w http.ResponseWriter, r *http.Request) {
 		SequenceType:     search.READS,
 		OutFormat:        "tsv",
 		MaxResults:       10,
-		ExtractPositions: true,
+		ExtractPositions: false,
 	}
 
 	err := parseSearchOptions(&searchOptions, w, r)
@@ -139,7 +139,7 @@ func searchNucleotide(w http.ResponseWriter, r *http.Request) {
 		SequenceType:     search.NUCLEOTIDE,
 		OutFormat:        "tsv",
 		MaxResults:       10,
-		ExtractPositions: true,
+		ExtractPositions: false,
 	}
 
 	err := parseSearchOptions(&searchOptions, w, r)
