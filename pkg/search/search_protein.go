@@ -24,7 +24,9 @@ import (
 	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
-func ProteinSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, w http.ResponseWriter) {
+func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOfThreads int, w http.ResponseWriter) {
+
+	file := searchOptions.File
 
 	queryChan := make(chan Query, 5)
 

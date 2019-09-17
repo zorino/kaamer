@@ -24,7 +24,9 @@ import (
 	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
-func NucleotideSearch(file string, kvStores *kvstore.KVStores, nbOfThreads int, w http.ResponseWriter, fastq bool) {
+func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOfThreads int, w http.ResponseWriter, fastq bool) {
+
+	file := searchOptions.File
 
 	queryChan := make(chan Query)
 

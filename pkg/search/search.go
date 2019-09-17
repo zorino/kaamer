@@ -149,13 +149,13 @@ func NewSearchResult(newSearchOptions SearchOptions, kvStores *kvstore.KVStores,
 	switch searchOptions.SequenceType {
 	case READS:
 		fmt.Println("Searching for Reads file")
-		NucleotideSearch(searchOptions.File, kvStores, nbOfThreads, w, true)
+		NucleotideSearch(searchOptions, kvStores, nbOfThreads, w, true)
 	case NUCLEOTIDE:
 		fmt.Println("Searching for Nucleotide file")
-		NucleotideSearch(searchOptions.File, kvStores, nbOfThreads, w, false)
+		NucleotideSearch(searchOptions, kvStores, nbOfThreads, w, false)
 	case PROTEIN:
 		fmt.Println("Searching from Protein file")
-		ProteinSearch(searchOptions.File, kvStores, nbOfThreads, w)
+		ProteinSearch(searchOptions, kvStores, nbOfThreads, w)
 	}
 
 	if searchOptions.InputType != "path" {
