@@ -333,12 +333,13 @@ func GetQueriesFastq(fileName string, queryChan chan<- Query) {
 	}
 
 	// check filetype
-	buff := make([]byte, 512)
+	buff := make([]byte, 32)
 	_, err = file.Read(buff)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+	file.Seek(0, 0)
 
 	filetype := http.DetectContentType(buff)
 
