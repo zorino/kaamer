@@ -54,6 +54,9 @@ func main() {
       -t            number of threads to use (default all)
       -tmp          tmp folder for query import (default /tmp)
 
+      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+
   // Database
 
   -make             make the protein database
