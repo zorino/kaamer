@@ -77,8 +77,6 @@ func GetORFs(dna string, geneticCode int) []ORF {
 
 	for framePos, frameSeq := range frames {
 
-		// fmt.Printf("Sequence NT (%d): %s\n", len(frameSeq), frameSeq)
-
 		startPos := frameStartPosition[framePos]
 		plusStrand := framePos <= 2
 		absPos := framePos
@@ -104,7 +102,6 @@ func GetORFs(dna string, geneticCode int) []ORF {
 		currentAAPos := 0
 
 		for i := 0; i < len(frameSeq)-(len(frameSeq)%3); i += 3 {
-			// fmt.Println(gcodeBacteria[f[i:i+3]])
 			currentPos = i
 			currentAA = gcodeBacteria[frameSeq[i:i+3]]
 
