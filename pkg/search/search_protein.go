@@ -24,7 +24,7 @@ import (
 	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
-func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOfThreads int, w http.ResponseWriter) {
+func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOfThreads int, w http.ResponseWriter, cancelQuery *bool) {
 
 	file := searchOptions.File
 
@@ -105,6 +105,10 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 				queryResult.FetchHitsInformation(kvStores)
 
 				queryResultChan <- queryResult
+
+				if *cancelQuery {
+					return
+				}
 
 			}
 

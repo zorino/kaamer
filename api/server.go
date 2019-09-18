@@ -127,7 +127,7 @@ func searchFastq(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		fmt.Fprintln(w, err.Error())
 	} else {
-		search.NewSearchResult(searchOptions, kvStores, nbOfThreads, w)
+		search.NewSearchResult(searchOptions, kvStores, nbOfThreads, w, r)
 	}
 
 }
@@ -150,7 +150,7 @@ func searchNucleotide(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		fmt.Fprintln(w, err.Error())
 	} else {
-		search.NewSearchResult(searchOptions, kvStores, nbOfThreads, w)
+		search.NewSearchResult(searchOptions, kvStores, nbOfThreads, w, r)
 	}
 
 }
@@ -173,7 +173,7 @@ func searchProtein(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		fmt.Fprintln(w, err.Error())
 	} else {
-		search.NewSearchResult(searchOptions, kvStores, nbOfThreads, w)
+		search.NewSearchResult(searchOptions, kvStores, nbOfThreads, w, r)
 	}
 
 }

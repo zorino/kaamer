@@ -30,6 +30,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	cnt "github.com/zorino/counters"
@@ -140,9 +141,20 @@ func sortMapByValue(hitFrequencies *sync.Map) HitList {
 	return pl
 }
 
-func NewSearchResult(newSearchOptions SearchOptions, kvStores *kvstore.KVStores, nbOfThreads int, w http.ResponseWriter) []QueryResult {
+func NewSearchResult(newSearchOptions SearchOptions, kvStores *kvstore.KVStores, nbOfThreads int, w http.ResponseWriter, r *http.Request) []QueryResult {
 
-	// sequence is either file path or the actual sequence (depends on sequenceType)
+	// Query cancellation
+	cancelQuery := false
+	go func(cancelQuery *bool) {
+	again:
+		select {
+		case <-time.After(3 * time.Second):
+			goto again
+		case <-r.Context().Done():
+			*cancelQuery = true
+		}
+	}(&cancelQuery)
+
 	queryResults := []QueryResult{}
 
 	searchOptions = newSearchOptions
@@ -150,13 +162,13 @@ func NewSearchResult(newSearchOptions SearchOptions, kvStores *kvstore.KVStores,
 	switch searchOptions.SequenceType {
 	case READS:
 		fmt.Println("Searching for Reads file")
-		NucleotideSearch(searchOptions, kvStores, nbOfThreads, w, true)
+		NucleotideSearch(searchOptions, kvStores, nbOfThreads, w, true, &cancelQuery)
 	case NUCLEOTIDE:
 		fmt.Println("Searching for Nucleotide file")
-		NucleotideSearch(searchOptions, kvStores, nbOfThreads, w, false)
+		NucleotideSearch(searchOptions, kvStores, nbOfThreads, w, false, &cancelQuery)
 	case PROTEIN:
 		fmt.Println("Searching from Protein file")
-		ProteinSearch(searchOptions, kvStores, nbOfThreads, w)
+		ProteinSearch(searchOptions, kvStores, nbOfThreads, w, &cancelQuery)
 	}
 
 	if searchOptions.InputType != "path" {
