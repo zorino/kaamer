@@ -71,11 +71,9 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 				searchRes.Counter = cnt.NewCounterBox()
 				searchRes.PositionHits = make(map[uint32][]bool)
 
-				var matchPositionChan chan MatchPosition
-				var wgMP sync.WaitGroup
+				matchPositionChan := make(chan MatchPosition, 10)
+				wgMP := new(sync.WaitGroup)
 				if searchOptions.ExtractPositions {
-					matchPositionChan = make(chan MatchPosition, 10)
-					wgMP := new(sync.WaitGroup)
 					wgMP.Add(1)
 					go searchRes.StoreMatchPositions(matchPositionChan, wgMP)
 				}
@@ -92,11 +90,8 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 
 				close(keyChan)
 				_wg.Wait()
-
-				if searchOptions.ExtractPositions {
-					close(matchPositionChan)
-					wgMP.Wait()
-				}
+				close(matchPositionChan)
+				wgMP.Wait()
 
 				searchRes.Hits = sortMapByValue(searchRes.Counter.GetCountersMap())
 
