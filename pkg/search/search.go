@@ -381,6 +381,8 @@ func GetQueriesFastq(fileName string, queryChan chan<- Query) {
 
 func (searchRes *SearchResults) KmerSearch(keyChan <-chan KeyPos, kvStores *kvstore.KVStores, wg *sync.WaitGroup, matchPositionChan chan<- MatchPosition) {
 
+	extractPos := (searchOptions.ExtractPositions || (searchOptions.SequenceType == NUCLEOTIDE) || (searchOptions.SequenceType == READS))
+
 	defer wg.Done()
 	for keyPos := range keyChan {
 
@@ -396,11 +398,10 @@ func (searchRes *SearchResults) KmerSearch(keyChan <-chan KeyPos, kvStores *kvst
 
 			for _, id := range kC.ProteinKeys {
 				searchRes.Counter.GetCounter(strconv.Itoa(int(id))).Increment()
-				if searchOptions.ExtractPositions {
+				if extractPos {
 					matchPositionChan <- MatchPosition{HitId: id, QPos: keyPos.Pos, QSize: keyPos.QSize}
 				}
 			}
-
 		}
 	}
 

@@ -92,13 +92,10 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 					keyChan = make(chan KeyPos, 10)
 
 					var matchPositionChan chan MatchPosition
-					var wgMP sync.WaitGroup
-					if searchOptions.ExtractPositions {
-						matchPositionChan = make(chan MatchPosition, 10)
-						wgMP := new(sync.WaitGroup)
-						wgMP.Add(1)
-						go searchRes.StoreMatchPositions(matchPositionChan, wgMP)
-					}
+					matchPositionChan = make(chan MatchPosition, 10)
+					wgMP := new(sync.WaitGroup)
+					wgMP.Add(1)
+					go searchRes.StoreMatchPositions(matchPositionChan, wgMP)
 
 					wg := new(sync.WaitGroup)
 					wg.Add(1)
@@ -111,11 +108,8 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 
 					close(keyChan)
 					wg.Wait()
-
-					if searchOptions.ExtractPositions {
-						close(matchPositionChan)
-						wgMP.Wait()
-					}
+					close(matchPositionChan)
+					wgMP.Wait()
 
 					searchRes.Hits = sortMapByValue(searchRes.Counter.GetCountersMap())
 					if len(searchRes.Hits) > 0 && searchRes.Hits[0].Kmatch >= 10 {
