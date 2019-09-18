@@ -115,6 +115,7 @@ func searchFastq(w http.ResponseWriter, r *http.Request) {
 	searchOptions := search.SearchOptions{
 		File:             "",
 		InputType:        r.FormValue("type"),
+		GeneticCode:      11,
 		SequenceType:     search.READS,
 		OutFormat:        "tsv",
 		MaxResults:       10,
@@ -136,6 +137,7 @@ func searchNucleotide(w http.ResponseWriter, r *http.Request) {
 	searchOptions := search.SearchOptions{
 		File:             "",
 		InputType:        r.FormValue("type"),
+		GeneticCode:      11,
 		SequenceType:     search.NUCLEOTIDE,
 		OutFormat:        "tsv",
 		MaxResults:       10,
@@ -158,6 +160,7 @@ func searchProtein(w http.ResponseWriter, r *http.Request) {
 	searchOptions := search.SearchOptions{
 		File:             "",
 		InputType:        r.FormValue("type"),
+		GeneticCode:      11, // not needed
 		SequenceType:     search.PROTEIN,
 		OutFormat:        "tsv",
 		MaxResults:       10,
@@ -216,6 +219,12 @@ func parseSearchOptions(searchOpts *search.SearchOptions, w http.ResponseWriter,
 	if r.FormValue("max-results") != "" {
 		if maxRes, err := strconv.Atoi(r.FormValue("max-results")); err == nil {
 			searchOpts.MaxResults = maxRes
+		}
+	}
+
+	if r.FormValue("gcode") != "11" {
+		if gCode, err := strconv.Atoi(r.FormValue("gcode")); err == nil {
+			searchOpts.GeneticCode = gCode
 		}
 	}
 

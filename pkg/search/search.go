@@ -53,6 +53,7 @@ type SearchOptions struct {
 	File             string
 	InputType        string
 	SequenceType     int
+	GeneticCode      int
 	OutFormat        string
 	MaxResults       int
 	ExtractPositions bool

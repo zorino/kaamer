@@ -62,7 +62,7 @@ func ReverseComplement(dna string) string {
 
 }
 
-func GetORFs(dna string) []ORF {
+func GetORFs(dna string, geneticCode int) []ORF {
 
 	orfs := []ORF{}
 	dna = strings.ToLower(dna)

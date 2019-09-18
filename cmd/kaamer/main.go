@@ -29,6 +29,7 @@ import (
 
 var (
 	validQueryType    = map[string]int{"prot": search.PROTEIN, "nt": search.NUCLEOTIDE, "fastq": search.READS}
+	validGeneticCode  = search.GCodes
 	validOutputFormat = map[string]bool{"tsv": true, "json": true}
 )
 
@@ -46,6 +47,8 @@ func main() {
       -h            server host (default http://localhost:8321)
 
       -t            (prot, nt, fastq) query type
+
+      -g            genetic code for nt/fastq type (default: 11 for bacteria)
 
       -i            input file (fasta or fastq)
 
@@ -68,6 +71,7 @@ func main() {
 	var serverHost = flag.String("h", "http://localhost:8321", "server URL")
 	var inputFile = flag.String("i", "", "input file")
 	var queryTypeArg = flag.String("t", "", "query type")
+	var geneticCode = flag.Int("g", 11, "genetic code")
 	var maxResults = flag.Int("m", 10, "max number of results")
 	var outputFile = flag.String("o", "stdout", "output file")
 	var outputFormat = flag.String("fmt", "tsv", "output format")
@@ -92,6 +96,11 @@ func main() {
 
 		if queryType, ok = validQueryType[*queryTypeArg]; !ok {
 			fmt.Println("Invalid query type ! use prot, nt or reads !")
+			os.Exit(1)
+		}
+
+		if _, ok = validGeneticCode[*geneticCode]; !ok {
+			fmt.Println("Invalid genetic code !")
 			os.Exit(1)
 		}
 
@@ -124,6 +133,7 @@ func main() {
 
 		options.File = *inputFile
 		options.SequenceType = queryType
+		options.GeneticCode = *geneticCode
 		options.OutFormat = *outputFormat
 		options.MaxResults = *maxResults
 		options.ExtractPositions = *addPositions

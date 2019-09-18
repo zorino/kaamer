@@ -43,6 +43,7 @@ func NewSearchRequest(options SearchRequestOptions) {
 	bodyWriter := multipart.NewWriter(bodyBuf)
 
 	bodyWriter.WriteField("type", options.InputType)
+	bodyWriter.WriteField("gcode", strconv.Itoa(options.GeneticCode))
 	bodyWriter.WriteField("output-format", options.OutFormat)
 	bodyWriter.WriteField("max-results", strconv.Itoa(options.MaxResults))
 	bodyWriter.WriteField("annotations", strconv.FormatBool(options.Annotations))

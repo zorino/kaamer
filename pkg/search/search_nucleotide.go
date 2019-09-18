@@ -69,7 +69,7 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 
 			for s := range queryChan {
 
-				orfs := GetORFs(s.Sequence)
+				orfs := GetORFs(s.Sequence, searchOptions.GeneticCode)
 
 				for _, o := range orfs {
 
