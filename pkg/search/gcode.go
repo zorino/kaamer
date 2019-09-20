@@ -16,6 +16,8 @@ limitations under the License.
 
 package search
 
+// See https://www.bioinformatics.org/JaMBW/2/3/TranslationTables.html#SG15
+
 var GCodes = map[int]map[string]AminoAcid{
 	1:  gcode_1,
 	2:  gcode_2,
