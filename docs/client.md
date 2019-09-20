@@ -7,6 +7,7 @@ The kaamer CLI is a client to query (-search) a kaamer database.
 
 > kaamer
 
+
  kaamer
 
   // Search
@@ -18,6 +19,8 @@ The kaamer CLI is a client to query (-search) a kaamer database.
       -h            server host (default http://localhost:8321)
 
       -t            (prot, nt, fastq) query type
+
+      -g            genetic code for nt/fastq type (default: 11 for bacteria)
 
       -i            input file (fasta or fastq)
 
@@ -51,6 +54,12 @@ The kaamer CLI is a client to query (-search) a kaamer database.
     * prot : for a protein sequence in the fasta format
     * nt : for nucleotide sequence (contigs, genes) in the fasta format
     * fastq : short reads sequence in the fastq format
+
+* -g Genetic Code
+
+   Genetic code number for translated search (with -t fastq or -t nt)
+   One of the following : 1-15 except 7,8 (default 11 - bacteria)
+   See https://www.bioinformatics.org/JaMBW/2/3/TranslationTables.html#SG15
 
 * -i Input File
 

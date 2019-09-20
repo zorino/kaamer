@@ -34,7 +34,7 @@ option. \
 All taxon proteins will be downloaded and gzipped into the output file. 
 
 ```shell
-kaamer-db -dl_uniprot -tax viruses -o uniprotkb-viruses.embl.gz
+kaamer-db -download -uniprot viruses -o uniprotkb-viruses.embl.gz
 ```
 
 ### 2. Make the database
@@ -58,7 +58,7 @@ kaamer-db -make -i uniprotkb-viruses.embl.gz -d kaamerdb-viruses
 
 > No index (-noindex) prevent database indexing.
 
-### 3. Index the database
+### 3.1 Index the database
 
 > If makedb hasn't built the index (-noindex)
 
@@ -71,6 +71,18 @@ kaamer-db -index -d kaamerdb-viruses
 ```
 
 > Once again you can use the -maxsize and -tablemode -valuemode options
+
+### 3.2 Download KEGG / BioCyc pathway annotation
+
+Since Uniprot only includes KEGG and Biocyc identifiers we have the option to download the actual
+pathway information associated with these IDs (fetch from the BioCyc and KEGG APIs).
+
+> Need to be executed on an indexed database
+
+```shell
+kaamer-db -download -kegg kaamerdb-viruses
+kaamer-db -download -biocyc kaamerdb-viruses
+```
 
 
 ### 4. Start the server
@@ -104,6 +116,9 @@ Execute kaamer-db to see all the options.
       -t            number of threads to use (default all)
       -tmp          tmp folder for query import (default /tmp)
 
+      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+
   // Database
 
   -make             make the protein database
@@ -118,7 +133,7 @@ Execute kaamer-db to see all the options.
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
       -noindex      will NOT index the database - need to be done afterward with -index
-      
+
   -index            index the database for kmer samples association (kcomb_store)
     (input)
       -d            database directory
@@ -128,13 +143,17 @@ Execute kaamer-db to see all the options.
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
 
-  -dl_uniprot       download uniprot in EMBL format for a specific taxon
+  -download         download databases (Uniprot, KeggPathways, BiocycPathways)
     (input)
       -o            output file (default: uniprotkb.txt.gz)
-    (flag)
-      -tax          taxon is one of the following :
+      -d            database directory (only with kegg and biocyc options)
+
+      -uniprot      download raw embl files for one of the following taxon :
                     archaea,bacteria,fungi,human,invertebrates,mammals,
                     plants,rodents,vertebrates,viruses
+    (flag)
+      -kegg         download kegg pathways protein association and merge into database
+      -biocyc       download biocyc pathways protein association and merge into database
 
   -merge            merge 2 unindexed databases made with makedb
     (input)
@@ -176,5 +195,3 @@ Execute kaamer-db to see all the options.
 
 
 ```
-
-
