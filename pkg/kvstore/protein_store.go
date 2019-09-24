@@ -17,11 +17,7 @@ limitations under the License.
 package kvstore
 
 import (
-	// "fmt"
-	// "bytes"
-	// "regexp"
 	"github.com/dgraph-io/badger"
-	// "encoding/hex"
 )
 
 // Hash store for values combination used in other stores
