@@ -23,10 +23,12 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/dgraph-io/badger"
 	"github.com/dgraph-io/badger/options"
 	"github.com/dgraph-io/badger/pb"
+	"github.com/golang/protobuf/proto"
 	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
@@ -45,6 +47,7 @@ func NewIndexDB(dbPath string, maxSize bool, tableLoadingMode options.FileLoadin
 	newKmerStore := CreateNewKmerStore(dbPath, nbOfThreads)
 	kvStores1 := kvstore.KVStoresNew(dbPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, true, false)
 	IndexStore(kvStores1, newKmerStore, nbOfThreads)
+	AddSettings(kvStores1, dbPath)
 	newKmerStore.GarbageCollect(1000, 0.5)
 	kvStores1.KCombStore.GarbageCollect(1000, 0.5)
 	newKmerStore.Close()
@@ -155,5 +158,37 @@ func CreateNewKmerStore(dbPath string, nbOfThreads int) *kvstore.KVStore {
 	newKmerStore := kvstore.K_New(k_opts, 1000, nbOfThreads)
 
 	return newKmerStore.KVStore
+
+}
+
+func AddSettings(kvStores *kvstore.KVStores, dbPath string) {
+
+	var dbName string
+
+	_dbPathS := strings.Split(dbPath, "/")
+
+	dbName = _dbPathS[len(_dbPathS)-1]
+	if dbName == "" {
+		dbName = _dbPathS[len(_dbPathS)-2]
+	}
+
+	// Add settings to protein store
+	ksettings := &kvstore.KSettings{
+		Name:              dbName,
+		Port:              8321,
+		DatabaseIndexed:   true,
+		IDsIndexed:        false,
+		KEGGPathwaysDwl:   false,
+		BiocycPathwaysDwl: false,
+	}
+	data, err := proto.Marshal(ksettings)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	kvStores.ProteinStore.KVStore.OpenInsertChannel()
+	kvStores.ProteinStore.AddValueToChannel([]byte("db_settings"), data, true)
+	kvStores.ProteinStore.KVStore.CloseInsertChannel()
+	kvStores.ProteinStore.Flush()
 
 }
