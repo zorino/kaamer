@@ -96,7 +96,7 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint
 	defer file.Close()
 
 	jobs := make(chan ProteinBuf)
-	results := make(chan int, 10)
+	results := make(chan int32, 10)
 	wg := new(sync.WaitGroup)
 
 	// thread pool
@@ -152,15 +152,20 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint
 
 	// Now, add up the results from the results channel until closed
 	timeStart := time.Now()
-	counts := 0
+	countProteins := uint64(0)
+	countAA := uint64(0)
+	countKmers := uint64(0)
+
 	wgGC := new(sync.WaitGroup)
 	for v := range results {
-		counts += v
-		if counts%10000 == 0 {
-			fmt.Printf("Processed %d proteins in %f minutes\n", counts, time.Since(timeStart).Minutes())
+		countProteins += 1
+		countAA += uint64(v)
+		countKmers += uint64(v) - KMER_SIZE + 1
+		if countProteins%10000 == 0 {
+			fmt.Printf("Processed %d proteins in %f minutes\n", countProteins, time.Since(timeStart).Minutes())
 		}
 		// Valuelog GC every 100K processed proteins
-		if counts%1000000 == 0 {
+		if countProteins%1000000 == 0 {
 			wgGC.Wait()
 			wgGC.Add(2)
 			go func() {
@@ -175,22 +180,35 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint
 	}
 	wgGC.Wait()
 
-	return counts
+	// Add Stats to protein_store
+	kstats := &kvstore.KStats{
+		NumberOfProteins:  countProteins,
+		NumberOfAA:        countAA,
+		NumberOfKmers:     countKmers,
+		NumberOfKCombSets: 0,
+	}
+	data, err := proto.Marshal(kstats)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	kvStores.ProteinStore.AddValueToChannel([]byte("db_stats"), data, true)
+
+	return 0
 
 }
 
-func readBuffer(jobs <-chan ProteinBuf, results chan<- int, wg *sync.WaitGroup, kvStores *kvstore.KVStores) {
+func readBuffer(jobs <-chan ProteinBuf, results chan<- int32, wg *sync.WaitGroup, kvStores *kvstore.KVStores) {
 
 	defer wg.Done()
 	// line by line
 	for j := range jobs {
-		processProteinInput(j, kvStores)
-		results <- 1
+		processProteinInput(j, results, kvStores)
+		// results <- 1
 	}
 
 }
 
-func processProteinInput(proteinBuf ProteinBuf, kvStores *kvstore.KVStores) {
+func processProteinInput(proteinBuf ProteinBuf, results chan<- int32, kvStores *kvstore.KVStores) {
 
 	textEntry := proteinBuf.proteinEntry
 	protein := &kvstore.Protein{}
@@ -248,6 +266,13 @@ func processProteinInput(proteinBuf ProteinBuf, kvStores *kvstore.KVStores) {
 		}
 	}
 
+	// skip peptide shorter than kmerSize
+	if protein.Length < KMER_SIZE {
+		return
+	}
+
+	results <- protein.Length
+
 	proteinId := make([]byte, 4)
 	binary.BigEndian.PutUint32(proteinId, uint32(proteinBuf.proteinId))
 
@@ -256,11 +281,6 @@ func processProteinInput(proteinBuf ProteinBuf, kvStores *kvstore.KVStores) {
 		log.Fatal(err.Error())
 	} else {
 		kvStores.ProteinStore.AddValueToChannel(proteinId, data, false)
-	}
-
-	// skip peptide shorter than kmerSize
-	if protein.Length < KMER_SIZE {
-		return
 	}
 
 	// sliding windows of kmerSize on Sequence
