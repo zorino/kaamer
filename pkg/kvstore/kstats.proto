@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package kvstore;
+
+message KStats {
+    
+    uint64 NumberOfProteins = 1;
+    uint64 NumberOfAA = 2;
+    uint64 NumberOfKmers = 4;
+    uint64 NumberOfKCombSets = 5;
+
+    repeated string Features = 6;
+
+}

@@ -31,6 +31,7 @@ import (
 
 	"github.com/dgraph-io/badger/options"
 	"github.com/go-chi/chi"
+	"github.com/golang/protobuf/proto"
 	"github.com/rs/xid"
 	"github.com/zorino/kaamer/internal/helper/duration"
 	"github.com/zorino/kaamer/pkg/kvstore"
@@ -39,6 +40,7 @@ import (
 
 /* global variables */
 var kvStores *kvstore.KVStores
+var dbStats *kvstore.KStats
 var tmpFolder = "/tmp/"
 var nbOfThreads = 0
 
@@ -62,6 +64,14 @@ func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadi
 
 	kvStores = kvstore.KVStoresNew(dbPath, 12, tableLoadingMode, valueLoadingMode, true, false, true)
 	defer kvStores.Close()
+
+	dbStatsByte, ok := kvStores.ProteinStore.GetValue([]byte("db_stats"))
+	if !ok {
+		fmt.Println("No database stats, aborting !")
+		os.Exit(1)
+	}
+	dbStats = &kvstore.KStats{}
+	proto.Unmarshal(dbStatsByte, dbStats)
 
 	elapsed := time.Since(startTime)
 	elapsed = elapsed.Round(time.Second)
@@ -127,7 +137,7 @@ func searchFastq(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		fmt.Fprintln(w, err.Error())
 	} else {
-		search.NewSearchResult(searchOptions, kvStores, nbOfThreads, w, r)
+		search.NewSearchResult(searchOptions, *dbStats, kvStores, nbOfThreads, w, r)
 	}
 
 }
@@ -150,7 +160,7 @@ func searchNucleotide(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		fmt.Fprintln(w, err.Error())
 	} else {
-		search.NewSearchResult(searchOptions, kvStores, nbOfThreads, w, r)
+		search.NewSearchResult(searchOptions, *dbStats, kvStores, nbOfThreads, w, r)
 	}
 
 }
@@ -173,7 +183,7 @@ func searchProtein(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 		fmt.Fprintln(w, err.Error())
 	} else {
-		search.NewSearchResult(searchOptions, kvStores, nbOfThreads, w, r)
+		search.NewSearchResult(searchOptions, *dbStats, kvStores, nbOfThreads, w, r)
 	}
 
 }

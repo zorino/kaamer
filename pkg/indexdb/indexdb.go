@@ -174,12 +174,10 @@ func AddSettings(kvStores *kvstore.KVStores, dbPath string) {
 
 	// Add settings to protein store
 	ksettings := &kvstore.KSettings{
-		Name:              dbName,
-		Port:              8321,
-		DatabaseIndexed:   true,
-		IDsIndexed:        false,
-		KEGGPathwaysDwl:   false,
-		BiocycPathwaysDwl: false,
+		Name:            dbName,
+		Port:            8321,
+		DatabaseIndexed: true,
+		IDsIndexed:      false,
 	}
 	data, err := proto.Marshal(ksettings)
 	if err != nil {

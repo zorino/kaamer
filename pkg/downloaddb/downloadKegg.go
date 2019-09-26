@@ -106,15 +106,21 @@ func DownloadKEGG(dbPath string) {
 			prot := &kvstore.Protein{}
 			proto.Unmarshal(valCopy, prot)
 
-			keggIds := prot.GetKEGG()
+			keggIds := []string{}
+			if ids, ok := prot.Features["KEGG_ID"]; ok {
+				keggIds = strings.Split(ids, ";")
+			}
+
 			if len(keggIds) > 0 {
-				fmt.Printf("KEGG IDs for %s.. ", prot.GetEntry())
-				prot.KEGG_Pathways = []string{}
+				fmt.Printf("KEGG IDs for %s.. ", prot.GetEntryId())
+				// prot.KEGG_Pathways = []string{}
+				prot.Features["KEGG_Pathways"] = ""
 				for _, keggId := range keggIds {
 					pathways := GetKeggPathway(keggId)
 					fmt.Printf("%d\n", len(pathways))
 					if len(pathways) > 0 {
-						prot.KEGG_Pathways = append(prot.KEGG_Pathways, pathways...)
+						prot.Features["KEGG_Pathways"] = strings.Join(pathways, ";")
+						// prot.KEGG_Pathways = append(prot.KEGG_Pathways, pathways...)
 						fmt.Println(strings.Join(pathways, ";"))
 						newVal, err := proto.Marshal(prot)
 						if err == nil {

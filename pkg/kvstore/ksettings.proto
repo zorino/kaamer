@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package kvstore;
+
+message KSettings {
+
+    string Name = 1;
+    int32 Port = 2;
+    string CreationDate = 3;
+    string OriginalFile = 4;
+
+    bool DatabaseIndexed = 5;
+    bool IDsIndexed = 6;
+    bool NamesIndexed = 7;
+
+}

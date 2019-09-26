@@ -106,17 +106,22 @@ func DownloadBiocyc(dbPath string) {
 			prot := &kvstore.Protein{}
 			proto.Unmarshal(valCopy, prot)
 
-			biocycIds := prot.GetBioCyc()
+			biocycIds := []string{}
+			if ids, ok := prot.Features["BioCyc_ID"]; ok {
+				biocycIds = strings.Split(ids, ";")
+			}
 
 			if len(biocycIds) > 0 {
-				fmt.Printf("Biocyc IDs for %s.. ", prot.GetEntry())
-				prot.Biocyc_Pathways = []string{}
+				fmt.Printf("Biocyc IDs for %s.. ", prot.GetEntryId())
+				prot.Features["BioCyc_Pathways"] = ""
+				// prot.Biocyc_Pathways = []string{}
 				for _, biocycId := range biocycIds {
 					geneId := strings.Replace(biocycId, "-MONOMER", "", 1)
 					pathways := GetBiocycPathway(geneId)
 					fmt.Printf("%d\n", len(pathways))
 					if len(pathways) > 0 {
-						prot.Biocyc_Pathways = append(prot.Biocyc_Pathways, pathways...)
+						prot.Features["BioCyc_Pathways"] = strings.Join(pathways, ";")
+						// prot.Biocyc_Pathways = append(prot.Biocyc_Pathways, pathways...)
 						fmt.Println(strings.Join(pathways, ";"))
 						newVal, err := proto.Marshal(prot)
 						if err == nil {

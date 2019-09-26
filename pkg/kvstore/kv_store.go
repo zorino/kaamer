@@ -144,7 +144,7 @@ func (kv *KVStore) GarbageCollect(count int, ratio float64) {
 		numberOfGC = i + 1
 		err := kv.DB.RunValueLogGC(ratio)
 		if err != nil {
-			fmt.Printf("DEBUG ValueLog GC failed with : %s \n", err.Error())
+			// fmt.Printf("DEBUG ValueLog GC failed with : %s \n", err.Error())
 			// stop iteration since we hit a GC error
 			i = count
 			numberOfGC--

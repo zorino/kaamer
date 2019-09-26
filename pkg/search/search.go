@@ -48,6 +48,7 @@ const (
 
 var (
 	searchOptions = SearchOptions{}
+	dbStats       kvstore.KStats
 )
 
 type SearchOptions struct {
@@ -141,7 +142,7 @@ func sortMapByValue(hitFrequencies *sync.Map) HitList {
 	return pl
 }
 
-func NewSearchResult(newSearchOptions SearchOptions, kvStores *kvstore.KVStores, nbOfThreads int, w http.ResponseWriter, r *http.Request) []QueryResult {
+func NewSearchResult(newSearchOptions SearchOptions, _dbStats kvstore.KStats, kvStores *kvstore.KVStores, nbOfThreads int, w http.ResponseWriter, r *http.Request) []QueryResult {
 
 	// Query cancellation
 	cancelQuery := false
@@ -158,6 +159,7 @@ func NewSearchResult(newSearchOptions SearchOptions, kvStores *kvstore.KVStores,
 	queryResults := []QueryResult{}
 
 	searchOptions = newSearchOptions
+	dbStats = _dbStats
 
 	switch searchOptions.SequenceType {
 	case READS:
@@ -460,11 +462,15 @@ func QueryResultResponseWriter(queryResult <-chan QueryResult, w http.ResponseWr
 		w.WriteHeader(200)
 
 		w.Write([]byte("QueryName\tQueryKSize\tQStart\tQEnd\tKMatch\tHit.Id"))
-		if searchOptions.Annotations {
-			w.Write([]byte("\tHit.ProteinName\tHit.Organism\tHit.EC\tHit.GO\tHit.HAMAP\tHit.KEGG_id\tHit.KEGG_pathway\tHit.Biocyc_id\tHit.Biocyc_pathway\tHit.Taxonomy"))
-		}
+
 		if searchOptions.ExtractPositions {
 			w.Write([]byte("\tQueryHit.Positions"))
+		}
+		if searchOptions.Annotations {
+			for _, annotation := range dbStats.Features {
+				w.Write([]byte("\t"))
+				w.Write([]byte(annotation))
+			}
 		}
 		w.Write([]byte("\n"))
 		output := ""
@@ -483,33 +489,20 @@ func QueryResultResponseWriter(queryResult <-chan QueryResult, w http.ResponseWr
 				output += "\t"
 				output += strconv.Itoa(int(h.Kmatch))
 				output += "\t"
-				output += qR.HitEntries[h.Key].Entry
-				if searchOptions.Annotations {
-					output += "\t"
-					output += qR.HitEntries[h.Key].ProteinName
-					output += "\t"
-					output += qR.HitEntries[h.Key].Organism
-					output += "\t"
-					output += qR.HitEntries[h.Key].EC
-					output += "\t"
-					output += strings.Join(qR.HitEntries[h.Key].GO, ";")
-					output += "\t"
-					output += strings.Join(qR.HitEntries[h.Key].HAMAP, ";")
-					output += "\t"
-					output += strings.Join(qR.HitEntries[h.Key].KEGG, ";")
-					output += "\t"
-					output += strings.Join(qR.HitEntries[h.Key].KEGG_Pathways, ";")
-					output += "\t"
-					output += strings.Join(qR.HitEntries[h.Key].BioCyc, ";")
-					output += "\t"
-					output += strings.Join(qR.HitEntries[h.Key].Biocyc_Pathways, ";")
-					output += "\t"
-					output += qR.HitEntries[h.Key].Taxonomy
-				}
+				output += qR.HitEntries[h.Key].EntryId
+
 				if searchOptions.ExtractPositions {
 					output += "\t"
 					output += FormatPositionsToString(qR.SearchResults.PositionHits[h.Key])
 				}
+
+				if searchOptions.Annotations {
+					for _, annotation := range dbStats.Features {
+						output += "\t"
+						output += qR.HitEntries[h.Key].Features[annotation]
+					}
+				}
+
 				output += "\n"
 				w.Write([]byte(output))
 			}
