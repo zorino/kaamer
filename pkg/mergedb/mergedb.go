@@ -29,6 +29,7 @@ import (
 	"github.com/dgraph-io/badger"
 	"github.com/dgraph-io/badger/options"
 	"github.com/dgraph-io/badger/pb"
+	"github.com/golang/protobuf/proto"
 	copy "github.com/zorino/kaamer/internal/helper/copy"
 	"github.com/zorino/kaamer/pkg/kvstore"
 )
@@ -64,6 +65,15 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 
 	kvStores1 := kvstore.KVStoresNew(outPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, true, false)
 
+	dbStats := &kvstore.KStats{}
+	dbStatsByte, ok := kvStores1.ProteinStore.GetValue([]byte("db_stats"))
+	if !ok {
+		fmt.Println("Couldn't find db stats")
+		os.Exit(1)
+	}
+	proto.Unmarshal(dbStatsByte, dbStats)
+
+	// Merge all DB into the first DB
 	for _, db := range allDBs {
 
 		if db != "" {
@@ -71,6 +81,17 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 			fmt.Printf("# Merging database %s into %s...\n", db, outPath)
 
 			kvStores2 := kvstore.KVStoresNew(db, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, true, false)
+
+			_dbStats := &kvstore.KStats{}
+			_dbStatsByte, ok := kvStores2.ProteinStore.GetValue([]byte("db_stats"))
+			if !ok {
+				fmt.Println("Couldn't find db stats")
+				os.Exit(1)
+			}
+			proto.Unmarshal(_dbStatsByte, _dbStats)
+			dbStats.NumberOfProteins += _dbStats.NumberOfProteins
+			dbStats.NumberOfAA += _dbStats.NumberOfAA
+			dbStats.NumberOfKmers += _dbStats.NumberOfKmers
 
 			wg := new(sync.WaitGroup)
 			wg.Add(2)
@@ -94,6 +115,15 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 		}
 
 	}
+
+	data, err := proto.Marshal(dbStats)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	kvStores1.ProteinStore.OpenInsertChannel()
+	kvStores1.ProteinStore.AddValueToChannel([]byte("db_stats"), data, true)
+	kvStores1.ProteinStore.CloseInsertChannel()
+	kvStores1.ProteinStore.Flush()
 
 	kvStores1.KmerStore.DB.Flatten(12)
 	kvStores1.ProteinStore.DB.Flatten(12)
