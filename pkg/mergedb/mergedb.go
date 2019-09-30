@@ -102,11 +102,11 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 			wg.Add(2)
 			go func(wg *sync.WaitGroup) {
 				defer wg.Done()
-				kvStores1.KmerStore.GarbageCollect(10000000, 0.05)
+				kvStores1.KmerStore.GarbageCollect(1000, 0.5)
 			}(wg)
 			go func(wg *sync.WaitGroup) {
 				defer wg.Done()
-				kvStores1.ProteinStore.GarbageCollect(10000000, 0.05)
+				kvStores1.ProteinStore.GarbageCollect(1000, 0.5)
 			}(wg)
 			wg.Wait()
 
@@ -129,8 +129,8 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 	kvStores1.ProteinStore.DB.Flatten(12)
 
 	// Final garbage collect before closing
-	kvStores1.KmerStore.GarbageCollect(10000000, 0.05)
-	kvStores1.ProteinStore.GarbageCollect(10000000, 0.05)
+	kvStores1.KmerStore.GarbageCollect(1000, 0.5)
+	kvStores1.ProteinStore.GarbageCollect(1000, 0.5)
 	kvStores1.Close()
 
 }
