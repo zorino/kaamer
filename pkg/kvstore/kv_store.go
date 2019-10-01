@@ -114,7 +114,7 @@ func (kv *KVStore) AddValueChanWorker() {
 		}
 		nbOfTxs++
 		keySeen[string(i.Key)] = true
-		err := wb.Set(i.Key, i.Val) // Will create txns as needed.
+		err := wb.Set(i.Key, i.Val, 0) // Will create txns as needed.
 		if err != nil {
 			log.Fatal(err.Error())
 		}

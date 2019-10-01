@@ -73,7 +73,7 @@ func Restore(backupFile string, storeDir string, maxSize bool) {
 		log.Fatal(err.Error())
 	}
 
-	err = db.Load(backupFileReader, 1000)
+	err = db.Load(backupFileReader)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
