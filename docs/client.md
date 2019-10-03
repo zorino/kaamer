@@ -59,7 +59,7 @@ The kaamer CLI is a client to query (-search) a kaamer database.
 
    Genetic code number for translated search (with -t fastq or -t nt)
    One of the following : 1-15 except 7,8 (default 11 - bacteria)
-   See https://www.bioinformatics.org/JaMBW/2/3/TranslationTables.html#SG15
+   See https://www.bioinformatics.org/JaMBW/2/3/TranslationTables.html
 
 * -i Input File
 
