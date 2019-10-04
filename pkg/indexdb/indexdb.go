@@ -57,6 +57,15 @@ func NewIndexDB(dbPath string, maxSize bool, tableLoadingMode options.FileLoadin
 	os.RemoveAll(dbPath + "/kmer_store")
 	os.Rename(dbPath+"/kmer_store.new", dbPath+"/kmer_store")
 
+	kvStores := kvstore.KVStoresNew(dbPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, true, false)
+	fmt.Printf("# Flattening KmerStore...\n")
+	kvStores.KmerStore.DB.Flatten(2)
+	fmt.Printf("# Flattening ProteinStore...\n")
+	kvStores.ProteinStore.DB.Flatten(2)
+	fmt.Printf("# Flattening KCombStore...\n")
+	kvStores.KCombStore.DB.Flatten(2)
+	kvStores.Close()
+
 }
 
 func IndexStore(kvStores1 *kvstore.KVStores, newKmerStore *kvstore.KVStore, nbOfThreads int) {

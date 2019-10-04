@@ -58,11 +58,6 @@ func NewMakedb(dbPath string, inputPath string, offset uint, lenght uint, maxSiz
 
 	kvStores = kvstore.KVStoresNew(dbPath, threadByWorker, tableLoadingMode, valueLoadingMode, maxSize, false, false)
 
-	fmt.Printf("# Flattening KmerStore...\n")
-	kvStores.KmerStore.DB.Flatten(threadByWorker)
-	fmt.Printf("# Flattening ProteinStore...\n")
-	kvStores.ProteinStore.DB.Flatten(threadByWorker)
-
 	fmt.Printf("# GC KmerStore...\n")
 	kvStores.KmerStore.GarbageCollect(1000, 0.5)
 	fmt.Printf("# GC ProteinStore...\n")
