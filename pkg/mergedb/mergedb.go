@@ -63,7 +63,7 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 	copy.Dir(allDBs[0], outPath)
 	allDBs = allDBs[1:]
 
-	kvStores1 := kvstore.KVStoresNew(outPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, false, false)
+	kvStores1 := kvstore.KVStoresNew(outPath, 2, tableLoadingMode, valueLoadingMode, maxSize, false, false)
 
 	dbStats := &kvstore.KStats{}
 	dbStatsByte, ok := kvStores1.ProteinStore.GetValue([]byte("db_stats"))
@@ -80,7 +80,7 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 
 			fmt.Printf("# Merging database %s into %s...\n", db, outPath)
 
-			kvStores2 := kvstore.KVStoresNew(db, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, false, false)
+			kvStores2 := kvstore.KVStoresNew(db, 1, tableLoadingMode, valueLoadingMode, maxSize, false, false)
 
 			_dbStats := &kvstore.KStats{}
 			_dbStatsByte, ok := kvStores2.ProteinStore.GetValue([]byte("db_stats"))
@@ -96,7 +96,7 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 			wg := new(sync.WaitGroup)
 			wg.Add(2)
 			go MergeStores(kvStores1.KmerStore.KVStore, kvStores2.KmerStore.KVStore, nbOfThreads, wg)
-			go MergeStores(kvStores1.ProteinStore.KVStore, kvStores2.ProteinStore.KVStore, nbOfThreads, wg)
+			go MergeStores(kvStores1.ProteinStore.KVStore, kvStores2.ProteinStore.KVStore, 2, wg)
 			wg.Wait()
 
 			wg.Add(2)
