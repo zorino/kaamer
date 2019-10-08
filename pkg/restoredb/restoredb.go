@@ -52,7 +52,7 @@ func RestoreDB(backupPath string, output string, maxSize bool) {
 
 func Restore(backupFile string, storeDir string, maxSize bool) {
 
-	opts := badger.DefaultOptions
+	opts := badger.DefaultOptions(storeDir)
 	opts.Dir = storeDir
 	opts.ValueDir = storeDir
 	opts.TableLoadingMode = options.MemoryMap
@@ -73,7 +73,7 @@ func Restore(backupFile string, storeDir string, maxSize bool) {
 		log.Fatal(err.Error())
 	}
 
-	err = db.Load(backupFileReader)
+	err = db.Load(backupFileReader, 100)
 	if err != nil {
 		log.Fatal(err.Error())
 	}

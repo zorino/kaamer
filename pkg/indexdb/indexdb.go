@@ -152,7 +152,7 @@ func IndexStore(kvStores1 *kvstore.KVStores, newKmerStore *kvstore.KVStore, nbOf
 func CreateNewKmerStore(dbPath string, nbOfThreads int) *kvstore.KVStore {
 
 	// kmer_store options
-	k_opts := badger.DefaultOptions
+	k_opts := badger.DefaultOptions(dbPath + "/kmer_store.new")
 	k_opts.Dir = dbPath + "/kmer_store.new"
 	k_opts.ValueDir = dbPath + "/kmer_store.new"
 	k_opts.TableLoadingMode = options.MemoryMap
