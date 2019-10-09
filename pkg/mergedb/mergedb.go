@@ -63,7 +63,7 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 	copy.Dir(allDBs[0], outPath)
 	allDBs = allDBs[1:]
 
-	kvStores1 := kvstore.KVStoresNew(outPath, 2, tableLoadingMode, valueLoadingMode, maxSize, false, false)
+	kvStores1 := kvstore.KVStoresNew(outPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, false, false)
 
 	dbStats := &kvstore.KStats{}
 	dbStatsByte, ok := kvStores1.ProteinStore.GetValue([]byte("db_stats"))
@@ -102,11 +102,11 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 			wg.Add(2)
 			go func(wg *sync.WaitGroup) {
 				defer wg.Done()
-				kvStores1.KmerStore.GarbageCollect(1000, 0.5)
+				kvStores1.KmerStore.GarbageCollect(100, 0.5)
 			}(wg)
 			go func(wg *sync.WaitGroup) {
 				defer wg.Done()
-				kvStores1.ProteinStore.GarbageCollect(1000, 0.5)
+				kvStores1.ProteinStore.GarbageCollect(100, 0.5)
 			}(wg)
 			wg.Wait()
 
@@ -125,12 +125,12 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 	kvStores1.ProteinStore.CloseInsertChannel()
 	kvStores1.ProteinStore.Flush()
 
-	kvStores1.KmerStore.DB.Flatten(12)
-	kvStores1.ProteinStore.DB.Flatten(12)
+	kvStores1.KmerStore.DB.Flatten(4)
+	kvStores1.ProteinStore.DB.Flatten(4)
 
 	// Final garbage collect before closing
-	kvStores1.KmerStore.GarbageCollect(1000, 0.5)
-	kvStores1.ProteinStore.GarbageCollect(1000, 0.5)
+	kvStores1.KmerStore.GarbageCollect(100, 0.5)
+	kvStores1.ProteinStore.GarbageCollect(100, 0.5)
 	kvStores1.Close()
 
 }
@@ -203,6 +203,7 @@ func MergeStores(kvStore1 *kvstore.KVStore, kvStore2 *kvstore.KVStore, nbOfThrea
 
 	// Done.
 	kvStore1.CloseInsertChannel()
+	kvStore1.DB.Sync()
 	kvStore1.Flush()
 
 }
