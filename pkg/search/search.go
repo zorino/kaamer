@@ -163,13 +163,10 @@ func NewSearchResult(newSearchOptions SearchOptions, _dbStats kvstore.KStats, kv
 
 	switch searchOptions.SequenceType {
 	case READS:
-		fmt.Println("Searching for Reads file")
 		NucleotideSearch(searchOptions, kvStores, nbOfThreads, w, true, &cancelQuery)
 	case NUCLEOTIDE:
-		fmt.Println("Searching for Nucleotide file")
 		NucleotideSearch(searchOptions, kvStores, nbOfThreads, w, false, &cancelQuery)
 	case PROTEIN:
-		fmt.Println("Searching from Protein file")
 		ProteinSearch(searchOptions, kvStores, nbOfThreads, w, &cancelQuery)
 	}
 
