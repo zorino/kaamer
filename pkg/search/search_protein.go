@@ -39,11 +39,19 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 		close(queryChan)
 	}()
 
-	// Concurrent query results writer
-	queryResultChan := make(chan QueryResult, 5)
-	wgWriter := new(sync.WaitGroup)
-	wgWriter.Add(1)
-	go QueryResultResponseWriter(queryResultChan, w, wgWriter)
+	// Single query results writer
+	queryWriterChan := make(chan []byte, 10)
+	wgResWriter := new(sync.WaitGroup)
+	wgResWriter.Add(1)
+	go QueryResultWriter(queryWriterChan, w, wgResWriter)
+
+	// Concurrent query result handlers
+	queryResultChan := make(chan QueryResult, 10)
+	wgResHandler := new(sync.WaitGroup)
+	for i := 0; i < nbOfThreads; i++ {
+		wgResHandler.Add(1)
+		go QueryResultHandler(queryResultChan, queryWriterChan, w, wgResHandler)
+	}
 
 	wgSearch := new(sync.WaitGroup)
 
@@ -54,6 +62,10 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 		go func() {
 
 			defer wgSearch.Done()
+
+			if *cancelQuery {
+				return
+			}
 
 			queryResult := QueryResult{}
 			searchRes := new(SearchResults)
@@ -96,14 +108,10 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 				searchRes.Hits = sortMapByValue(searchRes.Counter.GetCountersMap())
 
 				queryResult = QueryResult{Query: q, SearchResults: searchRes, HitEntries: map[uint32]kvstore.Protein{}}
-				queryResult.FilterResults(0.2)
+				queryResult.FilterResults()
 				queryResult.FetchHitsInformation(kvStores)
 
 				queryResultChan <- queryResult
-
-				if *cancelQuery {
-					return
-				}
 
 			}
 
@@ -116,6 +124,10 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 	wgSearch.Wait()
 	close(queryResultChan)
 
-	wgWriter.Wait()
+	wgResHandler.Wait()
+
+	close(queryWriterChan)
+
+	wgResWriter.Wait()
 
 }

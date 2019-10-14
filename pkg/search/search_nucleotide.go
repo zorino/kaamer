@@ -43,11 +43,19 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 		close(queryChan)
 	}()
 
-	// Concurrent query results writer
+	// Single query results writer
+	queryWriterChan := make(chan []byte, 10)
+	wgResWriter := new(sync.WaitGroup)
+	wgResWriter.Add(1)
+	go QueryResultWriter(queryWriterChan, w, wgResWriter)
+
+	// Concurrent query result handlers
 	queryResultChan := make(chan QueryResult, 10)
-	wgWriter := new(sync.WaitGroup)
-	wgWriter.Add(1)
-	go QueryResultResponseWriter(queryResultChan, w, wgWriter)
+	wgResHandler := new(sync.WaitGroup)
+	for i := 0; i < nbOfThreads; i++ {
+		wgResHandler.Add(1)
+		go QueryResultHandler(queryResultChan, queryWriterChan, w, wgResHandler)
+	}
 
 	wgSearch := new(sync.WaitGroup)
 
@@ -63,11 +71,15 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 
 			for s := range queryChan {
 
+				if *cancelQuery {
+					return
+				}
+
 				// Concurrent query results writer
 				queryResultStoreChan := make(chan QueryResult, 10)
 				wgResultStore := new(sync.WaitGroup)
 				wgResultStore.Add(1)
-				go QueryResultStore(queryResultStoreChan, queryResultChan, w, wgResultStore, kvStores)
+				go QueryResultStore(queryResultStoreChan, queryResultChan, w, wgResultStore, kvStores, cancelQuery)
 
 				orfs := GetORFs(s.Sequence, searchOptions.GeneticCode)
 
@@ -111,12 +123,8 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 					wgMP.Wait()
 
 					searchRes.Hits = sortMapByValue(searchRes.Counter.GetCountersMap())
-					if len(searchRes.Hits) > 0 && searchRes.Hits[0].Kmatch >= 10 {
+					if len(searchRes.Hits) > 0 && searchRes.Hits[0].Kmatch >= minKMatch {
 						queryResultStoreChan <- QueryResult{Query: q, SearchResults: searchRes, HitEntries: map[uint32]kvstore.Protein{}}
-					}
-
-					if *cancelQuery {
-						return
 					}
 
 				}
@@ -135,11 +143,14 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 	wgSearch.Wait()
 	close(queryResultChan)
 
-	wgWriter.Wait()
+	wgResHandler.Wait()
+
+	close(queryWriterChan)
+	wgResWriter.Wait()
 
 }
 
-func QueryResultStore(queryResultStoreChan <-chan QueryResult, queryResultChan chan<- QueryResult, w http.ResponseWriter, wg *sync.WaitGroup, kvStores *kvstore.KVStores) {
+func QueryResultStore(queryResultStoreChan <-chan QueryResult, queryResultChan chan<- QueryResult, w http.ResponseWriter, wg *sync.WaitGroup, kvStores *kvstore.KVStores, cancelQuery *bool) {
 
 	defer wg.Done()
 	queryResults := []QueryResult{}
@@ -148,6 +159,10 @@ func QueryResultStore(queryResultStoreChan <-chan QueryResult, queryResultChan c
 	currentPos := 0
 
 	for qR := range queryResultStoreChan {
+
+		if *cancelQuery {
+			return
+		}
 
 		if lastQueryResult == nil {
 			queryResults = append(queryResults, qR)
@@ -170,7 +185,7 @@ func QueryResultStore(queryResultStoreChan <-chan QueryResult, queryResultChan c
 		if currentPos > lastPos {
 			queryResults = ResolveORFs(queryResults)
 			for _, _qR := range queryResults {
-				_qR.FilterResults(0.2)
+				_qR.FilterResults()
 				if _qR.SearchResults.Hits.Len() > 0 {
 					_qR.FetchHitsInformation(kvStores)
 					queryResultChan <- _qR
@@ -186,7 +201,7 @@ func QueryResultStore(queryResultStoreChan <-chan QueryResult, queryResultChan c
 
 	queryResults = ResolveORFs(queryResults)
 	for _, _qR := range queryResults {
-		_qR.FilterResults(0.2)
+		_qR.FilterResults()
 		if _qR.SearchResults.Hits.Len() > 0 {
 			_qR.FetchHitsInformation(kvStores)
 			queryResultChan <- _qR

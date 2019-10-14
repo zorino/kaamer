@@ -250,6 +250,10 @@ func parseSearchOptions(searchOpts *search.SearchOptions, w http.ResponseWriter,
 		searchOpts.Annotations = true
 	}
 
+	if strings.ToLower(r.FormValue("align")) == "true" {
+		searchOpts.Align = true
+	}
+
 	return nil
 
 }

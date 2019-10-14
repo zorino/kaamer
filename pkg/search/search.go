@@ -34,6 +34,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	cnt "github.com/zorino/counters"
+	"github.com/zorino/kaamer/pkg/align"
 	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
@@ -49,6 +50,8 @@ const (
 var (
 	searchOptions = SearchOptions{}
 	dbStats       kvstore.KStats
+	kMatchRatio   = 0.05      // at least 5% of kmer hits (on query)
+	minKMatch     = int64(10) // at least 10 kmer hits
 )
 
 type SearchOptions struct {
@@ -58,6 +61,7 @@ type SearchOptions struct {
 	GeneticCode      int
 	OutFormat        string
 	MaxResults       int
+	Align            bool
 	ExtractPositions bool
 	Annotations      bool
 }
@@ -101,8 +105,9 @@ type Query struct {
 }
 
 type Hit struct {
-	Key    uint32
-	Kmatch int64
+	Key       uint32
+	Kmatch    int64
+	Alignment *align.AlignmentResult
 }
 
 type HitList []Hit
@@ -132,7 +137,7 @@ func sortMapByValue(hitFrequencies *sync.Map) HitList {
 			if err != nil {
 				log.Fatal(err.Error())
 			}
-			pl[i] = Hit{uint32(idUint32), item.Value()}
+			pl[i] = Hit{uint32(idUint32), item.Value(), &align.AlignmentResult{}}
 			i++
 		}
 		return true
@@ -178,13 +183,13 @@ func NewSearchResult(newSearchOptions SearchOptions, _dbStats kvstore.KStats, kv
 
 }
 
-func (queryResult *QueryResult) FilterResults(kmerMatchRatio float64) {
+func (queryResult *QueryResult) FilterResults() {
 
 	var hitsToDelete []uint32
 	var lastGoodHitPosition = len(queryResult.SearchResults.Hits) - 1
 
 	for i, hit := range queryResult.SearchResults.Hits {
-		if (float64(hit.Kmatch)/float64(queryResult.Query.SizeInKmer)) < kmerMatchRatio || hit.Kmatch < 10 {
+		if (float64(hit.Kmatch)/float64(queryResult.Query.SizeInKmer)) < kMatchRatio || hit.Kmatch < minKMatch {
 			if lastGoodHitPosition == (len(queryResult.SearchResults.Hits) - 1) {
 				lastGoodHitPosition = i - 1
 			}
@@ -448,45 +453,121 @@ func (queryResult *QueryResult) FetchHitsInformation(kvStores *kvstore.KVStores)
 
 }
 
-func QueryResultResponseWriter(queryResult <-chan QueryResult, w http.ResponseWriter, wg *sync.WaitGroup) {
+func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byte, w http.ResponseWriter, wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
-	if searchOptions.OutFormat == "tsv" {
+	// SetResponseFormatAndHeader(w)
+	// firstResult := true
+	output := ""
 
-		// set http response header
-		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
-		w.WriteHeader(200)
+	for qR := range queryResult {
 
-		w.Write([]byte("QueryName\tQueryKSize\tQStart\tQEnd\tKMatch\tHit.Id"))
-
-		if searchOptions.ExtractPositions {
-			w.Write([]byte("\tQueryHit.Positions"))
-		}
-		if searchOptions.Annotations {
-			for _, annotation := range dbStats.Features {
-				w.Write([]byte("\t"))
-				w.Write([]byte(annotation))
+		// Launch Alignment
+		if searchOptions.Align {
+			for i, _ := range qR.SearchResults.Hits {
+				alignment, err := align.Align(qR.Query.Sequence, qR.HitEntries[qR.SearchResults.Hits[i].Key].Sequence, dbStats, "blosum62", 11, 1)
+				if err != nil {
+					continue
+				}
+				qR.SearchResults.Hits[i].Alignment = &alignment
 			}
 		}
-		w.Write([]byte("\n"))
-		output := ""
 
-		for qR := range queryResult {
+		// Write respopnse json
+		if searchOptions.OutFormat == "json" {
 
+			// if !firstResult {
+			// 	w.Write([]byte(","))
+			// }
+			data, err := json.Marshal(qR)
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+			queryWriter <- data
+			// w.Write(data)
+			// firstResult = false
+
+		}
+
+		// Write respopnse tsv + no alignement
+		if searchOptions.OutFormat == "tsv" && !searchOptions.Align {
 			for _, h := range qR.SearchResults.Hits {
+				posString := ""
 				output = ""
-				output += qR.Query.Name
+				output += strings.Split(qR.Query.Name, " ")[0]
+				output += "\t"
+				output += qR.HitEntries[h.Key].EntryId
+				output += "\t"
+				output += fmt.Sprintf("%.2f", (float32(h.Kmatch) / float32(qR.Query.SizeInKmer) * float32(100.00)))
 				output += "\t"
 				output += strconv.Itoa(qR.Query.SizeInKmer)
+				output += "\t"
+				output += strconv.Itoa(int(h.Kmatch))
+				output += "\t"
+				if searchOptions.ExtractPositions {
+					posString = FormatPositionsToString(qR.SearchResults.PositionHits[h.Key])
+					output += fmt.Sprintf("%d", strings.Count(posString, ","))
+				} else {
+					output += "N/A"
+				}
 				output += "\t"
 				output += strconv.Itoa(qR.Query.Location.StartPosition)
 				output += "\t"
 				output += strconv.Itoa(qR.Query.Location.EndPosition)
 				output += "\t"
-				output += strconv.Itoa(int(h.Kmatch))
+				output += "1" // subject always start at 1 in kmer
+				output += "\t"
+
+				// Only know subject lenght when adding annotation
+				if searchOptions.Annotations {
+					output += fmt.Sprintf("%d", qR.HitEntries[h.Key].Length)
+				} else {
+					output += "N/A"
+				}
+				if searchOptions.ExtractPositions {
+					output += "\t"
+					output += posString
+				}
+
+				if searchOptions.Annotations {
+					for _, annotation := range dbStats.Features {
+						output += "\t"
+						output += qR.HitEntries[h.Key].Features[annotation]
+					}
+				}
+				output += "\n"
+				// w.Write([]byte(output))
+				queryWriter <- []byte(output)
+			}
+		}
+
+		if searchOptions.OutFormat == "tsv" && searchOptions.Align {
+			for _, h := range qR.SearchResults.Hits {
+				output = ""
+				output += strings.Split(qR.Query.Name, " ")[0]
 				output += "\t"
 				output += qR.HitEntries[h.Key].EntryId
+				output += "\t"
+				output += fmt.Sprintf("%.2f", h.Alignment.Identity)
+				output += "\t"
+				output += fmt.Sprintf("%d", h.Alignment.Length)
+				output += "\t"
+				output += fmt.Sprintf("%d", h.Alignment.Mismatches)
+				output += "\t"
+				output += fmt.Sprintf("%d", h.Alignment.GapOpenings)
+				output += "\t"
+				output += fmt.Sprintf("%d", h.Alignment.QueryStart)
+				output += "\t"
+				output += fmt.Sprintf("%d", h.Alignment.QueryEnd)
+				output += "\t"
+				output += fmt.Sprintf("%d", h.Alignment.SubjectStart)
+				output += "\t"
+				output += fmt.Sprintf("%d", h.Alignment.SubjectEnd)
+				output += "\t"
+				output += fmt.Sprintf("%e", h.Alignment.EValue)
+				output += "\t"
+				output += fmt.Sprintf("%.2f", h.Alignment.BitScore)
 
 				if searchOptions.ExtractPositions {
 					output += "\t"
@@ -499,15 +580,75 @@ func QueryResultResponseWriter(queryResult <-chan QueryResult, w http.ResponseWr
 						output += qR.HitEntries[h.Key].Features[annotation]
 					}
 				}
-
 				output += "\n"
-				w.Write([]byte(output))
+				// w.Write([]byte(output))
+				queryWriter <- []byte(output)
 			}
 
 		}
 
 	}
 
+	// if searchOptions.OutFormat == "json" {
+	// 	// open results array
+	// 	w.Write([]byte("]"))
+	// }
+
+}
+
+func QueryResultWriter(queryResultOutput <-chan []byte, w http.ResponseWriter, wg *sync.WaitGroup) {
+
+	defer wg.Done()
+	SetResponseFormatAndHeader(w)
+	firstResult := true
+	for output := range queryResultOutput {
+		// Write respopnse json
+		if searchOptions.OutFormat == "json" {
+			if !firstResult {
+				w.Write([]byte(","))
+			}
+			w.Write(output)
+			firstResult = false
+		} else if searchOptions.OutFormat == "tsv" {
+			w.Write(output)
+		}
+	}
+	if searchOptions.OutFormat == "json" {
+		// open results array
+		w.Write([]byte("]"))
+	}
+
+}
+
+func SetResponseFormatAndHeader(w http.ResponseWriter) {
+
+	// Set output response header TSV
+	if searchOptions.OutFormat == "tsv" {
+
+		// set http response header
+		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
+		w.WriteHeader(200)
+
+		if !searchOptions.Align {
+			w.Write([]byte("QueryId\tSubjectId\t%KMatchIdentity\tQueryKLength\tKMatch\tGapOpen\tQStart\tQEnd\tSStart\tSEnd"))
+		} else {
+			// TSV output for alignment
+			w.Write([]byte("QueryId\tSubjectId\t%Identity\tAlnLength\tMismatches\tGapOpen\tQStart\tQEnd\tSStart\tSEnd\tEvalue\tBitscore"))
+		}
+		if searchOptions.ExtractPositions {
+			w.Write([]byte("\tQueryPositions"))
+		}
+		if searchOptions.Annotations {
+			for _, annotation := range dbStats.Features {
+				w.Write([]byte("\t"))
+				w.Write([]byte(annotation))
+			}
+		}
+		w.Write([]byte("\n"))
+
+	}
+
+	// Set output response header json
 	if searchOptions.OutFormat == "json" {
 
 		// set http response header
@@ -516,26 +657,6 @@ func QueryResultResponseWriter(queryResult <-chan QueryResult, w http.ResponseWr
 
 		// open results array
 		w.Write([]byte("["))
-
-		firstResult := true
-
-		for qR := range queryResult {
-
-			if !firstResult {
-				w.Write([]byte(","))
-			}
-			data, err := json.Marshal(qR)
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-			w.Write(data)
-
-			firstResult = false
-
-		}
-
-		// open results array
-		w.Write([]byte("]"))
 
 	}
 

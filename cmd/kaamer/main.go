@@ -60,6 +60,8 @@ func main() {
 
     (flag)
 
+      -aln          do an alignment for query / database hit matches
+
       -ann          add hit annotations in tsv fmt (always true in json fmt)
 
       -pos          add query positions that hit
@@ -75,6 +77,7 @@ func main() {
 	var maxResults = flag.Int("m", 10, "max number of results")
 	var outputFile = flag.String("o", "stdout", "output file")
 	var outputFormat = flag.String("fmt", "tsv", "output format")
+	var addAlignment = flag.Bool("aln", false, "add alignment flag")
 	var addAnnotation = flag.Bool("ann", false, "add annotation flag")
 	var addPositions = flag.Bool("pos", false, "add position flag")
 
@@ -136,6 +139,7 @@ func main() {
 		options.GeneticCode = *geneticCode
 		options.OutFormat = *outputFormat
 		options.MaxResults = *maxResults
+		options.Align = *addAlignment
 		options.ExtractPositions = *addPositions
 		options.Annotations = *addAnnotation
 
