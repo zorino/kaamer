@@ -17,6 +17,7 @@ limitations under the License.
 package searchcli
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
@@ -46,6 +47,7 @@ func NewSearchRequest(options SearchRequestOptions) {
 	bodyWriter.WriteField("gcode", strconv.Itoa(options.GeneticCode))
 	bodyWriter.WriteField("output-format", options.OutFormat)
 	bodyWriter.WriteField("max-results", strconv.Itoa(options.MaxResults))
+	bodyWriter.WriteField("align", strconv.FormatBool(options.Align))
 	bodyWriter.WriteField("annotations", strconv.FormatBool(options.Annotations))
 	bodyWriter.WriteField("positions", strconv.FormatBool(options.ExtractPositions))
 
@@ -87,9 +89,6 @@ func NewSearchRequest(options SearchRequestOptions) {
 
 	defer resp.Body.Close()
 
-	readerBuf := make([]byte, 4096)
-	bytesRead := 0
-
 	out := os.Stdout
 	if options.OutputFile != "stdout" {
 		out, err = os.Create(options.OutputFile)
@@ -98,20 +97,19 @@ func NewSearchRequest(options SearchRequestOptions) {
 		}
 	}
 
+	reader := bufio.NewReader(resp.Body)
+	runeSep := byte('\n')
+	if options.OutFormat == "json" {
+		runeSep = byte(',')
+	}
 	for {
-
-		n, err := resp.Body.Read(readerBuf)
-		bytesRead += n
+		chunk, err := reader.ReadBytes(runeSep)
 
 		if err == io.EOF {
-			fmt.Fprint(out, string(readerBuf[0:n]))
+			fmt.Fprint(out, string(chunk))
 			break
 		} else {
-			fmt.Fprint(out, string(readerBuf))
-		}
-
-		if err != nil {
-			log.Fatal("Error reading HTTP response: ", err.Error())
+			fmt.Fprint(out, string(chunk))
 		}
 
 	}
