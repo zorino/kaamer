@@ -35,7 +35,7 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 
 	go func() {
 		defer wgReader.Done()
-		GetQueriesFasta(file, queryChan, true)
+		GetQueriesFasta(file, queryChan, true, cancelQuery)
 		close(queryChan)
 	}()
 
@@ -62,10 +62,6 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 		go func() {
 
 			defer wgSearch.Done()
-
-			if *cancelQuery {
-				return
-			}
 
 			queryResult := QueryResult{}
 			searchRes := new(SearchResults)

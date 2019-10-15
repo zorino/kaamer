@@ -36,9 +36,9 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 	go func() {
 		defer wgReader.Done()
 		if fastq {
-			GetQueriesFastq(file, queryChan)
+			GetQueriesFastq(file, queryChan, cancelQuery)
 		} else {
-			GetQueriesFasta(file, queryChan, false)
+			GetQueriesFasta(file, queryChan, false, cancelQuery)
 		}
 		close(queryChan)
 	}()
@@ -71,10 +71,6 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 
 			for s := range queryChan {
 
-				if *cancelQuery {
-					return
-				}
-
 				// Concurrent query results writer
 				queryResultStoreChan := make(chan QueryResult, 10)
 				wgResultStore := new(sync.WaitGroup)
@@ -84,6 +80,10 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 				orfs := GetORFs(s.Sequence, searchOptions.GeneticCode)
 
 				for _, o := range orfs {
+
+					if *cancelQuery {
+						return
+					}
 
 					q := Query{
 						Sequence:   o.Sequence,

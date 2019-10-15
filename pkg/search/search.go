@@ -216,7 +216,7 @@ func (queryResult *QueryResult) FilterResults() {
 
 }
 
-func GetQueriesFasta(fileName string, queryChan chan<- Query, isProtein bool) {
+func GetQueriesFasta(fileName string, queryChan chan<- Query, isProtein bool, cancelQuery *bool) {
 
 	loc := Location{
 		StartPosition:     1,
@@ -273,6 +273,11 @@ func GetQueriesFasta(fileName string, queryChan chan<- Query, isProtein bool) {
 	queryName := ""
 
 	for scanner.Scan() {
+
+		if *cancelQuery {
+			break
+		}
+
 		l = scanner.Text()
 		if len(l) < 1 {
 			continue
@@ -312,7 +317,7 @@ func GetQueriesFasta(fileName string, queryChan chan<- Query, isProtein bool) {
 
 }
 
-func GetQueriesFastq(fileName string, queryChan chan<- Query) {
+func GetQueriesFastq(fileName string, queryChan chan<- Query, cancelQuery *bool) {
 
 	loc := Location{
 		StartPosition:     1,
@@ -371,6 +376,11 @@ func GetQueriesFastq(fileName string, queryChan chan<- Query) {
 	l := ""
 
 	for scanner.Scan() {
+
+		if *cancelQuery {
+			break
+		}
+
 		l = scanner.Text()
 		if len(l) < 1 {
 			continue
