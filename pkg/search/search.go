@@ -476,18 +476,11 @@ func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byt
 
 		// Write respopnse json
 		if searchOptions.OutFormat == "json" {
-
-			// if !firstResult {
-			// 	w.Write([]byte(","))
-			// }
 			data, err := json.Marshal(qR)
 			if err != nil {
 				fmt.Println(err.Error())
 			}
 			queryWriter <- data
-			// w.Write(data)
-			// firstResult = false
-
 		}
 
 		// Write respopnse tsv + no alignement
@@ -537,7 +530,6 @@ func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byt
 					}
 				}
 				output += "\n"
-				// w.Write([]byte(output))
 				queryWriter <- []byte(output)
 			}
 		}
@@ -581,18 +573,12 @@ func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byt
 					}
 				}
 				output += "\n"
-				// w.Write([]byte(output))
 				queryWriter <- []byte(output)
 			}
 
 		}
 
 	}
-
-	// if searchOptions.OutFormat == "json" {
-	// 	// open results array
-	// 	w.Write([]byte("]"))
-	// }
 
 }
 
