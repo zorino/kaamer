@@ -549,10 +549,17 @@ func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byt
 				output += "\t"
 				output += fmt.Sprintf("%d", h.Alignment.GapOpenings)
 				output += "\t"
-				output += fmt.Sprintf("%d", h.Alignment.QueryStart)
-				output += "\t"
-				output += fmt.Sprintf("%d", h.Alignment.QueryEnd)
-				output += "\t"
+				if searchOptions.SequenceType != PROTEIN {
+					output += strconv.Itoa(qR.Query.Location.StartPosition)
+					output += "\t"
+					output += strconv.Itoa(qR.Query.Location.EndPosition)
+					output += "\t"
+				} else {
+					output += fmt.Sprintf("%d", h.Alignment.QueryStart)
+					output += "\t"
+					output += fmt.Sprintf("%d", h.Alignment.QueryEnd)
+					output += "\t"
+				}
 				output += fmt.Sprintf("%d", h.Alignment.SubjectStart)
 				output += "\t"
 				output += fmt.Sprintf("%d", h.Alignment.SubjectEnd)
