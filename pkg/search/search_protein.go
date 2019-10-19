@@ -105,9 +105,10 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 
 				queryResult = QueryResult{Query: q, SearchResults: searchRes, HitEntries: map[uint32]kvstore.Protein{}}
 				queryResult.FilterResults()
-				queryResult.FetchHitsInformation(kvStores)
-
-				queryResultChan <- queryResult
+				if queryResult.SearchResults.Hits.Len() > 0 {
+					queryResult.FetchHitsInformation(kvStores)
+					queryResultChan <- queryResult
+				}
 
 			}
 
