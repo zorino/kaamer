@@ -195,31 +195,6 @@ func GetFrame(frameNumber int, dna string) string {
 
 }
 
-func ResolveORFs(queryResults []QueryResult) []QueryResult {
-
-	goodResults := new([]QueryResult)
-	var startPositions []int
-	var endPositions []int
-
-	// sort query with most hits first
-	sort.Slice(queryResults[:], func(i, j int) bool {
-		if len(queryResults[j].SearchResults.Hits) == 0 {
-			return true
-		} else if len(queryResults[i].SearchResults.Hits) == 0 {
-			return false
-		}
-		return queryResults[i].SearchResults.Hits[0].Kmatch > queryResults[j].SearchResults.Hits[0].Kmatch
-	})
-
-	for _, r := range queryResults {
-		SetBestStartCodon(&r)
-		PruneORFs(r, &startPositions, &endPositions, goodResults)
-	}
-
-	return *goodResults
-
-}
-
 func SetBestStartCodon(queryResult *QueryResult) {
 
 	var bestHits []Hit
@@ -293,6 +268,36 @@ func SetBestStartCodon(queryResult *QueryResult) {
 	}
 
 	queryResult.Query.Location.StartsAlternative = []int{}
+
+}
+
+/*
+Below are unused functions
+Keep for furtur references
+*/
+
+func ResolveORFs(queryResults []QueryResult) []QueryResult {
+
+	goodResults := new([]QueryResult)
+	var startPositions []int
+	var endPositions []int
+
+	// sort query with most hits first
+	sort.Slice(queryResults[:], func(i, j int) bool {
+		if len(queryResults[j].SearchResults.Hits) == 0 {
+			return true
+		} else if len(queryResults[i].SearchResults.Hits) == 0 {
+			return false
+		}
+		return queryResults[i].SearchResults.Hits[0].Kmatch > queryResults[j].SearchResults.Hits[0].Kmatch
+	})
+
+	for _, r := range queryResults {
+		SetBestStartCodon(&r)
+		PruneORFs(r, &startPositions, &endPositions, goodResults)
+	}
+
+	return *goodResults
 
 }
 

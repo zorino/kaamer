@@ -71,19 +71,9 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 
 			for s := range queryChan {
 
-				// Concurrent query results writer
-				queryResultStoreChan := make(chan QueryResult, 10)
-				wgResultStore := new(sync.WaitGroup)
-				wgResultStore.Add(1)
-				go QueryResultStore(queryResultStoreChan, queryResultChan, w, wgResultStore, kvStores, cancelQuery)
-
 				orfs := GetORFs(s.Sequence, searchOptions.GeneticCode)
 
 				for _, o := range orfs {
-
-					if *cancelQuery {
-						return
-					}
 
 					q := Query{
 						Sequence:   o.Sequence,
@@ -124,13 +114,20 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 
 					searchRes.Hits = sortMapByValue(searchRes.Counter.GetCountersMap())
 					if len(searchRes.Hits) > 0 && searchRes.Hits[0].Kmatch >= minKMatch {
-						queryResultStoreChan <- QueryResult{Query: q, SearchResults: searchRes, HitEntries: map[uint32]kvstore.Protein{}}
+						qR := QueryResult{Query: q, SearchResults: searchRes, HitEntries: map[uint32]kvstore.Protein{}}
+						SetBestStartCodon(&qR)
+						qR.FilterResults()
+						if qR.SearchResults.Hits.Len() > 0 {
+							qR.FetchHitsInformation(kvStores)
+							queryResultChan <- qR
+						}
+					}
+
+					if *cancelQuery {
+						return
 					}
 
 				}
-
-				close(queryResultStoreChan)
-				wgResultStore.Wait()
 
 			}
 
@@ -147,65 +144,5 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 
 	close(queryWriterChan)
 	wgResWriter.Wait()
-
-}
-
-func QueryResultStore(queryResultStoreChan <-chan QueryResult, queryResultChan chan<- QueryResult, w http.ResponseWriter, wg *sync.WaitGroup, kvStores *kvstore.KVStores, cancelQuery *bool) {
-
-	defer wg.Done()
-	queryResults := []QueryResult{}
-	lastQueryResult := &QueryResult{}
-	lastPos := 0
-	currentPos := 0
-
-	for qR := range queryResultStoreChan {
-
-		if *cancelQuery {
-			return
-		}
-
-		if lastQueryResult == nil {
-			queryResults = append(queryResults, qR)
-			lastQueryResult = &queryResults[len(queryResults)-1]
-			return
-		}
-
-		if qR.Query.Location.PlusStrand {
-			currentPos = qR.Query.Location.EndPosition
-		} else {
-			currentPos = qR.Query.Location.StartPosition
-		}
-
-		if lastQueryResult.Query.Location.PlusStrand {
-			lastPos = lastQueryResult.Query.Location.EndPosition
-		} else {
-			lastPos = lastQueryResult.Query.Location.StartPosition
-		}
-
-		if currentPos > lastPos {
-			queryResults = ResolveORFs(queryResults)
-			for _, _qR := range queryResults {
-				_qR.FilterResults()
-				if _qR.SearchResults.Hits.Len() > 0 {
-					_qR.FetchHitsInformation(kvStores)
-					queryResultChan <- _qR
-				}
-			}
-			queryResults = []QueryResult{}
-		}
-
-		queryResults = append(queryResults, qR)
-		lastQueryResult = &queryResults[len(queryResults)-1]
-
-	}
-
-	queryResults = ResolveORFs(queryResults)
-	for _, _qR := range queryResults {
-		_qR.FilterResults()
-		if _qR.SearchResults.Hits.Len() > 0 {
-			_qR.FetchHitsInformation(kvStores)
-			queryResultChan <- _qR
-		}
-	}
 
 }
