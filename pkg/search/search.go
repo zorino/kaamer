@@ -450,15 +450,17 @@ func (searchRes *SearchResults) StoreMatchPositions(matchPosition <-chan MatchPo
 func (queryResult *QueryResult) FetchHitsInformation(kvStores *kvstore.KVStores) {
 
 	for _, h := range queryResult.SearchResults.Hits {
-		proteinId := make([]byte, 4)
-		binary.BigEndian.PutUint32(proteinId, h.Key)
-		val, err := kvStores.ProteinStore.GetValueFromBadger(proteinId)
-		if err != nil {
-			return
+		if _, ok := queryResult.HitEntries[h.Key]; !ok {
+			proteinId := make([]byte, 4)
+			binary.BigEndian.PutUint32(proteinId, h.Key)
+			val, err := kvStores.ProteinStore.GetValueFromBadger(proteinId)
+			if err != nil {
+				return
+			}
+			prot := &kvstore.Protein{}
+			proto.Unmarshal(val, prot)
+			queryResult.HitEntries[h.Key] = *prot
 		}
-		prot := &kvstore.Protein{}
-		proto.Unmarshal(val, prot)
-		queryResult.HitEntries[h.Key] = *prot
 	}
 
 }
