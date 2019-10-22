@@ -39,7 +39,7 @@ type KVStores struct {
 }
 
 const (
-	MaxTableSize        = 4096 << 20
+	MaxTableSize        = 2048 << 20
 	MaxValueLogFileSize = 2048 << 20
 	MaxValueLogEntries  = 100000000
 )
