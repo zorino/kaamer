@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/dgraph-io/badger/options"
 	"github.com/zorino/kaamer/api"
@@ -63,6 +64,7 @@ func main() {
     (input)
       -i            input raw EMBL file
       -d            badger database directory (output)
+      -t            number of threads to use (default all)
       -offset       start processing raw uniprot file at protein number x
       -length       process x number of proteins (-1 == infinity)
       -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
@@ -75,6 +77,7 @@ func main() {
   -index            index the database for kmer samples association (kcomb_store)
     (input)
       -d            database directory
+      -t            number of threads to use (default all)
       -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
       -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
     (flag)
@@ -135,7 +138,7 @@ func main() {
 
 	var serverOpt = flag.Bool("server", false, "program")
 	var portNumber = flag.Int("p", 8321, "port argument")
-	var nbThreads = flag.Int("t", 0, "number of threads")
+	var nbThreads = flag.Int("t", runtime.NumCPU(), "number of threads")
 	var tmpFolder = flag.String("tmp", "/tmp/", "tmp folder for query import")
 
 	var makedbOpt = flag.Bool("make", false, "program")
@@ -242,7 +245,7 @@ func main() {
 			fmt.Println("No input file !")
 			os.Exit(1)
 		} else {
-			makedb.NewMakedb(*dbPath, *inputPath, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode, *noIndex)
+			makedb.NewMakedb(*dbPath, *inputPath, *nbThreads, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode, *noIndex)
 		}
 
 		os.Exit(0)
@@ -254,7 +257,7 @@ func main() {
 			fmt.Println("No db path !")
 			os.Exit(1)
 		} else {
-			indexdb.NewIndexDB(*dbPath, *maxSize, tableLoadingMode, valueLoadingMode)
+			indexdb.NewIndexDB(*dbPath, *nbThreads, *maxSize, tableLoadingMode, valueLoadingMode)
 		}
 
 		os.Exit(0)

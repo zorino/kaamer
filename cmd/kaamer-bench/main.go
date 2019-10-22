@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/dgraph-io/badger/options"
 	"github.com/pkg/profile"
@@ -44,7 +45,7 @@ var (
 
 	/*opendb options*/
 	portNumber = flag.Int("p", 8321, "port argument")
-	nbThreads  = flag.Int("t", 2, "number of threads")
+	nbThreads  = flag.Int("t", runtime.NumCPU(), "number of threads")
 	tmpFolder  = flag.String("tmp", "/tmp/", "tmp folder for query import")
 
 	/*makedb options*/
@@ -81,6 +82,7 @@ func main() {
     (input)
       -i            input raw EMBL file
       -d            badger database directory (output)
+      -t            number of threads to use (default all)
       -offset       start processing raw uniprot file at protein number x
       -length       process x number of proteins (-1 == infinity)
       -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
@@ -143,7 +145,7 @@ func main() {
 			fmt.Println("No input file !")
 			os.Exit(1)
 		} else {
-			makedb.NewMakedb(*dbPath, *inputPath, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode, *noIndex)
+			makedb.NewMakedb(*dbPath, *inputPath, *nbThreads, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode, *noIndex)
 		}
 	default:
 		os.Remove("cpu.pprof")

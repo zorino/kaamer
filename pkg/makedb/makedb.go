@@ -35,13 +35,11 @@ type ProteinBuf struct {
 	proteinEntry string
 }
 
-func NewMakedb(dbPath string, inputPath string, offset uint, lenght uint, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, noIndex bool) {
+func NewMakedb(dbPath string, inputPath string, threadByWorker int, offset uint, lenght uint, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, noIndex bool) {
 
 	runtime.GOMAXPROCS(128)
 
 	os.Mkdir(dbPath, 0700)
-
-	threadByWorker := runtime.NumCPU()
 
 	if threadByWorker < 1 {
 		threadByWorker = 1
@@ -66,7 +64,7 @@ func NewMakedb(dbPath string, inputPath string, offset uint, lenght uint, maxSiz
 	kvStores.Close()
 
 	if !noIndex {
-		indexdb.NewIndexDB(dbPath, maxSize, tableLoadingMode, valueLoadingMode)
+		indexdb.NewIndexDB(dbPath, threadByWorker, maxSize, tableLoadingMode, valueLoadingMode)
 	}
 
 }

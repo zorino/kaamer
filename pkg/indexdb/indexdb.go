@@ -32,13 +32,11 @@ import (
 	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
-func NewIndexDB(dbPath string, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
+func NewIndexDB(dbPath string, nbOfThreads int, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
 
 	// For SSD throughput (as done in badger/graphdb) see :
 	// https://groups.google.com/forum/#!topic/golang-nuts/jPb_h3TvlKE/discussion
 	runtime.GOMAXPROCS(512)
-
-	nbOfThreads := runtime.NumCPU()
 
 	if nbOfThreads < 1 {
 		nbOfThreads = 1
