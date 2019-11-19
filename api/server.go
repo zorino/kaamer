@@ -81,14 +81,20 @@ func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadi
 	r := chi.NewRouter()
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		http.RedirectHandler("/docs/", 302).ServeHTTP(w, r)
+		http.RedirectHandler("/web/", 302).ServeHTTP(w, r)
 	})
 
 	/* Documentation */
-	_, workDir, _, _ := runtime.Caller(1)
-	workDir = filepath.Dir(workDir)
-	workDir += "/../../docs"
-	DocRoutes(r, "/docs", http.Dir(workDir))
+	_, docDir, _, _ := runtime.Caller(1)
+	docDir = filepath.Dir(docDir)
+	docDir += "/../../docs"
+	StaticPages(r, "/docs", http.Dir(docDir))
+
+	/* Web Search */
+	_, webDir, _, _ := runtime.Caller(1)
+	webDir = filepath.Dir(webDir)
+	webDir += "/../../web/public/"
+	StaticPages(r, "/web", http.Dir(webDir))
 
 	/* API */
 	APIRoutes(r, "/api", kvStores)
@@ -260,7 +266,7 @@ func parseSearchOptions(searchOpts *search.SearchOptions, w http.ResponseWriter,
 
 // FileServer conveniently sets up a http.FileServer handler to serve
 // static files from a http.FileSystem.
-func DocRoutes(r chi.Router, path string, root http.FileSystem) {
+func StaticPages(r chi.Router, path string, root http.FileSystem) {
 
 	if strings.ContainsAny(path, "{}*") {
 		panic("FileServer does not permit URL parameters.")
