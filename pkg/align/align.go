@@ -1,9 +1,9 @@
 package align
 
 import (
-	// "encoding/json"
 	"fmt"
 	"math"
+	"regexp"
 
 	"github.com/biogo/biogo/align"
 	"github.com/biogo/biogo/align/matrix"
@@ -33,6 +33,10 @@ type Scorer interface {
 	Score() int
 }
 
+var (
+	re = regexp.MustCompile(`[uU]`)
+)
+
 // Make a new anonymous linear.Seq.
 func NewAnonLinearSeq(s string) *linear.Seq {
 	return &linear.Seq{Seq: alphabet.BytesToLetters([]byte(s))}
@@ -45,6 +49,9 @@ func Align(querySeq string, refSeq string, dbStats kvstore.KStats, subMatrix str
 	if err != nil {
 		return AlignmentResult{}, err
 	}
+
+	querySeq = re.ReplaceAllString(querySeq, "*")
+	refSeq = re.ReplaceAllString(refSeq, "*")
 
 	nwsa := NewAnonLinearSeq(querySeq)
 	nwsa.Alpha = alphabet.Protein
