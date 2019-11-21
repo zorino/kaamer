@@ -1,6 +1,6 @@
-# kAAmer
+# ![kAAmer logo](web/src/images/kaamer.svg) kAAmer
 
-![kAAmer logo](web/src/images/kaamer.svg)
+
 
 kAAmer is a GO package that provides the tools to produce and query a kmerized protein database.
 
