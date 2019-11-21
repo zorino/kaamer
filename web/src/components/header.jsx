@@ -1,4 +1,3 @@
-import { Link } from "gatsby";
 import PropTypes from "prop-types";
 import React from "react";
 import DescriptionIcon from '@material-ui/icons/Description';
@@ -15,7 +14,6 @@ const Header = ({ siteTitle }) => (
             margin: `0 auto`,
             maxWidth: 960,
             "text-align": `center`,
-            /* padding: `1.45rem 1.0875rem`, */
         }}
       >
         <h1 style={{ margin: 0 }}>
