@@ -82,7 +82,7 @@ class FastaForm extends React.Component {
         formData.append("file", new Blob([this.state.fasta], { type: 'text/csv' }));
 
         axios
-            .post(this.state.domain+"/api/search/protein", formData)
+            .post(this.state.domain+"../api/search/protein", formData)
             .then((res) => {
                 console.log(res);
                 this.setState({kaamerResults: res.data});
