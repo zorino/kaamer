@@ -84,7 +84,6 @@ class FastaForm extends React.Component {
         axios
             .post(this.state.domain+"../api/search/protein", formData)
             .then((res) => {
-                console.log(res);
                 this.setState({kaamerResults: res.data});
                 this.setState({showResult: true});
             });
