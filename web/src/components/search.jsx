@@ -22,7 +22,7 @@ import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 
 import Popover from '@material-ui/core/Popover';
-// import Paper from '@material-ui/core/Paper';
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
@@ -53,6 +53,7 @@ class FastaForm extends React.Component {
             fasta: '',
             img: '',
             showResult: false,
+            showProgress: false,
             kaamerResults: [],
             domain: "",
             openAnchor: false,
@@ -71,6 +72,8 @@ class FastaForm extends React.Component {
     }
 
     fetchKaamerResults(){
+
+        this.setState({showProgress: true});
 
         let formData = new FormData();
         formData.append("type", "file");
@@ -122,6 +125,15 @@ class FastaForm extends React.Component {
 
         let kaamerRes = "";
         const { anchorEl, openedPopoverId } = this.state;
+
+        if (this.state.showProgress) {
+            (
+                kaamerRes =
+                    <Box>
+                      <CircularProgress />
+                    </Box>
+            );
+        };
 
         if (this.state.showResult) {
             (
