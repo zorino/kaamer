@@ -73,7 +73,10 @@ class FastaForm extends React.Component {
 
     fetchKaamerResults(){
 
-        this.setState({showProgress: true});
+        this.setState({
+            showResult: false,
+            showProgress: true
+        });
 
         let formData = new FormData();
         formData.append("type", "file");
@@ -87,8 +90,11 @@ class FastaForm extends React.Component {
         axios
             .post(this.state.domain+"../api/search/protein", formData)
             .then((res) => {
-                this.setState({kaamerResults: res.data});
-                this.setState({showResult: true});
+                this.setState({
+                    showProgress: false,
+                    kaamerResults: res.data,
+                    showResult: true
+                });
             });
 
     }
@@ -109,6 +115,7 @@ class FastaForm extends React.Component {
             anchorEl: event.target,
         });
     }
+
     handlePopoverClose() {
         event.preventDefault();
         this.setState({
