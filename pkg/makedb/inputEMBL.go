@@ -92,15 +92,6 @@ func runEMBL(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset 
 		buf := make([]byte, 0, 64*1024)
 		scanner.Buffer(buf, 1024*1024)
 
-		// gz, err := gzip.NewReader(file)
-		// defer gz.Close()
-		// if err != nil {
-		// 	log.Fatal(err)
-		// }
-		// scanner := bufio.NewScanner(gz)
-		// buf := make([]byte, 0, 64*1024)
-		// scanner.Buffer(buf, 1024*1024)
-
 		proteinEntry := ""
 		line := ""
 
