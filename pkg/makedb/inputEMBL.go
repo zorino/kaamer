@@ -22,6 +22,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"regexp"
 	"strconv"
@@ -65,16 +66,44 @@ func runEMBL(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset 
 	go func() {
 		proteinNb := uint(0)
 		lastProtein := offset + length
-		gz, err := gzip.NewReader(file)
-		defer gz.Close()
+
+		buff := make([]byte, 512)
+		_, err = file.Read(buff)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
+			os.Exit(1)
 		}
-		scanner := bufio.NewScanner(gz)
+		filetype := http.DetectContentType(buff)
+		file.Seek(0, 0)
+
+		var scanner *bufio.Scanner
+
+		if filetype == "application/x-gzip" {
+			reader, err := gzip.NewReader(file)
+			if err != nil {
+				log.Fatal(err)
+			}
+			scanner = bufio.NewScanner(reader)
+		} else {
+			reader := bufio.NewReader(file)
+			scanner = bufio.NewScanner(reader)
+		}
+
 		buf := make([]byte, 0, 64*1024)
 		scanner.Buffer(buf, 1024*1024)
+
+		// gz, err := gzip.NewReader(file)
+		// defer gz.Close()
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
+		// scanner := bufio.NewScanner(gz)
+		// buf := make([]byte, 0, 64*1024)
+		// scanner.Buffer(buf, 1024*1024)
+
 		proteinEntry := ""
 		line := ""
+
 		for scanner.Scan() {
 			line = scanner.Text()
 			if line == "//" {
