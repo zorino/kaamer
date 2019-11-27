@@ -33,11 +33,16 @@ import (
 	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
+type ProteinBufEMBL struct {
+	proteinId    uint
+	proteinEntry string
+}
+
 var (
 	EMBL_DEF_FTS = []string{"ProteinName", "GeneName", "EC", "GO", "KEGG_ID", "BioCyc_ID", "HAMAP", "Organism", "TaxId", "FullTaxonomy"}
 )
 
-func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint, length uint) int {
+func runEMBL(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint, length uint) int {
 
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -46,14 +51,14 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint
 
 	defer file.Close()
 
-	jobs := make(chan ProteinBuf)
+	jobs := make(chan ProteinBufEMBL)
 	results := make(chan int32, 10)
 	wg := new(sync.WaitGroup)
 
 	// thread pool
 	for w := 1; w <= nbThreads; w++ {
 		wg.Add(1)
-		go readBuffer(jobs, results, wg, kvStores)
+		go readBufferEMBL(jobs, results, wg, kvStores)
 	}
 
 	// Go over a file line by line and queue up a ton of work
@@ -75,12 +80,12 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint
 			if line == "//" {
 				proteinNb += 1
 				if proteinNb >= lastProtein {
-					jobs <- ProteinBuf{proteinId: proteinNb, proteinEntry: proteinEntry}
+					jobs <- ProteinBufEMBL{proteinId: proteinNb, proteinEntry: proteinEntry}
 					break
 				}
 				if proteinNb >= offset {
 					if proteinEntry != "" {
-						jobs <- ProteinBuf{proteinId: proteinNb, proteinEntry: proteinEntry}
+						jobs <- ProteinBufEMBL{proteinId: proteinNb, proteinEntry: proteinEntry}
 						proteinEntry = ""
 					}
 				}
@@ -150,18 +155,18 @@ func run(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint
 
 }
 
-func readBuffer(jobs <-chan ProteinBuf, results chan<- int32, wg *sync.WaitGroup, kvStores *kvstore.KVStores) {
+func readBufferEMBL(jobs <-chan ProteinBufEMBL, results chan<- int32, wg *sync.WaitGroup, kvStores *kvstore.KVStores) {
 
 	defer wg.Done()
 	// line by line
 	for j := range jobs {
-		processProteinInput(j, results, kvStores)
+		processProteinInputEMBL(j, results, kvStores)
 		// results <- 1
 	}
 
 }
 
-func processProteinInput(proteinBuf ProteinBuf, results chan<- int32, kvStores *kvstore.KVStores) {
+func processProteinInputEMBL(proteinBuf ProteinBufEMBL, results chan<- int32, kvStores *kvstore.KVStores) {
 
 	textEntry := proteinBuf.proteinEntry
 	protein := &kvstore.Protein{}

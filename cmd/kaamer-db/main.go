@@ -62,7 +62,8 @@ func main() {
 
   -make             make the protein database
     (input)
-      -i            input raw EMBL file
+      -i            input file
+      -f            input format (embl, tsv, fasta)
       -d            badger database directory (output)
       -t            number of threads to use (default all)
       -offset       start processing raw uniprot file at protein number x
@@ -143,6 +144,7 @@ func main() {
 
 	var makedbOpt = flag.Bool("make", false, "program")
 	var inputPath = flag.String("i", "", "input file argument")
+	var inputFmt = flag.String("f", "", "input file format")
 	var dbPath = flag.String("d", "", "db path argument")
 	var makedbOffset = flag.Uint("offset", 0, "offset to process raw file")
 	var makedbLenght = flag.Uint("length", uint(MaxInt), "process x number of files")
@@ -244,8 +246,11 @@ func main() {
 		} else if *inputPath == "" {
 			fmt.Println("No input file !")
 			os.Exit(1)
+		} else if *inputFmt == "" {
+			fmt.Println("No input format (-f) !")
+			os.Exit(1)
 		} else {
-			makedb.NewMakedb(*dbPath, *inputPath, *nbThreads, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode, *noIndex)
+			makedb.NewMakedb(*dbPath, *inputPath, *inputFmt, *nbThreads, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode, *noIndex)
 		}
 
 		os.Exit(0)

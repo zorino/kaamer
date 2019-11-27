@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/dgraph-io/badger/options"
 	"github.com/zorino/kaamer/pkg/indexdb"
@@ -30,12 +31,7 @@ const (
 	KMER_SIZE = 7
 )
 
-type ProteinBuf struct {
-	proteinId    uint
-	proteinEntry string
-}
-
-func NewMakedb(dbPath string, inputPath string, threadByWorker int, offset uint, lenght uint, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, noIndex bool) {
+func NewMakedb(dbPath string, inputPath string, inputFmt string, threadByWorker int, offset uint, lenght uint, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, noIndex bool) {
 
 	runtime.GOMAXPROCS(128)
 
@@ -45,12 +41,23 @@ func NewMakedb(dbPath string, inputPath string, threadByWorker int, offset uint,
 		threadByWorker = 1
 	}
 
+	inputFmt = strings.ToLower(inputFmt)
+
 	fmt.Printf("# Making Database %s from %s\n", dbPath, inputPath)
 	fmt.Printf("# Using %d CPU\n", threadByWorker)
 
 	kvStores := kvstore.KVStoresNew(dbPath, threadByWorker, tableLoadingMode, valueLoadingMode, maxSize, false, false)
 	kvStores.OpenInsertChannel()
-	run(inputPath, kvStores, threadByWorker, offset, lenght)
+
+	switch inputFmt {
+	case "embl":
+		runEMBL(inputPath, kvStores, threadByWorker, offset, lenght)
+	case "tsv":
+		runTSV(inputPath, kvStores, threadByWorker, offset, lenght)
+	default:
+		fmt.Println("Input format unrecognized !")
+		os.Exit(1)
+	}
 	kvStores.CloseInsertChannel()
 	kvStores.Close()
 
