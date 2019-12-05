@@ -620,7 +620,7 @@ func QueryResultWriter(queryResultOutput <-chan []byte, w http.ResponseWriter, w
 	}
 	if searchOptions.OutFormat == "json" {
 		// open results array
-		w.Write([]byte("]"))
+		w.Write([]byte("]}"))
 	}
 
 }
@@ -661,6 +661,22 @@ func SetResponseFormatAndHeader(w http.ResponseWriter) {
 		w.WriteHeader(200)
 
 		// open results array
+		w.Write([]byte("{\"dbProteinFeatures\":["))
+		if searchOptions.Annotations {
+			first := true
+			for _, annotation := range dbStats.Features {
+				if first {
+					first = false
+				} else {
+					w.Write([]byte(","))
+				}
+				w.Write([]byte("\""))
+				w.Write([]byte(annotation))
+				w.Write([]byte("\""))
+			}
+		}
+		w.Write([]byte("]"))
+		w.Write([]byte(",\"results\":"))
 		w.Write([]byte("["))
 
 	}

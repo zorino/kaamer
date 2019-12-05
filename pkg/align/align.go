@@ -16,6 +16,7 @@ import ()
 
 type AlignmentResult struct {
 	Identity     float32
+	Similarity   float32
 	Length       int
 	Mismatches   int
 	GapOpenings  int
@@ -69,20 +70,37 @@ func Align(querySeq string, refSeq string, dbStats kvstore.KStats, subMatrix str
 
 	// Compute percent identity and nb. of mismatches
 	identity := float32(0)
+	similarity := float32(0)
 	nbPos := float32(0)
 	mismatches := 0
+
 	aString := fmt.Sprint(alnOutput[0])
 	bString := fmt.Sprint(alnOutput[1])
-	alnString := fmt.Sprintf("%s\n%s\n", aString, bString)
+
+	alnMatch := ""
+
 	for i, a := range aString {
 		if rune(bString[i]) == a {
 			identity += 1
-		} else if rune(bString[i]) != '-' && a != '-' {
-			mismatches += 1
+			similarity += 1
+			alnMatch += string(bString[i])
+		} else {
+			if rune(bString[i]) != '-' && a != '-' {
+				mismatches += 1
+			}
+			if GetAlnScoreAA(matrixScores, rune(bString[i]), a) > 0 {
+				similarity += 1
+				alnMatch += "+"
+			} else {
+				alnMatch += " "
+			}
 		}
 		nbPos += 1
 	}
 	identity = (identity / nbPos) * 100
+	similarity = (similarity / nbPos) * 100
+
+	alnString := fmt.Sprintf("%s\n%s\n%s", aString, alnMatch, bString)
 
 	// Compute raw score and gap openings
 	rawScore := 0
@@ -124,6 +142,7 @@ func Align(querySeq string, refSeq string, dbStats kvstore.KStats, subMatrix str
 
 	alnScore := AlignmentResult{
 		Identity:     identity,
+		Similarity:   similarity,
 		Length:       lenght,
 		Mismatches:   mismatches,
 		GapOpenings:  gapOpenings,

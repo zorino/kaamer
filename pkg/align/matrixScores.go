@@ -103,6 +103,8 @@ var (
 		"pam70_10_1":    MatrixScores{SubMatrix: matrix.PAM70, GapOpen: 10, GapExtend: 1, Lambda: 0.291, K: 0.091},
 		"pam70_9_1":     MatrixScores{SubMatrix: matrix.PAM70, GapOpen: 9, GapExtend: 1, Lambda: 0.270, K: 0.060},
 	}
+
+	AAPosInMatrix = map[rune]int{'-': 0, 'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8, 'I': 9, 'J': 10, 'K': 11, 'L': 12, 'M': 13, 'N': 14, 'P': 15, 'Q': 16, 'R': 17, 'S': 18, 'T': 19, 'V': 20, 'W': 21, 'X': 22, 'Y': 23, 'Z': 24, '*': 25}
 )
 
 func GetMatrixScores(subMatrix string, gapOpen int, gapExtend int) (MatrixScores, error) {
@@ -115,4 +117,8 @@ func GetMatrixScores(subMatrix string, gapOpen int, gapExtend int) (MatrixScores
 
 	return MatrixScores{}, errors.New("No matrix found")
 
+}
+
+func GetAlnScoreAA(mScores MatrixScores, aa1 rune, aa2 rune) int {
+	return mScores.SubMatrix[AAPosInMatrix[aa1]][AAPosInMatrix[aa2]]
 }
