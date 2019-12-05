@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"sync"
 
 	"github.com/dgraph-io/badger/options"
 	"github.com/pkg/profile"
@@ -50,6 +51,7 @@ var (
 
 	/*makedb options*/
 	inputPath    = flag.String("i", "", "input file argument")
+	inputFmt     = flag.String("f", "", "input file format")
 	makedbOffset = flag.Uint("offset", 0, "offset to process raw file")
 	makedbLenght = flag.Uint("length", uint(MaxInt), "process x number of files")
 	noIndex      = flag.Bool("noindex", false, "prevent the indexing of database")
@@ -80,7 +82,8 @@ func main() {
 
   -f makedb (profile a database build)
     (input)
-      -i            input raw EMBL file
+      -i            input file
+      -f            input file format (embl, tsv, fasta)
       -d            badger database directory (output)
       -t            number of threads to use (default all)
       -offset       start processing raw uniprot file at protein number x
@@ -144,8 +147,17 @@ func main() {
 		} else if *inputPath == "" {
 			fmt.Println("No input file !")
 			os.Exit(1)
+		} else if *inputFmt == "" {
+			fmt.Println("No input format (-f) !")
+			os.Exit(1)
 		} else {
-			makedb.NewMakedb(*dbPath, *inputPath, *nbThreads, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode, *noIndex)
+			stop := false
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go NewMonitor(10, &stop, &wg)
+			makedb.NewMakedb(*dbPath, *inputPath, *inputFmt, *nbThreads, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode, *noIndex)
+			stop = true
+			wg.Wait()
 		}
 	default:
 		os.Remove("cpu.pprof")
