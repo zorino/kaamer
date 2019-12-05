@@ -1,44 +1,37 @@
 import PropTypes from "prop-types";
 import React from "react";
 import DescriptionIcon from '@material-ui/icons/Description';
+import Grid from '@material-ui/core/Grid';
+import Logo from '../images/kaamer_light.svg';
 
 const Header = ({ siteTitle }) => (
     <header
       style={{
           background: `#36454F`,
-          padding: `1em`
+          padding: `0.5em`,
       }}
     >
-      <div
-        style={{
-            margin: `0 auto`,
-            maxWidth: 960,
-            "text-align": `center`,
-        }}
-      >
-        <h1 style={{ margin: 0 }}>
+      <Grid container>
+        <Grid item xs >
           <a href="../docs/#/"
+             target="_blank"
              style={{
                  color: `white`,
                  textDecoration: `none`,
              }}
           >
-            <DescriptionIcon />
+            <DescriptionIcon style={{height: "100%"}} />
           </a>
 
+        </Grid>
+        <Grid item xs={6} style={{"text-align": "center"}}>
+          <img src={Logo} alt={siteTitle} style={{width: "60px", "margin-bottom": "0px !important"}}/>
+        </Grid>
+        <Grid item xs>
+        </Grid>
 
-          <span
-            style={{
-                color: `white`,
-                textDecoration: `none`,
-                "margin-left": `20px`,
-            }}
-          >
-            {siteTitle}
-          </span>
+      </Grid>
 
-        </h1>
-      </div>
     </header>
 );
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import axios from "axios";
 import TextField from '@material-ui/core/TextField';
 import FormControl from '@material-ui/core/FormControl';
@@ -8,7 +8,9 @@ import Container from '@material-ui/core/Container';
 import Grid from '@material-ui/core/Grid';
 import Box from '@material-ui/core/Box';
 import SendIcon from '@material-ui/icons/Send';
-import InfoIcon from '@material-ui/icons/Info';
+// import InfoIcon from '@material-ui/icons/Info';
+import SubjectIcon from '@material-ui/icons/Subject';
+import Paper from '@material-ui/core/Paper';
 
 import ExpansionPanel from '@material-ui/core/ExpansionPanel';
 import ExpansionPanelSummary from '@material-ui/core/ExpansionPanelSummary';
@@ -24,10 +26,11 @@ import TableRow from '@material-ui/core/TableRow';
 import Popover from '@material-ui/core/Popover';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
+// import List from '@material-ui/core/List';
 
 import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
+
+import Alignment from './alignment';
 
 const theme = createMuiTheme({
     palette: {
@@ -38,10 +41,21 @@ const theme = createMuiTheme({
     overrides: {
         MuiPaper: {
             root: {
-                padding: '10px',
+                padding: '0px',
             }
         },
-    }
+        MuiTableCell: {
+            root: {
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+            }
+        },
+        MuiExpansionPanel: {
+            root: {
+                'max-width': '1200px'
+            }
+        }
+    },
 });
 
 class FastaForm extends React.Component {
@@ -83,17 +97,18 @@ class FastaForm extends React.Component {
         formData.append("gcode", "11");
         formData.append("output-format", "json");
         formData.append("align", "true");
-        formData.append("annotation", "true");
-        formData.append("positions", "true");
+        formData.append("annotations", "true");
+        formData.append("positions", "false");
         formData.append("file", new Blob([this.state.fasta], { type: 'text/csv' }));
 
         axios
-            .post(this.state.domain+"../api/search/protein", formData)
+            .post(this.state.domain+"../api/search/protein", formData, {headers: {'Accept': '*/*'}})
             .then((res) => {
                 this.setState({
                     showProgress: false,
-                    kaamerResults: res.data,
-                    showResult: true
+                    showResult: true,
+                    kaamerResults: res.data.results,
+                    kaamerFeatures: res.data.dbProteinFeatures,
                 });
             });
 
@@ -104,8 +119,16 @@ class FastaForm extends React.Component {
     }
 
     handleSubmit(event) {
-        this.fetchKaamerResults();
+        if (this.state.fasta != "") {
+            this.fetchKaamerResults();
+        }
         event.preventDefault();
+    }
+
+    keydownHandler(event){
+        if(event.keyCode===13 && event.ctrlKey) {
+            this.handleSubmit(event);
+        }
     }
 
     handlePopoverOpen(event, popoverId) {
@@ -123,10 +146,6 @@ class FastaForm extends React.Component {
             anchorEl: null,
         });
     }
-
-    // getBestHit(item) {
-
-    // }
 
     render() {
 
@@ -152,90 +171,107 @@ class FastaForm extends React.Component {
                               expandIcon={<ExpandMoreIcon />}
                               aria-controls="panel1a-content"
                               id="panel1a-header">
-                              <Typography>
-                                Query : {item.Query.Name}
-                              </Typography>
-                              <Typography style={{"margin-left": `20px`}}>
-                                |
-                              </Typography>
-                              <Typography style={{"margin-left": `20px`}}>
-                                Best Hit: {item.HitEntries[item.SearchResults.Hits[0].Key].EntryId} ({item.SearchResults.Hits[0].Alignment.Identity.toFixed(2)}%)
+                              <Typography style={{
+                                  heading: {
+                                      fontSize: theme.typography.pxToRem(15),
+                                      fontWeight: theme.typography.fontWeightRegular,
+                                  },
+                              }}>
+                                Query: {item.Query.Name}
+                                <span style={{"margin-left": `20px`}}>
+                                  |
+                                </span>
+                                <span style={{"margin-left": `20px`}}>
+                                  Best Hit: {item.HitEntries[item.SearchResults.Hits[0].Key].EntryId} - {item.HitEntries[item.SearchResults.Hits[0].Key].Features["ProteinName"]} ({item.SearchResults.Hits[0].Alignment.Identity.toFixed(2)}%)
+                                </span>
                               </Typography>
                             </ExpansionPanelSummary>
-                          <ExpansionPanelDetails>
-                              <Table size="small">
-                                <TableHead>
-                                  <TableRow>
-                                    <TableCell>Hit</TableCell>
-                                    <TableCell>%Identity</TableCell>
-                                    <TableCell>AlnLength</TableCell>
-                                    <TableCell>Mismatches</TableCell>
-                                    <TableCell>GapOpenings</TableCell>
-                                    <TableCell>QueryStart</TableCell>
-                                    <TableCell>QueryEnd</TableCell>
-                                    <TableCell>HitStart</TableCell>
-                                    <TableCell>HitEnd</TableCell>
-                                    <TableCell>EValue</TableCell>
-                                    <TableCell>BitScore</TableCell>
-                                  </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                  {item.SearchResults.Hits.map(hit => (
-                                      <TableRow>
-                                        <TableCell>
-
-                                          <Typography noWrap>
-                                            <Button
-                                              variant="contained"
-                                              color="primary"
-                                              endIcon={<InfoIcon/>}
-                                              onClick={(e) => this.handlePopoverOpen(e, item.HitEntries[hit.Key].EntryId)}>
-                                              {item.HitEntries[hit.Key].EntryId}
-                                            </Button>
-                                          </Typography>
-                                          <Popover
-                                            open={openedPopoverId === item.HitEntries[hit.Key].EntryId}
-                                            onClose={this.handlePopoverClose}
-                                            anchorEl={anchorEl}
-                                            anchorOrigin={{
-                                                vertical: 'bottom',
-                                                horizontal: 'right',
-                                            }}
-                                            transformOrigin={{
-                                                vertical: 'top',
-                                                horizontal: 'center',
-                                            }}
-                                          >
-
-                                            <Typography variant="h5" component="h5">
-                                              Hit : {item.HitEntries[hit.Key].EntryId}
+                            <ExpansionPanelDetails>
+                              <Paper style={{
+                                  'width': '100%',
+                                  overflowX: 'auto'}} >
+                                <Table size="small">
+                                  <TableHead>
+                                    <TableRow>
+                                      <TableCell>Hit</TableCell>
+                                      <TableCell>%Identity</TableCell>
+                                      <TableCell>AlnLength</TableCell>
+                                      <TableCell>Mismatches</TableCell>
+                                      <TableCell>GapOpenings</TableCell>
+                                      <TableCell>QueryStart</TableCell>
+                                      <TableCell>QueryEnd</TableCell>
+                                      <TableCell>HitStart</TableCell>
+                                      <TableCell>HitEnd</TableCell>
+                                      <TableCell>EValue</TableCell>
+                                      <TableCell>BitScore</TableCell>
+                                      {Object.entries(this.state.kaamerFeatures).map(([_, ft]) => (
+                                          <TableCell>{ft}</TableCell>
+                                      ))}
+                                    </TableRow>
+                                  </TableHead>
+                                  <TableBody>
+                                    {item.SearchResults.Hits.map(hit => (
+                                        <TableRow>
+                                          <TableCell style={{"max-width": "100%"}}>
+                                            <Typography>
+                                              <Button
+                                                variant="contained"
+                                                color="primary"
+                                                endIcon={<SubjectIcon/>}
+                                                onClick={(e) => this.handlePopoverOpen(e, item.HitEntries[hit.Key].EntryId)}>
+                                                {item.HitEntries[hit.Key].EntryId}
+                                              </Button>
                                             </Typography>
-                                            <List>
-                                              {Object.entries(item.HitEntries[hit.Key].Features).map(([ft, val]) => (
-                                                  <ListItem>
-                                                    <Typography>
-                                                      {ft} : {val}
-                                                    </Typography>
-                                                  </ListItem>
-                                              ))}
-                                            </List>
-                                          </Popover>
 
-                                        </TableCell>
-                                        <TableCell>{hit.Alignment.Identity.toFixed(2)}</TableCell>
-                                        <TableCell>{hit.Alignment.Length}</TableCell>
-                                        <TableCell>{hit.Alignment.Mismatches}</TableCell>
-                                        <TableCell>{hit.Alignment.GapOpenings}</TableCell>
-                                        <TableCell>{hit.Alignment.QueryStart}</TableCell>
-                                        <TableCell>{hit.Alignment.QueryEnd}</TableCell>
-                                        <TableCell>{hit.Alignment.SubjectStart}</TableCell>
-                                        <TableCell>{hit.Alignment.SubjectEnd}</TableCell>
-                                        <TableCell><Typography noWrap>{hit.Alignment.EValue.toPrecision(2)}</Typography></TableCell>
-                                        <TableCell>{hit.Alignment.BitScore.toFixed(2)}</TableCell>
-                                      </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
+                                            <Popover
+                                              open={openedPopoverId === item.HitEntries[hit.Key].EntryId}
+                                              onClose={this.handlePopoverClose}
+                                              anchorEl={anchorEl}
+                                              anchorOrigin={{
+                                                  vertical: 'bottom',
+                                                  horizontal: 'right',
+                                              }}
+                                              transformOrigin={{
+                                                  vertical: 'top',
+                                                  horizontal: 'center',
+                                              }}
+                                            >
+
+                                              <Typography variant="h5" component="h5">
+                                                Query: {item.Query.Name} | Hit: {item.HitEntries[hit.Key].EntryId}
+                                              </Typography>
+
+                                              <Typography>
+                                                Sequence Alignment
+                                              </Typography>
+
+                                              <Alignment
+                                                seq_0={hit.Alignment.AlnString.split("\n")[0]}
+                                                seq_1={hit.Alignment.AlnString.split("\n")[1]}
+                                                seq_2={hit.Alignment.AlnString.split("\n")[2]}
+                                              />
+
+                                            </Popover>
+
+                                          </TableCell>
+                                          <TableCell>{hit.Alignment.Identity.toFixed(2)}</TableCell>
+                                          <TableCell>{hit.Alignment.Length}</TableCell>
+                                          <TableCell>{hit.Alignment.Mismatches}</TableCell>
+                                          <TableCell>{hit.Alignment.GapOpenings}</TableCell>
+                                          <TableCell>{hit.Alignment.QueryStart}</TableCell>
+                                          <TableCell>{hit.Alignment.QueryEnd}</TableCell>
+                                          <TableCell>{hit.Alignment.SubjectStart}</TableCell>
+                                          <TableCell>{hit.Alignment.SubjectEnd}</TableCell>
+                                          <TableCell><Typography noWrap>{hit.Alignment.EValue.toPrecision(2)}</Typography></TableCell>
+                                          <TableCell>{hit.Alignment.BitScore.toFixed(2)}</TableCell>
+                                          {Object.entries(this.state.kaamerFeatures).map(([_, ft]) => (
+                                              <TableCell>{item.HitEntries[hit.Key].Features[ft]}</TableCell>
+                                          ))}
+                                        </TableRow>
+                                    ))}
+                                  </TableBody>
+                                </Table>
+                              </Paper>
                             </ExpansionPanelDetails>
                           </ExpansionPanel>
                       ))}
@@ -246,7 +282,7 @@ class FastaForm extends React.Component {
         return (
             <MuiThemeProvider theme={theme}>
 
-              <div style={{"margin-top":`20px`}}>
+              <div style={{"margin-top":`20px`}} onKeyDown={(e) => this.keydownHandler(e)}>
 
                 <Container fixed>
 
