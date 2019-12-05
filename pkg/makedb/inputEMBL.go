@@ -192,7 +192,7 @@ func processProteinInputEMBL(proteinBuf ProteinBufEMBL, results chan<- int32, kv
 	protein := &kvstore.Protein{}
 	features := map[string]string{}
 
-	reg := regexp.MustCompile(` \{.*\}\.`)
+	reg := regexp.MustCompile(` \{.*\};`)
 	var fields []string
 
 	for _, l := range strings.Split(textEntry, "\n") {
