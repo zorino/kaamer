@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	KMER_SIZE = 7
+	KMER_SIZE = 7 // 7 is currently the only supported kmer size
 )
 
 func NewMakedb(dbPath string, inputPath string, inputFmt string, threadByWorker int, offset uint, lenght uint, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, noIndex bool) {
@@ -54,6 +54,10 @@ func NewMakedb(dbPath string, inputPath string, inputFmt string, threadByWorker 
 		runEMBL(inputPath, kvStores, threadByWorker, offset, lenght)
 	case "tsv":
 		runTSV(inputPath, kvStores, threadByWorker, offset, lenght)
+	case "gbk":
+		runGBK(inputPath, kvStores, threadByWorker, offset, lenght)
+	case "genbank":
+		runGBK(inputPath, kvStores, threadByWorker, offset, lenght)
 	default:
 		fmt.Println("Input format unrecognized !")
 		os.Exit(1)
