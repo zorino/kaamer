@@ -235,9 +235,7 @@ func processProteinInputEMBL(proteinBuf ProteinBufEMBL, results chan<- int32, kv
 			} else {
 				features["Organism"] += strings.TrimRight(l[5:], ".")
 			}
-			// features["Organism"] = strings.TrimRight(l[5:], ".")
 		case "OC":
-			features["FullTaxonomy"] += l[5:]
 			if features["FullTaxonomy"] != "" {
 				features["FullTaxonomy"] += " "
 			}
