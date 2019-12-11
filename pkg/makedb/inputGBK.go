@@ -25,7 +25,6 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	// "strconv"
 	"strings"
 	"sync"
 	"time"
@@ -40,7 +39,7 @@ type ProteinBufGBK struct {
 }
 
 var (
-	GBK_DEF_FTS = []string{"ProteinName", "Organism", "TaxId", "FullTaxonomy"}
+	GBK_DEF_FTS = []string{"ProteinName", "Organism", "FullTaxonomy"}
 )
 
 func runGBK(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset uint, length uint) int {
