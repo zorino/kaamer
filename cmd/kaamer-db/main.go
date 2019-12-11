@@ -157,6 +157,7 @@ func main() {
 
 	var downloadOpt = flag.Bool("download", false, "download uniprotkb or kaamer db")
 	var uniprotOpt = flag.String("uniprot", "", "uniprot taxon")
+	var refseqOpt = flag.String("refseq", "", "refseq release (taxon)")
 	var keggOpt = flag.Bool("kegg", false, "download kegg pathways")
 	var biocycOpt = flag.Bool("biocyc", false, "download biocyc pathways")
 
@@ -216,6 +217,13 @@ func main() {
 			} else {
 				downloaddb.DownloadUniprot(*outPath, *uniprotOpt)
 			}
+		} else if *refseqOpt != "" {
+			if !downloaddb.NCBI_refseq_valid[*refseqOpt] {
+				fmt.Println("Invalid taxon !")
+				os.Exit(1)
+			} else {
+				downloaddb.DownloadRefseq(*outPath, *refseqOpt)
+			}
 		} else if *keggOpt != false {
 			if *dbPath == "" {
 				fmt.Println("No input db path !")
@@ -231,7 +239,7 @@ func main() {
 				downloaddb.DownloadBiocyc(*dbPath)
 			}
 		} else {
-			fmt.Println("Need uniprot, kegg or biocyc option !")
+			fmt.Println("Need uniprot, refseq, kegg or biocyc option !")
 			os.Exit(1)
 		}
 
