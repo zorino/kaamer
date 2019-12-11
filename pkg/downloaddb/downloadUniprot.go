@@ -17,17 +17,10 @@ limitations under the License.
 package downloaddb
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
-	"time"
-
-	"github.com/dustin/go-humanize"
-	"github.com/jlaffaye/ftp"
 )
 
 const (
@@ -49,36 +42,6 @@ var (
 		"viruses":       true,
 	}
 )
-
-type TSVOutputWriter struct {
-	File     *os.File
-	Buffer   *bufio.Writer
-	Iterator int
-}
-
-// WriteCounter counts the number of bytes written to it. It implements to the io.Writer
-// interface and we can pass this into io.TeeReader() which will report progress on each
-// write cycle.
-type WriteCounter struct {
-	Total uint64
-}
-
-func (wc *WriteCounter) Write(p []byte) (int, error) {
-	n := len(p)
-	wc.Total += uint64(n)
-	wc.PrintProgress()
-	return n, nil
-}
-
-func (wc WriteCounter) PrintProgress() {
-	// Clear the line by using a character return to go back to the start and remove
-	// the remaining characters by filling it with spaces
-	fmt.Printf("\r%s", strings.Repeat(" ", 35))
-
-	// Return again and print current status of download
-	// We use the humanize package to print the bytes in a meaningful way (e.g. 10 MB)
-	fmt.Printf("\r  Downloading... %s complete", humanize.Bytes(wc.Total))
-}
 
 func DownloadUniprot(outputFile string, taxon string) {
 
@@ -103,11 +66,11 @@ func DownloadUniprot(outputFile string, taxon string) {
 	trembl_path := Uniprot_ftp_taxonomic_path + "uniprot_trembl_" + taxon + ".dat.gz"
 
 	fmt.Println("# Downloading uniprotkb - LICENSE..")
-	IODownloadFile(dstFileLicense, license_path)
+	IODownloadFTP(dstFileLicense, Uniprot_ftp_host, license_path)
 	fmt.Printf("# Downloading uniprotkb - swissprot (%s)..\n", taxon)
-	IODownloadFile(dstFile, sprot_path)
+	IODownloadFTP(dstFile, Uniprot_ftp_host, sprot_path)
 	fmt.Printf("# Downloading uniprotkb - trembl (%s)..\n", taxon)
-	IODownloadFile(dstFile, trembl_path)
+	IODownloadFTP(dstFile, Uniprot_ftp_host, trembl_path)
 
 	err = dstFile.Close()
 	if err != nil {
@@ -120,33 +83,5 @@ func DownloadUniprot(outputFile string, taxon string) {
 	}
 
 	fmt.Printf("See LICENSE : %s\n", outputPath+"/LICENSE")
-
-}
-
-func IODownloadFile(dstFile *os.File, path string) {
-
-	c, err := ftp.Dial(Uniprot_ftp_host, ftp.DialWithTimeout(5*time.Second))
-	if err != nil {
-		fmt.Println("Error c.Dial")
-		log.Fatal(err.Error())
-	}
-
-	err = c.Login("anonymous", "anonymous")
-	if err != nil {
-		fmt.Println("Error c.Login")
-		log.Fatal(err.Error())
-	}
-
-	reader, err := c.Retr(path)
-	if err != nil {
-		fmt.Println("Error c.Retr")
-		log.Fatal(err.Error())
-	}
-
-	_, err = io.Copy(dstFile, reader)
-
-	if err := c.Quit(); err != nil {
-		log.Fatal(err)
-	}
 
 }
