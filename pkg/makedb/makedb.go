@@ -58,6 +58,8 @@ func NewMakedb(dbPath string, inputPath string, inputFmt string, threadByWorker 
 		runGBK(inputPath, kvStores, threadByWorker, offset, lenght)
 	case "genbank":
 		runGBK(inputPath, kvStores, threadByWorker, offset, lenght)
+	case "fasta":
+		runFASTA(inputPath, kvStores, threadByWorker, offset, lenght)
 	default:
 		fmt.Println("Input format unrecognized !")
 		os.Exit(1)
