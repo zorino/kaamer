@@ -85,14 +85,19 @@ func main() {
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
 
-  -download         download databases (Uniprot, KeggPathways, BiocycPathways)
+  -download         download databases (Uniprot, RefSeq, KeggPathways, BiocycPathways)
     (input)
       -o            output file (default: uniprotkb.txt.gz)
       -d            database directory (only with kegg and biocyc options)
 
-      -uniprot      download raw embl files for one of the following taxon :
+      -uniprot      download raw embl file for one of the following taxon :
                     archaea,bacteria,fungi,human,invertebrates,mammals,
                     plants,rodents,vertebrates,viruses
+
+      -refseq       download raw genbank file for one of the following taxon :
+                    archaea, bacteria, fungi, invertebrate, mitochondrion, plant, plasmid,
+                    plastid, protozoa, viral, vertebrate_mammalian, vertebrate_other
+
     (flag)
       -kegg         download kegg pathways protein association and merge into database
       -biocyc       download biocyc pathways protein association and merge into database
