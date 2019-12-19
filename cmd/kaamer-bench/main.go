@@ -35,7 +35,7 @@ const (
 
 var (
 	/*program options*/
-	function      = flag.String("f", "", "function to test")
+	function      = flag.String("func", "", "function to test")
 	profilingMode = flag.String("prof", "cpu", "profiling mode")
 
 	/*shared options*/
@@ -68,7 +68,7 @@ func main() {
 
   // Functions to profile
 
-  -f opendb (db opened in read-only mode)
+  -func opendb (db opened in read-only mode)
     (input)
       -d            database directory
       -p            port (default: 8321)
@@ -80,7 +80,7 @@ func main() {
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
 
-  -f makedb (profile a database build)
+  -func makedb (profile a database build)
     (input)
       -i            input file
       -f            input file format (embl, tsv, fasta)
@@ -136,8 +136,14 @@ func main() {
 			fmt.Println("No output db path !")
 			os.Exit(1)
 		} else {
+			stop := false
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go NewMonitor(1, &stop, &wg)
 			var kvStores *kvstore.KVStores
 			kvStores = kvstore.KVStoresNew(*dbPath, *nbThreads, tableLoadingMode, valueLoadingMode, true, false, true)
+			stop = true
+			wg.Wait()
 			defer kvStores.Close()
 		}
 	case "makedb":
