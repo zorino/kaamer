@@ -70,9 +70,9 @@ func NewMakedb(dbPath string, inputPath string, inputFmt string, threadByWorker 
 	kvStores = kvstore.KVStoresNew(dbPath, threadByWorker, tableLoadingMode, valueLoadingMode, maxSize, false, false)
 
 	fmt.Printf("# GC KmerStore...\n")
-	kvStores.KmerStore.GarbageCollect(1000, 0.5)
+	kvStores.KmerStore.GarbageCollect(10, 0.5)
 	fmt.Printf("# GC ProteinStore...\n")
-	kvStores.ProteinStore.GarbageCollect(1000, 0.5)
+	kvStores.ProteinStore.GarbageCollect(10, 0.5)
 
 	kvStores.Close()
 
