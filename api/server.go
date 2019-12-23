@@ -18,6 +18,7 @@ package server
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -117,11 +118,19 @@ func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadi
 
 func APIRoutes(r chi.Router, path string, kvStores *kvstore.KVStores) {
 
-	// RESTy routes for "search" function
-	r.Route("/api/search", func(r chi.Router) {
-		r.Post("/protein", searchProtein)
-		r.Post("/fastq", searchFastq)
-		r.Post("/nucleotide", searchNucleotide)
+	// RESTy routes
+	r.Route("/api", func(r chi.Router) {
+		r.Post("/search/protein", searchProtein)
+		r.Post("/search/fastq", searchFastq)
+		r.Post("/search/nucleotide", searchNucleotide)
+		r.Get("/dbinfo", func(w http.ResponseWriter, r *http.Request) {
+			b, err := json.Marshal(dbStats)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			w.Write([]byte(string(b)))
+		})
 	})
 
 }
