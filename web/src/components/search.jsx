@@ -8,7 +8,6 @@ import Container from '@material-ui/core/Container';
 import Grid from '@material-ui/core/Grid';
 import Box from '@material-ui/core/Box';
 import SendIcon from '@material-ui/icons/Send';
-// import InfoIcon from '@material-ui/icons/Info';
 import SubjectIcon from '@material-ui/icons/Subject';
 import Paper from '@material-ui/core/Paper';
 
@@ -26,9 +25,10 @@ import TableRow from '@material-ui/core/TableRow';
 import Popover from '@material-ui/core/Popover';
 import CircularProgress from '@material-ui/core/CircularProgress';
 
-// import List from '@material-ui/core/List';
-
 import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
+import Fab from '@material-ui/core/Fab';
+import HighlightOffIcon from '@material-ui/icons/HighlightOff';
+import CloseIcon from '@material-ui/icons/Close';
 
 import Alignment from './alignment';
 
@@ -85,7 +85,7 @@ class FastaForm extends React.Component {
         this.state.domain = window.location.host;
     }
 
-    fetchKaamerResults(){
+    fetchKaamerResults() {
 
         this.setState({
             showResult: false,
@@ -110,6 +110,7 @@ class FastaForm extends React.Component {
                     kaamerResults: res.data.results,
                     kaamerFeatures: res.data.dbProteinFeatures,
                 });
+                console.log(res);
             });
 
     }
@@ -237,15 +238,39 @@ class FastaForm extends React.Component {
                                               }}
                                             >
 
-                                              <Typography variant="h5" component="h5">
-                                                Query: {item.Query.Name} | Hit: {item.HitEntries[hit.Key].EntryId}
-                                              </Typography>
+                                              <Box p={2}>
+                                                <Typography variant="h5" component="h5">
+                                                  Query: {item.Query.Name} | Hit: {item.HitEntries[hit.Key].EntryId}
+                                                  <span style={{float: "right"}}>
+                                                    <Fab aria-label="close" size="small" onClick={(e) => this.handlePopoverClose(e)}>
+                                                      <CloseIcon />
+                                                    </Fab>
+                                                  </span>
+                                                </Typography>
+                                              </Box>
 
-                                              <Typography>
-                                                Sequence Alignment
-                                              </Typography>
+                                              <Box pl={2} pr={2} style={{"font-size": "6px !important"}}>
+                                                <Table size="small">
+                                                  <TableHead>
+                                                    <TableRow>
+                                                      <TableCell>Score</TableCell>
+                                                      <TableCell>Expect</TableCell>
+                                                      <TableCell>Identities</TableCell>
+                                                      <TableCell>Positives</TableCell>
+<TableCell>Gaps</TableCell>
+                                                </TableRow>
+                                              </TableHead>
+                                              <TableBody>
+                                                <TableCell>{hit.Alignment.BitScore.toFixed(2)}</TableCell>
+                                                <TableCell><Typography noWrap>{hit.Alignment.EValue.toPrecision(2)}</Typography></TableCell>
+                                                <TableCell>{hit.Alignment.Identity.toFixed(2)}%</TableCell>
+                                                <TableCell>{hit.Alignment.Similarity.toFixed(2)}%</TableCell>
+                                                <TableCell>{hit.Alignment.GapOpenings}</TableCell>
+                                              </TableBody>
+                                            </Table>
+                                          </Box>
 
-                                              <Alignment
+                                          <Alignment
                                                 seq_0={hit.Alignment.AlnString.split("\n")[0]}
                                                 seq_1={hit.Alignment.AlnString.split("\n")[1]}
                                                 seq_2={hit.Alignment.AlnString.split("\n")[2]}

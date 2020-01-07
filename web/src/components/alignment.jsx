@@ -1,7 +1,5 @@
 import React from 'react';
 import Box from '@material-ui/core/Box';
-import Grid from '@material-ui/core/Grid';
-import Typography from '@material-ui/core/Typography';
 
 class Alignment extends React.Component {
 
