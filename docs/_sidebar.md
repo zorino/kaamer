@@ -3,4 +3,6 @@
 
 * [kAAmer Database](/database.md)
 
-* [kAAmer Client](/client.md)
+* [kAAmer Client (CLI)](/client.md)
+
+* [kAAmer Web UI](/web.md)

@@ -1,4 +1,6 @@
-## kaamer CLI
+# kAAmer Client (CLI)
+
+## kaamer Search
 
 The kaamer CLI is a client to query (-search) a kaamer database.
 
@@ -32,15 +34,16 @@ The kaamer CLI is a client to query (-search) a kaamer database.
 
     (flag)
 
+      -aln          do an alignment for query / database hit matches
+
       -ann          add hit annotations in tsv fmt (always true in json fmt)
 
       -pos          add query positions that hit
 
-
 ```
 
 
-## Options
+### Options
 
 * -h Host
 
@@ -77,6 +80,10 @@ The kaamer CLI is a client to query (-search) a kaamer database.
 
     Output format currently supported are tsv or json
 
+* -aln Alignment on query / hits
+
+    Align the hits with the query using local Smith-Waterman alignment
+
 * -ann Hit Annotations
 
     Add hit annotations output (default false)
@@ -86,7 +93,7 @@ The kaamer CLI is a client to query (-search) a kaamer database.
     Add the positions that has a match with the hit (default false) 
 
 
-## Result example - TSV
+### Result example - TSV
 
 ```shell
 kaamer -search -h http://localhost:8321 -t prot -i query.fasta -m 1 -o results.tsv -fmt tsv -ann -pos
@@ -94,10 +101,10 @@ kaamer -search -h http://localhost:8321 -t prot -i query.fasta -m 1 -o results.t
 
 |QueryName|QueryKSize|QStart|QEnd|KMatch|Hit.Id          |Hit.ProteinName                                                        |Hit.Organism    |Hit.EC                               |Hit.GO                                                |Hit.HAMAP|Hit.KEGG   |Hit.Biocyc|Hit.Taxonomy                                                                                                                                                                                      |QueryHit.Positions|
 |---------|----------|------|----|------|----------------|-----------------------------------------------------------------------|----------------|-------------------------------------|------------------------------------------------------|---------|-----------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------|
-|query    |264       |1     |270 |264   |BLAN1_KLEPN     |Metallo-beta-lactamase type 2 {ECO:0000305}                            |Klebsiella pneumoniae|3.5.2.6 {ECO:0000269&#124;PubMed:19770275}|GO:0042597;GO:0008800;GO:0008270;GO:0017001;GO:0046677|         |ag:CAZ39946|          |Bacteria; Proteobacteria; Gammaproteobacteria; Enterobacterales; Bacteria; Proteobacteria; Gammaproteobacteria; Enterobacterales;Enterobacteriaceae; Klebsiella. Enterobacteriaceae; Klebsiella.  |1-264             |
+|query    |264       |1     |270 |264   |BLAN1_KLEPN     |Metallo-beta-lactamase type 2 {ECO:0000305}                            |Klebsiella pneumoniae|3.5.2.6 {ECO:0000269&#124;PubMed:19770275}|GO:0042597;GO:0008800;GO:0008270;GO:0017001;GO:0046677|         |ag:CAZ39946|          |Bacteria; Proteobacteria; Gammaproteobacteria; Enterobacterales;Enterobacteriaceae; Klebsiella. Enterobacteriaceae; Klebsiella.  |1-264             |
 
 
-## Result example - JSON
+### Result example - JSON
 
 ```shell
 kaamer -search -h http://localhost:8321 -t prot -i query.fasta -m 1 -o results.tsv -fmt json -ann -pos | jq

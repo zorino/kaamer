@@ -9,4 +9,4 @@ kAAmer is based on LSM-tree key-value (KV) stores which provides efficient write
 
 The kAAmer KV engine [badger](https://github.com/dgraph-io/badger) is also optimized for SSD and database files are memory mapped for fast kmer lookup.
 
-See the [Getting Started](installation.md) section to start using kAAmer.
+See the [Getting Started](installation.md?id=getting-started) section to start using kAAmer.
