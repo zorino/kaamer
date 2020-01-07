@@ -1,5 +1,5 @@
 vendor/
-metaprot
 README.html
 test/
 build/
+.log/
