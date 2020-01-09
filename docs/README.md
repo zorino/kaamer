@@ -1,6 +1,6 @@
 # kAAmer
 
-kAAmer is a GO package that provides the tools to produce and query a kmerized protein database.
+kAAmer is a Go package that provides the tools to produce and query a kmerized protein database.
 
 It can speed up protein and translated nucleotide searches by a magnitude in alignment-free mode and
 it also supports an alignment mode with a runtime comparable to the most efficient and accurate aligners.
