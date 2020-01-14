@@ -45,7 +45,15 @@ We suggest at least 3-5x the final database in size of free available space on d
 
 #### Serve a database
 
-| Number Of Proteins | Threads        | Memory         | Runtime OpenDB |
+One should provide at least +2 GB of RAM from the Memory peak to serve a database.
+
+The more RAM, threads allocated to the database, the better performance you will obtain from kAAmer.
+
+RAM will take advantage of Linux page caching for recurrently used key value from the database and
+CPU will help with query parallelisation.
+
+
+| Number Of Proteins | Threads        | Memory Peak    | Runtime OpenDB |
 | -------------:     | -------------: | -------------: | ------:        |
 | 1,000              | 2              | 3.152 GB       | 0m0.0s         |
 | 10,000             | 4              | 3.151 GB       | 0m1.0s         |
