@@ -57,23 +57,22 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 		go QueryResultHandler(queryResultChan, queryWriterChan, w, wgResHandler)
 	}
 
-	wgSearch := new(sync.WaitGroup)
+	for s := range queryChan {
 
-	for i := 0; i < nbOfThreads; i++ {
+		wgSearch := new(sync.WaitGroup)
+		orfsChan := make(chan ORF, 10)
 
-		wgSearch.Add(1)
+		for i := 0; i < nbOfThreads; i++ {
 
-		go func() {
+			wgSearch.Add(1)
 
-			defer wgSearch.Done()
-			searchRes := new(SearchResults)
-			keyChan := make(chan KeyPos, 10)
+			go func() {
 
-			for s := range queryChan {
+				defer wgSearch.Done()
+				searchRes := new(SearchResults)
+				keyChan := make(chan KeyPos, 10)
 
-				orfs := GetORFs(s.Sequence, searchOptions.GeneticCode)
-
-				for _, o := range orfs {
+				for o := range orfsChan {
 
 					q := Query{
 						Sequence:   o.Sequence,
@@ -129,16 +128,22 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 
 				}
 
-			}
+			}()
 
-		}()
+		}
+
+		orfs := GetORFs(s.Sequence, searchOptions.GeneticCode)
+		for _, orf := range orfs {
+			orfsChan <- orf
+		}
+		close(orfsChan)
+
+		wgSearch.Wait()
+		close(queryResultChan)
 
 	}
 
 	wgReader.Wait()
-
-	wgSearch.Wait()
-	close(queryResultChan)
 
 	wgResHandler.Wait()
 
