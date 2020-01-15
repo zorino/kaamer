@@ -24,6 +24,7 @@ def taxon(taxon, gbk_file):
     taxonReg1 = ("%s." % taxon)
     taxonReg2 = ("%s;" % taxon)
     inside_taxon = False
+    inside_def = False
 
     for l in filein:
         if l[0:2] == "//":
@@ -38,6 +39,14 @@ def taxon(taxon, gbk_file):
 
             if l[0:12] != "            ":
                 inside_taxon = False
+                inside_def = False
+
+            if l[0:10] == "DEFINITION":
+                inside_def = True
+
+            if inside_def:
+                if ", partial" in l:
+                    skip = True
 
             if inside_taxon:
                 if (taxonReg1 in l):
@@ -70,6 +79,7 @@ def taxon_file(taxon_file, gbk_file):
     taxonReg1 = ("%s." % taxon)
     taxonReg2 = ("%s;" % taxon)
     inside_taxon = False
+    inside_def = False
     currentTaxon = ""
 
     for l in filein:
@@ -88,6 +98,14 @@ def taxon_file(taxon_file, gbk_file):
 
             if l[0:12] != "            ":
                 inside_taxon = False
+                inside_def = False
+
+            if l[0:10] == "DEFINITION":
+                inside_def = True
+
+            if inside_def:
+                if ", partial" in l:
+                    skip = True
 
             if inside_taxon:
                 for t in l[5:].split(";"):
@@ -99,6 +117,7 @@ def taxon_file(taxon_file, gbk_file):
 
             if l[0:10] == "  ORGANISM":
                 inside_taxon = True
+
 
     return
 
@@ -113,6 +132,7 @@ def fasta(gbk_file):
     keep = 0
     reg = re.compile("\s+")
     inside_seq = False
+    inside_def = False
     skip = False
 
     for l in filein:
@@ -126,9 +146,18 @@ def fasta(gbk_file):
             entry += ">%s\n" % (reg.split(l))[1]
         elif l[0:6] == "ORIGIN":
             inside_seq = True
+        elif l[0:10] == "DEFINITION":
+                inside_def = True
+                if ", partial" in l:
+                    skip = True
         elif inside_seq:
             seq_split = reg.split(l.strip())[1:]
             entry += "".join(seq_split)
+        elif inside_seq:
+            if ", partial" in l:
+                skip = True
+        elif l[0:12] != "            ":
+            inside_def = False
 
     return
 
@@ -187,7 +216,7 @@ gbk-filter.py [options] INPUT_GBK
 
   ids            <ids_list.txt> will only keep those proteins ids
 
-Note: All 'Flags: Fragment;' will be skipped
+Note: All partial proteins will be skipped
 
     """
 
