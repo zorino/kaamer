@@ -47,14 +47,15 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 	queryWriterChan := make(chan []byte, 10)
 	wgResWriter := new(sync.WaitGroup)
 	wgResWriter.Add(1)
-	go QueryResultWriter(queryWriterChan, w, wgResWriter)
+	go QueryResultWriter(queryWriterChan, w, wgResWriter, searchOptions)
 
 	// Concurrent query result handlers
 	queryResultChan := make(chan QueryResult, 10)
+
 	wgResHandler := new(sync.WaitGroup)
 	for i := 0; i < nbOfThreads; i++ {
 		wgResHandler.Add(1)
-		go QueryResultHandler(queryResultChan, queryWriterChan, w, wgResHandler)
+		go QueryResultHandler(queryResultChan, queryWriterChan, w, wgResHandler, searchOptions)
 	}
 
 	for s := range queryChan {
@@ -99,7 +100,7 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 
 					wg := new(sync.WaitGroup)
 					wg.Add(1)
-					go searchRes.KmerSearch(keyChan, kvStores, wg, matchPositionChan)
+					go searchRes.KmerSearch(keyChan, kvStores, wg, matchPositionChan, searchOptions)
 
 					for i := 0; i < q.SizeInKmer; i++ {
 						key := kvStores.KmerStore.CreateBytesKey(q.Sequence[i : i+KMER_SIZE])
@@ -115,7 +116,7 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 					if len(searchRes.Hits) > 0 && searchRes.Hits[0].Kmatch >= minKMatch {
 						qR := QueryResult{Query: q, SearchResults: searchRes, HitEntries: map[uint32]kvstore.Protein{}}
 						SetBestStartCodon(&qR)
-						qR.FilterResults()
+						qR.FilterResults(searchOptions)
 						if qR.SearchResults.Hits.Len() > 0 {
 							qR.FetchHitsInformation(kvStores)
 							queryResultChan <- qR
@@ -139,9 +140,10 @@ func NucleotideSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, n
 		close(orfsChan)
 
 		wgSearch.Wait()
-		close(queryResultChan)
 
 	}
+
+	close(queryResultChan)
 
 	wgReader.Wait()
 

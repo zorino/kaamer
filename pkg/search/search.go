@@ -48,10 +48,9 @@ const (
 )
 
 var (
-	searchOptions = SearchOptions{}
-	dbStats       kvstore.KStats
-	kMatchRatio   = 0.05      // at least 5% of kmer hits (on query)
-	minKMatch     = int64(10) // at least 10 kmer hits
+	dbStats     kvstore.KStats
+	kMatchRatio = 0.05      // at least 5% of kmer hits (on query)
+	minKMatch   = int64(10) // at least 10 kmer hits
 )
 
 type SearchOptions struct {
@@ -147,7 +146,7 @@ func sortMapByValue(hitFrequencies *sync.Map) HitList {
 	return pl
 }
 
-func NewSearchResult(newSearchOptions SearchOptions, _dbStats kvstore.KStats, kvStores *kvstore.KVStores, nbOfThreads int, w http.ResponseWriter, r *http.Request) []QueryResult {
+func NewSearchResult(searchOptions SearchOptions, _dbStats kvstore.KStats, kvStores *kvstore.KVStores, nbOfThreads int, w http.ResponseWriter, r *http.Request) []QueryResult {
 
 	// Query cancellation
 	cancelQuery := false
@@ -163,7 +162,6 @@ func NewSearchResult(newSearchOptions SearchOptions, _dbStats kvstore.KStats, kv
 
 	queryResults := []QueryResult{}
 
-	searchOptions = newSearchOptions
 	dbStats = _dbStats
 
 	switch searchOptions.SequenceType {
@@ -183,7 +181,7 @@ func NewSearchResult(newSearchOptions SearchOptions, _dbStats kvstore.KStats, kv
 
 }
 
-func (queryResult *QueryResult) FilterResults() {
+func (queryResult *QueryResult) FilterResults(searchOptions SearchOptions) {
 
 	var hitsToDelete []uint32
 	var lastGoodHitPosition = len(queryResult.SearchResults.Hits) - 1
@@ -408,7 +406,7 @@ func GetQueriesFastq(fileName string, queryChan chan<- Query, cancelQuery *bool)
 
 }
 
-func (searchRes *SearchResults) KmerSearch(keyChan <-chan KeyPos, kvStores *kvstore.KVStores, wg *sync.WaitGroup, matchPositionChan chan<- MatchPosition) {
+func (searchRes *SearchResults) KmerSearch(keyChan <-chan KeyPos, kvStores *kvstore.KVStores, wg *sync.WaitGroup, matchPositionChan chan<- MatchPosition, searchOptions SearchOptions) {
 
 	extractPos := (searchOptions.ExtractPositions || (searchOptions.SequenceType == NUCLEOTIDE) || (searchOptions.SequenceType == READS))
 
@@ -466,7 +464,7 @@ func (queryResult *QueryResult) FetchHitsInformation(kvStores *kvstore.KVStores)
 
 }
 
-func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byte, w http.ResponseWriter, wg *sync.WaitGroup) {
+func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byte, w http.ResponseWriter, wg *sync.WaitGroup, searchOptions SearchOptions) {
 
 	defer wg.Done()
 
@@ -602,10 +600,10 @@ func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byt
 
 }
 
-func QueryResultWriter(queryResultOutput <-chan []byte, w http.ResponseWriter, wg *sync.WaitGroup) {
+func QueryResultWriter(queryResultOutput <-chan []byte, w http.ResponseWriter, wg *sync.WaitGroup, searchOptions SearchOptions) {
 
 	defer wg.Done()
-	SetResponseFormatAndHeader(w)
+	SetResponseFormatAndHeader(w, searchOptions)
 	firstResult := true
 	for output := range queryResultOutput {
 		// Write respopnse json
@@ -626,7 +624,7 @@ func QueryResultWriter(queryResultOutput <-chan []byte, w http.ResponseWriter, w
 
 }
 
-func SetResponseFormatAndHeader(w http.ResponseWriter) {
+func SetResponseFormatAndHeader(w http.ResponseWriter, searchOptions SearchOptions) {
 
 	// Set output response header TSV
 	if searchOptions.OutFormat == "tsv" {

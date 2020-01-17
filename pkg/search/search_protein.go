@@ -43,14 +43,14 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 	queryWriterChan := make(chan []byte, 10)
 	wgResWriter := new(sync.WaitGroup)
 	wgResWriter.Add(1)
-	go QueryResultWriter(queryWriterChan, w, wgResWriter)
+	go QueryResultWriter(queryWriterChan, w, wgResWriter, searchOptions)
 
 	// Concurrent query result handlers
 	queryResultChan := make(chan QueryResult, 10)
 	wgResHandler := new(sync.WaitGroup)
 	for i := 0; i < nbOfThreads; i++ {
 		wgResHandler.Add(1)
-		go QueryResultHandler(queryResultChan, queryWriterChan, w, wgResHandler)
+		go QueryResultHandler(queryResultChan, queryWriterChan, w, wgResHandler, searchOptions)
 	}
 
 	wgSearch := new(sync.WaitGroup)
@@ -89,7 +89,7 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 				keyChan = make(chan KeyPos, 10)
 				_wg := new(sync.WaitGroup)
 				_wg.Add(1)
-				go searchRes.KmerSearch(keyChan, kvStores, _wg, matchPositionChan)
+				go searchRes.KmerSearch(keyChan, kvStores, _wg, matchPositionChan, searchOptions)
 
 				for k := 0; k < q.SizeInKmer; k++ {
 					key := kvStores.KmerStore.CreateBytesKey(q.Sequence[k : k+KMER_SIZE])
@@ -104,7 +104,7 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 				searchRes.Hits = sortMapByValue(searchRes.Counter.GetCountersMap())
 
 				queryResult = QueryResult{Query: q, SearchResults: searchRes, HitEntries: map[uint32]kvstore.Protein{}}
-				queryResult.FilterResults()
+				queryResult.FilterResults(searchOptions)
 				if queryResult.SearchResults.Hits.Len() > 0 {
 					queryResult.FetchHitsInformation(kvStores)
 					queryResultChan <- queryResult
