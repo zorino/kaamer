@@ -289,6 +289,7 @@ func GetQueriesFasta(fileName string, queryChan chan<- Query, isProtein bool, ca
 					query.SizeInKmer--
 				}
 				query.Location.EndPosition = len(query.Sequence)
+				query.Sequence = strings.ToUpper(query.Sequence)
 				queryChan <- query
 				query = Query{Sequence: "", Name: "", SizeInKmer: 0, Contig: ""}
 			}
