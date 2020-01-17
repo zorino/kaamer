@@ -87,7 +87,6 @@ func (k *K_) CreateBytesVal(entry string) []byte {
 	return byteArrayKmer
 }
 
-
 // expect kmers of length 7
 func (k *K_) EncodeKmer(kmer string) uint32 {
 
@@ -144,7 +143,6 @@ func (k *K_) DecodeKmer(key []byte) string {
 	return kmer
 
 }
-
 
 func (k *K_) EncodeEntry(kmer string) uint32 {
 
