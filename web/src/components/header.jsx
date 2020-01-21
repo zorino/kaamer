@@ -27,7 +27,7 @@ const Header = ({ siteTitle }) => {
 
             </Grid>
             <Grid item xs={6} style={{"text-align": "center"}}>
-              <a href="/">
+              <a href="#">
                 <img src={Logo} alt={siteTitle} style={{width: "60px", "margin-bottom": "0px !important"}}/>
               </a>
             </Grid>
