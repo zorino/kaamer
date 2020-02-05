@@ -98,6 +98,8 @@ func main() {
                     archaea, bacteria, fungi, invertebrate, mitochondrion, plant, plasmid,
                     plastid, protozoa, viral, vertebrate_mammalian, vertebrate_other
 
+      -ncbi_nt      download a single NCBI genome genbank file from nuccore and transform to TSV to make a DB
+
     (flag)
       -kegg         download kegg pathways protein association and merge into database
       -biocyc       download biocyc pathways protein association and merge into database
@@ -163,6 +165,7 @@ func main() {
 	var downloadOpt = flag.Bool("download", false, "download uniprotkb or kaamer db")
 	var uniprotOpt = flag.String("uniprot", "", "uniprot taxon")
 	var refseqOpt = flag.String("refseq", "", "refseq release (taxon)")
+	var ncbigenomeOpt = flag.String("ncbi_nt", "", "download NCBI genome from nuccore")
 	var keggOpt = flag.Bool("kegg", false, "download kegg pathways")
 	var biocycOpt = flag.Bool("biocyc", false, "download biocyc pathways")
 
@@ -243,6 +246,8 @@ func main() {
 			} else {
 				downloaddb.DownloadBiocyc(*dbPath)
 			}
+		} else if *ncbigenomeOpt != "" {
+			downloaddb.DownloadGenbankGenome(*ncbigenomeOpt)
 		} else {
 			fmt.Println("Need uniprot, refseq, kegg or biocyc option !")
 			os.Exit(1)

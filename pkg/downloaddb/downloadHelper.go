@@ -1,9 +1,12 @@
 package downloaddb
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -89,5 +92,22 @@ func IOListFTP(host string, path string) []*ftp.Entry {
 	}
 
 	return listing
+
+}
+
+func IODownloadHTTP(dstFile *os.File, url string) {
+	// Search the corresponding ID in the API
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+
+	_, err = io.Copy(dstFile, bytes.NewReader(body))
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 }
