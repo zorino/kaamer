@@ -483,6 +483,9 @@ func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byt
 				}
 				qR.SearchResults.Hits[i].Alignment = &alignment
 			}
+			sort.Slice(qR.SearchResults.Hits, func(i, j int) bool {
+				return qR.SearchResults.Hits[i].Alignment.BitScore > qR.SearchResults.Hits[j].Alignment.BitScore
+			})
 		}
 
 		// Write respopnse json
@@ -546,10 +549,6 @@ func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byt
 		}
 
 		if searchOptions.OutFormat == "tsv" && searchOptions.Align {
-
-			sort.Slice(qR.SearchResults.Hits, func(i, j int) bool {
-				return qR.SearchResults.Hits[i].Alignment.BitScore > qR.SearchResults.Hits[j].Alignment.BitScore
-			})
 
 			for _, h := range qR.SearchResults.Hits {
 				output = ""
