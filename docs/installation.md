@@ -27,7 +27,7 @@ docker run --name kaamer-db -d -p 8321:8321 -v /kaamer-db:/data zorino/kaamer
 #### Using Binaries
 
 You can also download precompiled binaries : https://github.com/zorino/kaamer/releases 
-> However to deploy the Web UI and Web documentation you need to compile from source.
+> However to deploy the Web UI and Web documentation you need to compile from source or use Docker.
 
 ## Requirement
 
