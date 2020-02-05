@@ -7,12 +7,24 @@ To run kaamer you will need at least GO >= 1.13 (https://golang.org/doc/install)
 
 This command will download and install kaamer executables (kaamer and kaamer-db) into your `GOPATH`
 
+#### Install from source
+
 ```shell
 export GO111MODULE=on
 git clone https://github.com/zorino/kaamer.git
 cd kaamer
 go install ./...
 ```
+
+#### Using Docker
+
+You will need a database to mount onto the container (/kaamer-db)
+
+```shell
+docker run --name kaamer-db -d -p 8321:8321 -v /kaamer-db:/data zorino/kaamer
+```
+
+#### Using Binaries
 
 You can also download precompiled binaries : https://github.com/zorino/kaamer/releases 
 > However to deploy the Web UI and Web documentation you need to compile from source.
