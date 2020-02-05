@@ -64,7 +64,7 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 			defer wgSearch.Done()
 
 			queryResult := QueryResult{}
-			searchRes := new(SearchResults)
+			searchRes := &SearchResults{}
 			keyChan := make(chan KeyPos, 20)
 
 			for q := range queryChan {
@@ -75,7 +75,7 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 					return
 				}
 
-				searchRes = new(SearchResults)
+				searchRes = &SearchResults{}
 				searchRes.Counter = cnt.NewCounterBox()
 				searchRes.PositionHits = make(map[uint32][]bool)
 
@@ -91,8 +91,9 @@ func ProteinSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOf
 				_wg.Add(1)
 				go searchRes.KmerSearch(keyChan, kvStores, _wg, matchPositionChan, searchOptions)
 
+				key := []byte{}
 				for k := 0; k < q.SizeInKmer; k++ {
-					key := kvStores.KmerStore.CreateBytesKey(q.Sequence[k : k+KMER_SIZE])
+					key = kvStores.KmerStore.CreateBytesKey(q.Sequence[k : k+KMER_SIZE])
 					keyChan <- KeyPos{Key: key, Pos: k, QSize: q.SizeInKmer}
 				}
 
