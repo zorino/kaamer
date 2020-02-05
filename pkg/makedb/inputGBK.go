@@ -206,7 +206,7 @@ func processProteinInputGBK(proteinBuf ProteinBufGBK, results chan<- int32, kvSt
 			continue
 		}
 
-		switch strings.Trim(l[0:11], " ") {
+		switch strings.Split(strings.Trim(l, " "), " ")[0] {
 		case "LOCUS":
 			insideAnnotation = 0
 		case "DEFINITION":
