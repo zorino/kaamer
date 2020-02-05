@@ -13,7 +13,8 @@ COPY . .
 RUN go install -v ./...
 
 RUN cd web \
-    && test -d node_modules && rm -fr node_modules \
+    && rm -fr node_modules \
+    && rm -fr public/* \
     && npm install \
     && npm install -g gatsby \
     && gatsby build --prefix-paths
