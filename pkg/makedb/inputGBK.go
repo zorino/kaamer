@@ -229,6 +229,8 @@ func processProteinInputGBK(proteinBuf ProteinBufGBK, results chan<- int32, kvSt
 			insideAnnotation = 5
 		case "//":
 			insideAnnotation = 6
+		case "REFERENCE":
+			insideAnnotation = 0
 		}
 
 		switch insideAnnotation {
