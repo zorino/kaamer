@@ -231,6 +231,10 @@ func processProteinInputGBK(proteinBuf ProteinBufGBK, results chan<- int32, kvSt
 			insideAnnotation = 6
 		case "REFERENCE":
 			insideAnnotation = 0
+		case "DBLINK":
+			insideAnnotation = 0
+		case "DBSOURCE":
+			insideAnnotation = 0
 		}
 
 		switch insideAnnotation {
