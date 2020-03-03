@@ -17,8 +17,10 @@ limitations under the License.
 package kvstore
 
 import (
+	"bytes"
 	"encoding/binary"
 	"log"
+	"math/rand"
 
 	"github.com/OneOfOne/xxhash"
 	"github.com/dgraph-io/badger"
@@ -40,6 +42,7 @@ func KC_New(opts badger.Options, flushSize int, nbOfThreads int) *KC_ {
 func (kc *KC_) CreateKCKeyValue(keys [][]byte) ([]byte, []byte) {
 
 	h := xxhash.New64()
+
 	kComb := &KComb{}
 
 	sortedKeys := RemoveDuplicatesFromSlice(keys)
@@ -57,6 +60,25 @@ func (kc *KC_) CreateKCKeyValue(keys [][]byte) ([]byte, []byte) {
 	}
 
 	combKeyByte := make([]byte, 8)
+	binary.BigEndian.PutUint64(combKeyByte, h.Sum64())
+
+	val, hasKey := kc.GetValue(combKeyByte)
+
+	if bytes.Compare(val, kCombPB) == 0 {
+		return combKeyByte, nil
+	}
+
+	proceedWithKey := (hasKey == false)
+
+	for !proceedWithKey {
+		token := make([]byte, 4)
+		rand.Read(token)
+		h.Write(token)
+		_, hasKey := kc.GetValue(combKeyByte)
+		proceedWithKey = !hasKey
+	}
+
+	combKeyByte = make([]byte, 8)
 	binary.BigEndian.PutUint64(combKeyByte, h.Sum64())
 
 	return combKeyByte, kCombPB

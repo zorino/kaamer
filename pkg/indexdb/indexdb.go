@@ -122,7 +122,10 @@ func IndexStore(kvStores1 *kvstore.KVStores, newKmerStore *kvstore.KVStore, nbOf
 		}
 
 		combKey, combVal := kvStores1.KCombStore.CreateKCKeyValue(keys)
-		kvStores1.KCombStore.AddValueToChannel(combKey, combVal, true)
+		if combVal != nil {
+			kvStores1.KCombStore.AddValueToChannel(combKey, combVal, true)
+		}
+
 		newKmerStore.AddValueToChannel(keyCopy, combKey, true)
 
 		return nil, nil
