@@ -74,12 +74,11 @@ func (kc *KC_) CreateKCKeyValue(keys [][]byte) ([]byte, []byte) {
 		token := make([]byte, 4)
 		rand.Read(token)
 		h.Write(token)
+		combKeyByte = make([]byte, 8)
+		binary.BigEndian.PutUint64(combKeyByte, h.Sum64())
 		_, hasKey := kc.GetValue(combKeyByte)
 		proceedWithKey = !hasKey
 	}
-
-	combKeyByte = make([]byte, 8)
-	binary.BigEndian.PutUint64(combKeyByte, h.Sum64())
 
 	return combKeyByte, kCombPB
 
