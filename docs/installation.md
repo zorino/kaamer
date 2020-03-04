@@ -73,7 +73,7 @@ CPU will help with query parallelisation.
 | 1,000,000          | 8              | 5.597 GB       | 0m15.0s        |
 
 
-## How to use kAAmer :
+## How to use kAAmer
 
 #### &rarr; [Build a database](/database?id=kaamer-database)
 #### &rarr; [Query a database](/client?id=kaamer-client-cli)
