@@ -166,7 +166,7 @@ func NewSearchResult(searchOptions SearchOptions, _dbStats kvstore.KStats, kvSto
 
 	switch searchOptions.SequenceType {
 	case READS:
-		NucleotideSearch(searchOptions, kvStores, nbOfThreads, w, true, &cancelQuery)
+		FastqSearch(searchOptions, kvStores, nbOfThreads, w, true, &cancelQuery)
 	case NUCLEOTIDE:
 		NucleotideSearch(searchOptions, kvStores, nbOfThreads, w, false, &cancelQuery)
 	case PROTEIN:
