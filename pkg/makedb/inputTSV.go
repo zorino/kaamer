@@ -95,7 +95,7 @@ func runTSV(fileName string, kvStores *kvstore.KVStores, nbThreads int, offset u
 			line = scanner.Text()
 			if firstLine {
 				// this is the header
-				features = strings.Fields(line)
+				features = strings.Split(line, "\t")
 				hasEntryId := false
 				hasSequence := false
 				for _, f := range features {
