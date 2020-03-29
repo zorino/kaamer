@@ -19,4 +19,4 @@ RUN cd web \
     && npm install -g gatsby \
     && gatsby build --prefix-paths
 
-CMD ["kaamer-db", "-server", "-d", "/data"]
+CMD cd web/ && gatsby build --prefix-paths && kaamer-db -server -d /data
