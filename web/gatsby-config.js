@@ -1,5 +1,9 @@
+require("dotenv").config({
+    path: `.env`,
+});
+
 module.exports = {
-    pathPrefix: '/web',
+    pathPrefix: process.env.SITE_PATH_PREFIX+'/web',
     siteMetadata: {
         title: 'kAAmer web search',
         description: 'Protein search in a kaamer database.',
@@ -28,6 +32,16 @@ module.exports = {
                 display: 'minimal-ui',
                 icon: 'src/images/kaamer.svg', // This path is relative to the root of the site.
             },
+        },
+        'gatsby-plugin-google-analytics',
+        {
+            resolve: 'gatsby-plugin-google-analytics',
+            options: {
+                trackingId: process.env.GA_TRACKING_ID,
+                head: false,
+                anonymize: true,
+                respectDNT: true,
+            }
         },
     ],
 };
