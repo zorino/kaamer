@@ -521,7 +521,7 @@ func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byt
 				output += "\t"
 				output += strconv.Itoa(qR.Query.Location.StartPosition)
 				output += "\t"
-				output += strconv.Itoa(qR.Query.Location.EndPosition)
+				output += strconv.Itoa(qR.Query.Location.EndPosition + KMER_SIZE - 1)
 				output += "\t"
 				output += "1" // subject always start at 1 in kmer
 				output += "\t"
