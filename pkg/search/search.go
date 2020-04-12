@@ -567,7 +567,7 @@ func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byt
 				if searchOptions.SequenceType != PROTEIN {
 					output += strconv.Itoa(qR.Query.Location.StartPosition)
 					output += "\t"
-					output += strconv.Itoa(qR.Query.Location.EndPosition)
+					output += strconv.Itoa(qR.Query.Location.EndPosition + KMER_SIZE - 1)
 					output += "\t"
 				} else {
 					output += fmt.Sprintf("%d", h.Alignment.QueryStart)
