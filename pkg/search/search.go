@@ -521,7 +521,7 @@ func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byt
 				output += "\t"
 				output += strconv.Itoa(qR.Query.Location.StartPosition)
 				output += "\t"
-				output += strconv.Itoa(qR.Query.Location.EndPosition + KMER_SIZE - 1)
+				output += strconv.Itoa(qR.Query.Location.EndPosition)
 				output += "\t"
 				output += "1" // subject always start at 1 in kmer
 				output += "\t"
@@ -567,7 +567,7 @@ func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byt
 				if searchOptions.SequenceType != PROTEIN {
 					output += strconv.Itoa(qR.Query.Location.StartPosition)
 					output += "\t"
-					output += strconv.Itoa(qR.Query.Location.EndPosition + 2*KMER_SIZE - 2)
+					output += strconv.Itoa(qR.Query.Location.EndPosition)
 					output += "\t"
 				} else {
 					output += fmt.Sprintf("%d", h.Alignment.QueryStart)
