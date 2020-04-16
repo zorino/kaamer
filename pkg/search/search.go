@@ -513,7 +513,7 @@ func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byt
 				output += strconv.Itoa(int(h.Kmatch))
 				output += "\t"
 				if searchOptions.ExtractPositions {
-					posString = FormatPositionsToString(qR.SearchResults.PositionHits[h.Key])
+					posString = FormatPositionsToString(qR.SearchResults.PositionHits[h.Key], false)
 					output += fmt.Sprintf("%d", strings.Count(posString, ","))
 				} else {
 					output += "N/A"
@@ -585,7 +585,7 @@ func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byt
 
 				if searchOptions.ExtractPositions {
 					output += "\t"
-					output += FormatPositionsToString(qR.SearchResults.PositionHits[h.Key])
+					output += FormatPositionsToString(qR.SearchResults.PositionHits[h.Key], true)
 				}
 
 				if searchOptions.Annotations {
@@ -686,11 +686,11 @@ func SetResponseFormatAndHeader(w http.ResponseWriter, searchOptions SearchOptio
 
 }
 
-func FormatPositionsToString(positions []bool) string {
+func FormatPositionsToString(positions []bool, withAlignment bool) string {
 
 	currentStart := 0
 	inSequence := false
-
+	endPos := 0
 	positionsString := ""
 
 	for pos, match := range positions {
@@ -705,7 +705,11 @@ func FormatPositionsToString(positions []bool) string {
 					if positionsString != "" {
 						positionsString += ","
 					}
-					positionsString += (strconv.Itoa(currentStart) + "-" + (strconv.Itoa(pos + 1)))
+					endPos = pos + 1
+					if withAlignment {
+						endPos = endPos + KMER_SIZE - 1
+					}
+					positionsString += (strconv.Itoa(currentStart) + "-" + (strconv.Itoa(endPos)))
 					inSequence = false
 				} else {
 					if positionsString != "" {
@@ -721,7 +725,11 @@ func FormatPositionsToString(positions []bool) string {
 		if positionsString != "" {
 			positionsString += ","
 		}
-		positionsString += (strconv.Itoa(currentStart) + "-" + (strconv.Itoa(len(positions))))
+		endPos = len(positions)
+		if withAlignment {
+			endPos = endPos + KMER_SIZE - 1
+		}
+		positionsString += (strconv.Itoa(currentStart) + "-" + (strconv.Itoa(endPos)))
 	}
 
 	return positionsString
