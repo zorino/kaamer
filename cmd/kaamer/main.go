@@ -21,8 +21,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
+	"github.com/zorino/kaamer/pkg/align"
 	"github.com/zorino/kaamer/pkg/search"
 	"github.com/zorino/kaamer/pkg/searchcli"
 )
@@ -66,6 +68,13 @@ func main() {
 
       -pos          add query positions that hit
 
+
+    // aln options
+
+      -mat          substitution matrix (default: BLOSUM62)
+      -gop          gap open penalty (default: 11)
+      -gex          gap extension penalty (default: 1)
+
 `
 
 	var searchOpt = flag.Bool("search", false, "program")
@@ -80,6 +89,10 @@ func main() {
 	var addAlignment = flag.Bool("aln", false, "add alignment flag")
 	var addAnnotation = flag.Bool("ann", false, "add annotation flag")
 	var addPositions = flag.Bool("pos", false, "add position flag")
+
+	var subMatrix = flag.String("mat", "blosum62", "substitution matrix")
+	var gapOpen = flag.Int("gop", 11, "gap open penalty")
+	var gapExtend = flag.Int("gex", 1, "gap extension penalty")
 
 	/* CLI usage */
 	flag.Usage = func() {
@@ -136,6 +149,12 @@ func main() {
 			options.InputType = "file"
 		}
 
+		subMatrixKey := *subMatrix + "_" + strconv.Itoa(*gapOpen) + "_" + strconv.Itoa(*gapExtend)
+		if _, ok = align.AllMatrixScores[subMatrixKey]; !ok {
+			fmt.Println("Invalid Substitution matrix and gap penalty options !")
+			os.Exit(1)
+		}
+
 		options.File = *inputFile
 		options.SequenceType = queryType
 		options.GeneticCode = *geneticCode
@@ -144,6 +163,9 @@ func main() {
 		options.Align = *addAlignment
 		options.ExtractPositions = *addPositions
 		options.Annotations = *addAnnotation
+		options.SubMatrix = *subMatrix
+		options.GapOpen = *gapOpen
+		options.GapExtend = *gapExtend
 
 		searchcli.NewSearchRequest(options)
 

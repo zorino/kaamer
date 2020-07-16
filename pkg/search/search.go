@@ -63,6 +63,9 @@ type SearchOptions struct {
 	Align            bool
 	ExtractPositions bool
 	Annotations      bool
+	SubMatrix        string
+	GapOpen          int
+	GapExtend        int
 }
 
 type SearchResults struct {
@@ -477,7 +480,7 @@ func QueryResultHandler(queryResult <-chan QueryResult, queryWriter chan<- []byt
 		// Launch Alignment
 		if searchOptions.Align {
 			for i, _ := range qR.SearchResults.Hits {
-				alignment, err := align.Align(qR.Query.Sequence, qR.HitEntries[qR.SearchResults.Hits[i].Key].Sequence, dbStats, "blosum62", 11, 1)
+				alignment, err := align.Align(qR.Query.Sequence, qR.HitEntries[qR.SearchResults.Hits[i].Key].Sequence, dbStats, searchOptions.SubMatrix, searchOptions.GapOpen, searchOptions.GapExtend)
 				if err != nil {
 					continue
 				}

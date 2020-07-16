@@ -40,6 +40,12 @@ The kaamer CLI is a client to query (-search) a kaamer database.
 
       -pos          add query positions that hit
 
+   // aln options
+
+      -mat          substitution matrix (default: BLOSUM62)
+      -gop          gap open penalty (default: 11)
+      -gex          gap extension penalty (default: 1)
+      
 ```
 
 
@@ -91,6 +97,14 @@ The kaamer CLI is a client to query (-search) a kaamer database.
 * -pos Positions Match
 
     Add the positions that has a match with the hit (default false) 
+
+##### Alignment Options
+
+* -mat  Substitution matrix (default: BLOSUM62)
+    
+* -gop  Gap open penalty (default: 11)
+    
+* -gex  Gap extension penalty (default: 1)
 
 
 ### Result example - TSV

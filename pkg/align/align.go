@@ -45,7 +45,7 @@ func NewAnonLinearSeq(s string) *linear.Seq {
 
 func Align(querySeq string, refSeq string, dbStats kvstore.KStats, subMatrix string, gapOpen int, gapPenalty int) (AlignmentResult, error) {
 
-	matrixScores, err := GetMatrixScores("blosum62", 11, 1)
+	matrixScores, err := GetMatrixScores(subMatrix, gapOpen, gapPenalty)
 
 	if err != nil {
 		return AlignmentResult{}, err

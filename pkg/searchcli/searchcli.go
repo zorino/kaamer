@@ -50,6 +50,9 @@ func NewSearchRequest(options SearchRequestOptions) {
 	bodyWriter.WriteField("align", strconv.FormatBool(options.Align))
 	bodyWriter.WriteField("annotations", strconv.FormatBool(options.Annotations))
 	bodyWriter.WriteField("positions", strconv.FormatBool(options.ExtractPositions))
+	bodyWriter.WriteField("sub-matrix", options.SubMatrix)
+	bodyWriter.WriteField("gap-open", strconv.Itoa(options.GapOpen))
+	bodyWriter.WriteField("gap-extend", strconv.Itoa(options.GapExtend))
 
 	host := options.ServerHost + "/api/search/"
 	switch options.SequenceType {

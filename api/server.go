@@ -145,6 +145,9 @@ func searchFastq(w http.ResponseWriter, r *http.Request) {
 		OutFormat:        "tsv",
 		MaxResults:       10,
 		ExtractPositions: false,
+		SubMatrix:        "blosum62",
+		GapOpen:          11,
+		GapExtend:        1,
 	}
 
 	err := parseSearchOptions(&searchOptions, w, r)
@@ -167,6 +170,9 @@ func searchNucleotide(w http.ResponseWriter, r *http.Request) {
 		OutFormat:        "tsv",
 		MaxResults:       10,
 		ExtractPositions: false,
+		SubMatrix:        "blosum62",
+		GapOpen:          11,
+		GapExtend:        1,
 	}
 
 	err := parseSearchOptions(&searchOptions, w, r)
@@ -190,6 +196,9 @@ func searchProtein(w http.ResponseWriter, r *http.Request) {
 		OutFormat:        "tsv",
 		MaxResults:       10,
 		ExtractPositions: false,
+		SubMatrix:        "blosum62",
+		GapOpen:          11,
+		GapExtend:        1,
 	}
 
 	err := parseSearchOptions(&searchOptions, w, r)
@@ -267,6 +276,22 @@ func parseSearchOptions(searchOpts *search.SearchOptions, w http.ResponseWriter,
 
 	if strings.ToLower(r.FormValue("align")) == "true" {
 		searchOpts.Align = true
+	}
+
+	if strings.ToLower(r.FormValue("sub-matrix")) != "blosum62" {
+		searchOpts.SubMatrix = strings.ToLower(r.FormValue("sub-matrix"))
+	}
+
+	if r.FormValue("gap-open") != "11" {
+		if gop, err := strconv.Atoi(r.FormValue("gap-open")); err == nil {
+			searchOpts.GapOpen = gop
+		}
+	}
+
+	if r.FormValue("gap-extend") != "1" {
+		if gex, err := strconv.Atoi(r.FormValue("gap-extend")); err == nil {
+			searchOpts.GapExtend = gex
+		}
 	}
 
 	return nil
