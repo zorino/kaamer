@@ -48,9 +48,9 @@ const (
 )
 
 var (
-	dbStats     kvstore.KStats
-	kMatchRatio = 0.05      // at least 5% of kmer hits (on query)
-	minKMatch   = int64(10) // at least 10 kmer hits
+	dbStats kvstore.KStats
+	// kMatchRatio = 0.05      // at least 5% of kmer hits (on query)
+	// minKMatch   = int64(10) // at least 10 kmer hits
 )
 
 type SearchOptions struct {
@@ -66,6 +66,8 @@ type SearchOptions struct {
 	SubMatrix        string
 	GapOpen          int
 	GapExtend        int
+	MinKMatch        int64
+	MinKRatio        float64
 }
 
 type SearchResults struct {
@@ -186,11 +188,13 @@ func NewSearchResult(searchOptions SearchOptions, _dbStats kvstore.KStats, kvSto
 
 func (queryResult *QueryResult) FilterResults(searchOptions SearchOptions) {
 
+	fmt.Printf("KmerMatch: %d  |  KmerRatio: %f \n", searchOptions.MinKMatch, searchOptions.MinKRatio)
+
 	var hitsToDelete []uint32
 	var lastGoodHitPosition = len(queryResult.SearchResults.Hits) - 1
 
 	for i, hit := range queryResult.SearchResults.Hits {
-		if (float64(hit.Kmatch)/float64(queryResult.Query.SizeInKmer)) < kMatchRatio || hit.Kmatch < minKMatch {
+		if (float64(hit.Kmatch)/float64(queryResult.Query.SizeInKmer)) < searchOptions.MinKRatio || hit.Kmatch < searchOptions.MinKMatch {
 			if lastGoodHitPosition == (len(queryResult.SearchResults.Hits) - 1) {
 				lastGoodHitPosition = i - 1
 			}

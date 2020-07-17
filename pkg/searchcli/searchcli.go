@@ -50,6 +50,8 @@ func NewSearchRequest(options SearchRequestOptions) {
 	bodyWriter.WriteField("align", strconv.FormatBool(options.Align))
 	bodyWriter.WriteField("annotations", strconv.FormatBool(options.Annotations))
 	bodyWriter.WriteField("positions", strconv.FormatBool(options.ExtractPositions))
+	bodyWriter.WriteField("minkmatch", strconv.FormatInt(options.MinKMatch, 10))
+	bodyWriter.WriteField("minkratio", fmt.Sprintf("%f", options.MinKRatio))
 	bodyWriter.WriteField("sub-matrix", options.SubMatrix)
 	bodyWriter.WriteField("gap-open", strconv.Itoa(options.GapOpen))
 	bodyWriter.WriteField("gap-extend", strconv.Itoa(options.GapExtend))

@@ -145,6 +145,8 @@ func searchFastq(w http.ResponseWriter, r *http.Request) {
 		OutFormat:        "tsv",
 		MaxResults:       10,
 		ExtractPositions: false,
+		MinKMatch:        10,
+		MinKRatio:        0.05,
 		SubMatrix:        "blosum62",
 		GapOpen:          11,
 		GapExtend:        1,
@@ -170,6 +172,8 @@ func searchNucleotide(w http.ResponseWriter, r *http.Request) {
 		OutFormat:        "tsv",
 		MaxResults:       10,
 		ExtractPositions: false,
+		MinKMatch:        10,
+		MinKRatio:        0.05,
 		SubMatrix:        "blosum62",
 		GapOpen:          11,
 		GapExtend:        1,
@@ -196,6 +200,8 @@ func searchProtein(w http.ResponseWriter, r *http.Request) {
 		OutFormat:        "tsv",
 		MaxResults:       10,
 		ExtractPositions: false,
+		MinKMatch:        10,
+		MinKRatio:        0.05,
 		SubMatrix:        "blosum62",
 		GapOpen:          11,
 		GapExtend:        1,
@@ -276,6 +282,18 @@ func parseSearchOptions(searchOpts *search.SearchOptions, w http.ResponseWriter,
 
 	if strings.ToLower(r.FormValue("align")) == "true" {
 		searchOpts.Align = true
+	}
+
+	if r.FormValue("minkmatch") != "10" {
+		if minKMatch, err := strconv.ParseInt(r.FormValue("minkmatch"), 10, 64); err == nil {
+			searchOpts.MinKMatch = minKMatch
+		}
+	}
+
+	if r.FormValue("minkratio") != "0.05" {
+		if minKRatio, err := strconv.ParseFloat(r.FormValue("minkratio"), 64); err == nil {
+			searchOpts.MinKRatio = minKRatio
+		}
 	}
 
 	if strings.ToLower(r.FormValue("sub-matrix")) != "blosum62" {

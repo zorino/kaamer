@@ -116,7 +116,7 @@ func FastqSearch(searchOptions SearchOptions, kvStores *kvstore.KVStores, nbOfTh
 					wgMP.Wait()
 
 					searchRes.Hits = sortMapByValue(searchRes.Counter.GetCountersMap())
-					if len(searchRes.Hits) > 0 && searchRes.Hits[0].Kmatch >= minKMatch {
+					if len(searchRes.Hits) > 0 && searchRes.Hits[0].Kmatch >= searchOptions.MinKMatch {
 						qR = QueryResult{Query: q, SearchResults: searchRes, HitEntries: map[uint32]kvstore.Protein{}}
 						SetBestStartCodon(&qR)
 						qR.FilterResults(searchOptions)

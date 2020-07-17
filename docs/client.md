@@ -42,6 +42,9 @@ The kaamer CLI is a client to query (-search) a kaamer database.
 
    // aln options
 
+      -mink         minimum number of k-mers match to report a hit (default: 10)
+      -minr         minimum ratio of query k-mers matches to report a hit (default: 0.05)
+
       -mat          substitution matrix (default: BLOSUM62)
       -gop          gap open penalty (default: 11)
       -gex          gap extension penalty (default: 1)
@@ -67,7 +70,7 @@ The kaamer CLI is a client to query (-search) a kaamer database.
 * -g Genetic Code
 
    Genetic code number for translated search (with -t fastq or -t nt) \
-   One of the following : 1-15 except 7,8 (default 11 - bacteria) \
+   One of the following : 1-15 except 7,8 (default: 11 - bacteria) \
    See https://www.bioinformatics.org/JaMBW/2/3/TranslationTables.html
 
 * -i Input File
@@ -76,7 +79,7 @@ The kaamer CLI is a client to query (-search) a kaamer database.
 
 * -m Max Results
 
-    Maximum number of results to return (default 10) 
+    Maximum number of results to return (default: 10) 
 
 * -o Outpout
 
@@ -92,18 +95,19 @@ The kaamer CLI is a client to query (-search) a kaamer database.
 
 * -ann Hit Annotations
 
-    Add hit annotations output (default false)
+    Add hit annotations output (default: false)
 
 * -pos Positions Match
 
-    Add the positions that has a match with the hit (default false) 
+    Add the positions that has a match with the hit (default: false) 
 
 ##### Alignment Options
 
+* -mink  Minimum number of k-mers match to report a hit (default: 10)
+* -minr  Minimum ratio of query k-mers matches to report a hit (default: 0.05)
+
 * -mat  Substitution matrix (default: BLOSUM62)
-    
 * -gop  Gap open penalty (default: 11)
-    
 * -gex  Gap extension penalty (default: 1)
 
 

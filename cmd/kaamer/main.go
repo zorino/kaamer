@@ -71,6 +71,9 @@ func main() {
 
     // aln options
 
+      -mink         minimum number of k-mer matches to report a hit (default: 10)
+      -minr         minimum ratio of query k-mer matches to report a hit (default: 0.05)
+
       -mat          substitution matrix (default: BLOSUM62)
       -gop          gap open penalty (default: 11)
       -gex          gap extension penalty (default: 1)
@@ -90,6 +93,8 @@ func main() {
 	var addAnnotation = flag.Bool("ann", false, "add annotation flag")
 	var addPositions = flag.Bool("pos", false, "add position flag")
 
+	var minKMatch = flag.Int64("mink", 10, "minimum number of k-mer matches to report a hit")
+	var minKRatio = flag.Float64("minr", 0.05, "minimum ratio of query k-mer matches to report a hit")
 	var subMatrix = flag.String("mat", "blosum62", "substitution matrix")
 	var gapOpen = flag.Int("gop", 11, "gap open penalty")
 	var gapExtend = flag.Int("gex", 1, "gap extension penalty")
@@ -163,6 +168,8 @@ func main() {
 		options.Align = *addAlignment
 		options.ExtractPositions = *addPositions
 		options.Annotations = *addAnnotation
+		options.MinKMatch = *minKMatch
+		options.MinKRatio = *minKRatio
 		options.SubMatrix = *subMatrix
 		options.GapOpen = *gapOpen
 		options.GapExtend = *gapExtend
