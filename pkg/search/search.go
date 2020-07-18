@@ -188,8 +188,6 @@ func NewSearchResult(searchOptions SearchOptions, _dbStats kvstore.KStats, kvSto
 
 func (queryResult *QueryResult) FilterResults(searchOptions SearchOptions) {
 
-	fmt.Printf("KmerMatch: %d  |  KmerRatio: %f \n", searchOptions.MinKMatch, searchOptions.MinKRatio)
-
 	var hitsToDelete []uint32
 	var lastGoodHitPosition = len(queryResult.SearchResults.Hits) - 1
 
