@@ -21,8 +21,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/dgraph-io/badger"
-	"github.com/dgraph-io/badger/options"
+	"github.com/dgraph-io/badger/v3"
 	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
@@ -55,10 +54,7 @@ func Restore(backupFile string, storeDir string, maxSize bool) {
 	opts := badger.DefaultOptions(storeDir)
 	opts.Dir = storeDir
 	opts.ValueDir = storeDir
-	opts.TableLoadingMode = options.MemoryMap
-	opts.ValueLogLoadingMode = options.FileIO
 	if maxSize {
-		opts.MaxTableSize = kvstore.MaxTableSize
 		opts.ValueLogFileSize = kvstore.MaxValueLogFileSize
 		opts.ValueLogMaxEntries = kvstore.MaxValueLogEntries
 	}

@@ -28,9 +28,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/dgraph-io/badger"
-	"github.com/dgraph-io/badger/options"
-	"github.com/dgraph-io/badger/pb"
+	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v3/pb"
 	"github.com/golang/protobuf/proto"
 	"github.com/zorino/kaamer/pkg/kvstore"
 )
@@ -57,7 +56,7 @@ func DownloadKEGG(dbPath string) {
 		os.Exit(0)
 	}
 
-	kvStores := kvstore.KVStoresNew(dbPath, 2, options.MemoryMap, options.MemoryMap, true, true, false)
+	kvStores := kvstore.KVStoresNew(dbPath, 2, true, true, false)
 
 	proteinStore := kvStores.ProteinStore
 

@@ -18,7 +18,7 @@ package kvstore
 
 import (
 	"encoding/binary"
-	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/v3"
 )
 
 // Kmer Entries

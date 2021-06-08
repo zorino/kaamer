@@ -25,7 +25,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/v3"
 )
 
 type KV struct {

@@ -23,7 +23,7 @@ import (
 	"math/rand"
 
 	"github.com/OneOfOne/xxhash"
-	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/v3"
 	proto "github.com/golang/protobuf/proto"
 )
 
