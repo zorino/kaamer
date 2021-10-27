@@ -36,10 +36,6 @@ const (
 	MaxInt uint32 = 1<<32 - 1
 )
 
-// var (
-// 	LoadingMode = map[string]options.FileLoadingMode{"memorymap": options.MemoryMap, "fileio": options.FileIO}
-// )
-
 func main() {
 
 	usage := `
@@ -173,20 +169,6 @@ func main() {
 		fmt.Println(usage)
 	}
 	flag.Parse()
-
-	/* Setting values from CLI */
-	// var tableLoadingMode options.FileLoadingMode
-	// var valueLoadingMode options.FileLoadingMode
-	// var ok = false
-
-	// if tableLoadingMode, ok = LoadingMode[*tableMode]; !ok {
-	// 	fmt.Println("TableMode unrecognized ! use fileio or memorymap!")
-	// 	os.Exit(1)
-	// }
-	// if valueLoadingMode, ok = LoadingMode[*valueMode]; !ok {
-	// 	fmt.Println("ValueMode unrecognized ! use fileio or memorymap!")
-	// 	os.Exit(1)
-	// }
 
 	if _, err := os.Stat(*tmpFolder); os.IsNotExist(err) {
 		fmt.Printf("Directory %s does not exist !\n", tmpFolder)
