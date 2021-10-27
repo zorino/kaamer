@@ -23,7 +23,6 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/dgraph-io/badger/options"
 	"github.com/pkg/profile"
 	"github.com/zorino/kaamer/pkg/kvstore"
 	"github.com/zorino/kaamer/pkg/makedb"
@@ -56,7 +55,7 @@ var (
 	makedbLenght = flag.Uint("length", uint(MaxInt), "process x number of files")
 	noIndex      = flag.Bool("noindex", false, "prevent the indexing of database")
 
-	LoadingMode = map[string]options.FileLoadingMode{"memorymap": options.MemoryMap, "fileio": options.FileIO}
+	// LoadingMode = map[string]options.FileLoadingMode{"memorymap": options.MemoryMap, "fileio": options.FileIO}
 )
 
 func main() {
@@ -74,8 +73,7 @@ func main() {
       -p            port (default: 8321)
       -t            number of threads to use (default all)
       -tmp          tmp folder for query import (default /tmp)
-      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
-      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+
     (flag)
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
@@ -88,8 +86,7 @@ func main() {
       -t            number of threads to use (default all)
       -offset       start processing raw uniprot file at protein number x
       -length       process x number of proteins (-1 == infinity)
-      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
-      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+
     (flag)
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
@@ -116,18 +113,16 @@ func main() {
 	}
 
 	/* Setting values from CLI */
-	var tableLoadingMode options.FileLoadingMode
-	var valueLoadingMode options.FileLoadingMode
-	var ok = false
+	// var ok = false
 
-	if tableLoadingMode, ok = LoadingMode[*tableMode]; !ok {
-		fmt.Println("TableMode unrecognized ! use fileio or memorymap!")
-		os.Exit(1)
-	}
-	if valueLoadingMode, ok = LoadingMode[*valueMode]; !ok {
-		fmt.Println("ValueMode unrecognized ! use fileio or memorymap!")
-		os.Exit(1)
-	}
+	// if tableLoadingMode, ok = LoadingMode[*tableMode]; !ok {
+	// 	fmt.Println("TableMode unrecognized ! use fileio or memorymap!")
+	// 	os.Exit(1)
+	// }
+	// if valueLoadingMode, ok = LoadingMode[*valueMode]; !ok {
+	// 	fmt.Println("ValueMode unrecognized ! use fileio or memorymap!")
+	// 	os.Exit(1)
+	// }
 
 	/* Functions */
 	switch *function {
@@ -141,7 +136,7 @@ func main() {
 			wg.Add(1)
 			go NewMonitor(1, &stop, &wg)
 			var kvStores *kvstore.KVStores
-			kvStores = kvstore.KVStoresNew(*dbPath, *nbThreads, tableLoadingMode, valueLoadingMode, true, false, true)
+			kvStores = kvstore.KVStoresNew(*dbPath, *nbThreads, true, false, true)
 			stop = true
 			wg.Wait()
 			defer kvStores.Close()
@@ -161,7 +156,7 @@ func main() {
 			var wg sync.WaitGroup
 			wg.Add(1)
 			go NewMonitor(10, &stop, &wg)
-			makedb.NewMakedb(*dbPath, *inputPath, *inputFmt, *nbThreads, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode, *noIndex)
+			makedb.NewMakedb(*dbPath, *inputPath, *inputFmt, *nbThreads, *makedbOffset, *makedbLenght, *maxSize, *noIndex)
 			stop = true
 			wg.Wait()
 		}

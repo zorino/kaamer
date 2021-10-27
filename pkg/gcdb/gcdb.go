@@ -20,14 +20,13 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/dgraph-io/badger/options"
 	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
-func NewGC(dbPath string, iteration int, ratio float64, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
+func NewGC(dbPath string, iteration int, ratio float64, maxSize bool) {
 
 	runtime.GOMAXPROCS(128)
-	kvStores := kvstore.KVStoresNew(dbPath, runtime.NumCPU(), tableLoadingMode, valueLoadingMode, maxSize, true, false)
+	kvStores := kvstore.KVStoresNew(dbPath, runtime.NumCPU(), maxSize, true, false)
 
 	wg := new(sync.WaitGroup)
 	wg.Add(2)

@@ -26,9 +26,8 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/dgraph-io/badger"
-	"github.com/dgraph-io/badger/options"
-	"github.com/dgraph-io/badger/pb"
+	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v3/pb"
 	"github.com/golang/protobuf/proto"
 	copy "github.com/zorino/kaamer/internal/helper/copy"
 	"github.com/zorino/kaamer/pkg/kvstore"
@@ -40,7 +39,7 @@ type DBMerger struct {
 	KVToMerge sync.Map
 }
 
-func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
+func NewMergedb(dbsPath string, outPath string, maxSize bool) {
 
 	// For SSD throughput (as done in badger/graphdb) see :
 	// https://groups.google.com/forum/#!topic/golang-nuts/jPb_h3TvlKE/discussion
@@ -63,7 +62,7 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 	copy.Dir(allDBs[0], outPath)
 	allDBs = allDBs[1:]
 
-	kvStores1 := kvstore.KVStoresNew(outPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, false, false)
+	kvStores1 := kvstore.KVStoresNew(outPath, nbOfThreads, maxSize, false, false)
 
 	dbStats := &kvstore.KStats{}
 	dbStatsByte, ok := kvStores1.ProteinStore.GetValue([]byte("db_stats"))
@@ -80,7 +79,7 @@ func NewMergedb(dbsPath string, outPath string, maxSize bool, tableLoadingMode o
 
 			fmt.Printf("# Merging database %s into %s...\n", db, outPath)
 
-			kvStores2 := kvstore.KVStoresNew(db, 1, tableLoadingMode, valueLoadingMode, maxSize, false, false)
+			kvStores2 := kvstore.KVStoresNew(db, 1, maxSize, false, false)
 
 			_dbStats := &kvstore.KStats{}
 			_dbStatsByte, ok := kvStores2.ProteinStore.GetValue([]byte("db_stats"))

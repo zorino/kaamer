@@ -22,8 +22,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/dgraph-io/badger/options"
-	"github.com/zorino/kaamer/api"
+	server "github.com/zorino/kaamer/api"
 	"github.com/zorino/kaamer/pkg/backupdb"
 	"github.com/zorino/kaamer/pkg/downloaddb"
 	"github.com/zorino/kaamer/pkg/gcdb"
@@ -35,10 +34,6 @@ import (
 
 const (
 	MaxInt uint32 = 1<<32 - 1
-)
-
-var (
-	LoadingMode = map[string]options.FileLoadingMode{"memorymap": options.MemoryMap, "fileio": options.FileIO}
 )
 
 func main() {
@@ -55,9 +50,6 @@ func main() {
       -t            number of threads to use (default all)
       -tmp          tmp folder for query import (default /tmp)
 
-      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
-      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
-
   // Database
 
   -make             make the protein database
@@ -68,8 +60,7 @@ func main() {
       -t            number of threads to use (default all)
       -offset       start processing raw uniprot file at protein number x
       -length       process x number of proteins (-1 == infinity)
-      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
-      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+
     (flag)
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
@@ -79,8 +70,7 @@ func main() {
     (input)
       -d            database directory
       -t            number of threads to use (default all)
-      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
-      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+
     (flag)
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
@@ -108,8 +98,7 @@ func main() {
     (input)
       -dbs          databases directory
       -o            output directory of merged database
-      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
-      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+
     (flag)
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
@@ -118,15 +107,12 @@ func main() {
     (input)
       -d            badger db directory
       -o            badger backup output directory
-      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
-      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
 
   -restore          restore a backup database
     (input)
       -d            badger backup db directory
       -o            badger db output directory
-      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
-      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+
     (flag)
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
@@ -136,8 +122,7 @@ func main() {
       -d            database directory
       -it           number of GC iterations
       -ratio        number of ratio of the GC (between 0-1)
-      -tableMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
-      -valueMode    (fileio, memorymap) default memorymap / fileio decreases memory usage
+
     (flag)
       -maxsize      will maximize the size of tables (.sst) and vlog (.log) files
                     (to limit the number of open files)
@@ -156,8 +141,6 @@ func main() {
 	var makedbOffset = flag.Uint("offset", 0, "offset to process raw file")
 	var makedbLenght = flag.Uint("length", uint(MaxInt), "process x number of files")
 	var maxSize = flag.Bool("maxsize", false, "to maximize badger output file size")
-	var tableMode = flag.String("tablemode", "memorymap", "table loading mode (fileio, memorymap)")
-	var valueMode = flag.String("valuemode", "memorymap", "value loading mode (fileio, memorymap)")
 	var noIndex = flag.Bool("noindex", false, "prevent the indexing of database")
 
 	var indexOpt = flag.Bool("index", false, "program")
@@ -187,20 +170,6 @@ func main() {
 	}
 	flag.Parse()
 
-	/* Setting values from CLI */
-	var tableLoadingMode options.FileLoadingMode
-	var valueLoadingMode options.FileLoadingMode
-	var ok = false
-
-	if tableLoadingMode, ok = LoadingMode[*tableMode]; !ok {
-		fmt.Println("TableMode unrecognized ! use fileio or memorymap!")
-		os.Exit(1)
-	}
-	if valueLoadingMode, ok = LoadingMode[*valueMode]; !ok {
-		fmt.Println("ValueMode unrecognized ! use fileio or memorymap!")
-		os.Exit(1)
-	}
-
 	if _, err := os.Stat(*tmpFolder); os.IsNotExist(err) {
 		fmt.Printf("Directory %s does not exist !\n", tmpFolder)
 		os.Exit(1)
@@ -211,7 +180,7 @@ func main() {
 		if *dbPath == "" {
 			fmt.Println("No db path !")
 		} else {
-			server.NewServer(*dbPath, *portNumber, tableLoadingMode, valueLoadingMode, *nbThreads, *tmpFolder)
+			server.NewServer(*dbPath, *portNumber, *nbThreads, *tmpFolder)
 		}
 		os.Exit(0)
 	}
@@ -268,7 +237,7 @@ func main() {
 			fmt.Println("No input format (-f) !")
 			os.Exit(1)
 		} else {
-			makedb.NewMakedb(*dbPath, *inputPath, *inputFmt, *nbThreads, *makedbOffset, *makedbLenght, *maxSize, tableLoadingMode, valueLoadingMode, *noIndex)
+			makedb.NewMakedb(*dbPath, *inputPath, *inputFmt, *nbThreads, *makedbOffset, *makedbLenght, *maxSize, *noIndex)
 		}
 
 		os.Exit(0)
@@ -280,7 +249,7 @@ func main() {
 			fmt.Println("No db path !")
 			os.Exit(1)
 		} else {
-			indexdb.NewIndexDB(*dbPath, *nbThreads, *maxSize, tableLoadingMode, valueLoadingMode)
+			indexdb.NewIndexDB(*dbPath, *nbThreads, *maxSize)
 		}
 
 		os.Exit(0)
@@ -290,7 +259,7 @@ func main() {
 		if *dbsPath == "" || *outPath == "" {
 			fmt.Println("Need to have a valid databases path !")
 		} else {
-			mergedb.NewMergedb(*dbsPath, *outPath, *maxSize, tableLoadingMode, valueLoadingMode)
+			mergedb.NewMergedb(*dbsPath, *outPath, *maxSize)
 		}
 		os.Exit(0)
 	}
@@ -299,7 +268,7 @@ func main() {
 		if *dbPath == "" {
 			fmt.Println("No db path !")
 		} else {
-			gcdb.NewGC(*dbPath, *gcIteration, *gcRatio, *maxSize, tableLoadingMode, valueLoadingMode)
+			gcdb.NewGC(*dbPath, *gcIteration, *gcRatio, *maxSize)
 		}
 		os.Exit(0)
 	}
@@ -310,7 +279,7 @@ func main() {
 		} else if *outPath == "" {
 			fmt.Println("Need to have a valid backup directory path !")
 		} else {
-			backupdb.Backupdb(*dbPath, *outPath, tableLoadingMode, valueLoadingMode)
+			backupdb.Backupdb(*dbPath, *outPath)
 		}
 		os.Exit(0)
 	}

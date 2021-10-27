@@ -30,7 +30,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dgraph-io/badger/options"
 	"github.com/go-chi/chi"
 	"github.com/golang/protobuf/proto"
 	"github.com/rs/xid"
@@ -45,7 +44,7 @@ var dbStats *kvstore.KStats
 var tmpFolder = "/tmp/"
 var nbOfThreads = 0
 
-func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, newNbThreads int, newTmpFolder string) {
+func NewServer(dbPath string, portNumber int, newNbThreads int, newTmpFolder string) {
 
 	runtime.GOMAXPROCS(512)
 
@@ -63,7 +62,7 @@ func NewServer(dbPath string, portNumber int, tableLoadingMode options.FileLoadi
 	fmt.Printf(" + Opening kAAmer Database.. ")
 	startTime := time.Now()
 
-	kvStores = kvstore.KVStoresNew(dbPath, 12, tableLoadingMode, valueLoadingMode, true, false, true)
+	kvStores = kvstore.KVStoresNew(dbPath, 12, true, false, true)
 	defer kvStores.Close()
 
 	dbStatsByte, ok := kvStores.ProteinStore.GetValue([]byte("db_stats"))

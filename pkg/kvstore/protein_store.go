@@ -17,7 +17,7 @@ limitations under the License.
 package kvstore
 
 import (
-	"github.com/dgraph-io/badger"
+	"github.com/dgraph-io/badger/v3"
 )
 
 // Hash store for values combination used in other stores

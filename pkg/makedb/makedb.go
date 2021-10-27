@@ -22,7 +22,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/dgraph-io/badger/options"
 	"github.com/zorino/kaamer/pkg/indexdb"
 	"github.com/zorino/kaamer/pkg/kvstore"
 )
@@ -31,7 +30,7 @@ const (
 	KMER_SIZE = 7 // 7 is currently the only supported kmer size
 )
 
-func NewMakedb(dbPath string, inputPath string, inputFmt string, threadByWorker int, offset uint, lenght uint, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode, noIndex bool) {
+func NewMakedb(dbPath string, inputPath string, inputFmt string, threadByWorker int, offset uint, lenght uint, maxSize bool, noIndex bool) {
 
 	runtime.GOMAXPROCS(128)
 
@@ -46,7 +45,7 @@ func NewMakedb(dbPath string, inputPath string, inputFmt string, threadByWorker 
 	fmt.Printf("# Making Database %s from %s\n", dbPath, inputPath)
 	fmt.Printf("# Using %d CPU\n", threadByWorker)
 
-	kvStores := kvstore.KVStoresNew(dbPath, threadByWorker, tableLoadingMode, valueLoadingMode, maxSize, false, false)
+	kvStores := kvstore.KVStoresNew(dbPath, threadByWorker, maxSize, false, false)
 	kvStores.OpenInsertChannel()
 
 	switch inputFmt {
@@ -67,7 +66,7 @@ func NewMakedb(dbPath string, inputPath string, inputFmt string, threadByWorker 
 	kvStores.CloseInsertChannel()
 	kvStores.Close()
 
-	kvStores = kvstore.KVStoresNew(dbPath, threadByWorker, tableLoadingMode, valueLoadingMode, maxSize, false, false)
+	kvStores = kvstore.KVStoresNew(dbPath, threadByWorker, maxSize, false, false)
 
 	fmt.Printf("# GC KmerStore...\n")
 	kvStores.KmerStore.GarbageCollect(10, 0.5)
@@ -77,7 +76,7 @@ func NewMakedb(dbPath string, inputPath string, inputFmt string, threadByWorker 
 	kvStores.Close()
 
 	if !noIndex {
-		indexdb.NewIndexDB(dbPath, threadByWorker, maxSize, tableLoadingMode, valueLoadingMode)
+		indexdb.NewIndexDB(dbPath, threadByWorker, maxSize)
 	}
 
 }

@@ -25,14 +25,13 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/dgraph-io/badger"
-	"github.com/dgraph-io/badger/options"
-	"github.com/dgraph-io/badger/pb"
+	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v3/pb"
 	"github.com/golang/protobuf/proto"
 	"github.com/zorino/kaamer/pkg/kvstore"
 )
 
-func NewIndexDB(dbPath string, nbOfThreads int, maxSize bool, tableLoadingMode options.FileLoadingMode, valueLoadingMode options.FileLoadingMode) {
+func NewIndexDB(dbPath string, nbOfThreads int, maxSize bool) {
 
 	// For SSD throughput (as done in badger/graphdb) see :
 	// https://groups.google.com/forum/#!topic/golang-nuts/jPb_h3TvlKE/discussion
@@ -43,7 +42,7 @@ func NewIndexDB(dbPath string, nbOfThreads int, maxSize bool, tableLoadingMode o
 	}
 
 	newKmerStore := CreateNewKmerStore(dbPath, nbOfThreads)
-	kvStores1 := kvstore.KVStoresNew(dbPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, true, false)
+	kvStores1 := kvstore.KVStoresNew(dbPath, nbOfThreads, maxSize, true, false)
 	IndexStore(kvStores1, newKmerStore, nbOfThreads)
 	AddSettings(kvStores1, dbPath)
 	newKmerStore.GarbageCollect(1000, 0.5)
@@ -55,7 +54,7 @@ func NewIndexDB(dbPath string, nbOfThreads int, maxSize bool, tableLoadingMode o
 	os.RemoveAll(dbPath + "/kmer_store")
 	os.Rename(dbPath+"/kmer_store.new", dbPath+"/kmer_store")
 
-	kvStores := kvstore.KVStoresNew(dbPath, nbOfThreads, tableLoadingMode, valueLoadingMode, maxSize, true, false)
+	kvStores := kvstore.KVStoresNew(dbPath, nbOfThreads, maxSize, true, false)
 	fmt.Printf("# Flattening KmerStore...\n")
 	kvStores.KmerStore.DB.Flatten(2)
 	fmt.Printf("# Flattening ProteinStore...\n")
@@ -156,11 +155,8 @@ func CreateNewKmerStore(dbPath string, nbOfThreads int) *kvstore.KVStore {
 	k_opts := badger.DefaultOptions(dbPath + "/kmer_store.new")
 	k_opts.Dir = dbPath + "/kmer_store.new"
 	k_opts.ValueDir = dbPath + "/kmer_store.new"
-	k_opts.TableLoadingMode = options.MemoryMap
-	k_opts.ValueLogLoadingMode = options.MemoryMap
 	k_opts.SyncWrites = true
 	k_opts.NumVersionsToKeep = 1
-	k_opts.MaxTableSize = kvstore.MaxTableSize
 	k_opts.ValueLogFileSize = kvstore.MaxValueLogFileSize
 	k_opts.ValueLogMaxEntries = kvstore.MaxValueLogEntries
 	k_opts.NumCompactors = 8
