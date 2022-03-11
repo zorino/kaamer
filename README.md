@@ -1,6 +1,6 @@
-# <img src="web/src/images/kaamer.svg" alt="kAAmer logo" width="40px"/> kAAmer
+# <img src="web/src/images/kaamer.svg" alt="kaamer logo" width="40px"/> kaamer
 
-kAAmer is a Go package that provides the tools to produce and query a kmerized protein database.
+kaamer is a Go package that provides the tools to produce and query a kmerized protein database.
 
 It provides fast protein and translated nucleotide searches over a protein database while lacking the sensitivity of alignment when it comes to find distant homology.
 
